@@ -56,19 +56,23 @@ nothing has been spent yet. And it grounds the answer in *your* project, not a g
 
 ```bash
 ollama pull llama3.1:8b            # a judge to evaluate your project
-uv tool install specjudge
+uv tool install git+https://github.com/JoaquinRuiz/SpecJudge.git
 specjudge /path/to/your/project
 ```
 
 That's it. On first run SpecJudge lists your local models, asks which one to use as the judge,
 and remembers your choice.
 
+> **PyPI release pending** — once published, this becomes `uv tool install specjudge`.
+
 <details>
 <summary><b>Run without installing, or from source</b></summary>
 
 ```bash
-uvx specjudge /path/to/your/project     # ephemeral run
+# Ephemeral run, no install
+uvx --from git+https://github.com/JoaquinRuiz/SpecJudge.git specjudge /path/to/project
 
+# From source
 git clone https://github.com/JoaquinRuiz/SpecJudge.git && cd SpecJudge
 uv sync --extra dev
 uv run specjudge --help

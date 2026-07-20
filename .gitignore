@@ -100,3 +100,4 @@ desktop.ini
 *.tmp
 tmp/
 scratch/
+dist/
