@@ -23,10 +23,10 @@ jobs:
       matrix:
         python-version: ["3.11", "3.12", "3.13"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
 
@@ -39,16 +39,16 @@ jobs:
       # Ollama is mocked at the HTTP level, so the suite needs no local model
       # and makes no network calls.
       - name: Run tests
-        run: uv run --python ${{ matrix.python-version }} pytest -q
+        run: uv run --extra dev --python ${{ matrix.python-version }} pytest -q
 
   lint:
     name: Lint & format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
 
@@ -56,19 +56,19 @@ jobs:
         run: uv sync --extra dev
 
       - name: Ruff (lint)
-        run: uv run ruff check --output-format=github .
+        run: uv run --extra dev ruff check --output-format=github .
 
       - name: Ruff (format)
-        run: uv run ruff format --check .
+        run: uv run --extra dev ruff format --check .
 
   catalog:
     name: Catalog schema
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
 
@@ -79,16 +79,16 @@ jobs:
       # a fast, focused signal: every model conforms to the schema, every price
       # carries a date, and the catalog and rating rules agree on dimensions.
       - name: Validate model catalog
-        run: uv run pytest tests/contract -q
+        run: uv run --extra dev pytest tests/contract -q
 
   build:
     name: Build package
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
 
