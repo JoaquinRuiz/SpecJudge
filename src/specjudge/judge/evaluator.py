@@ -92,14 +92,10 @@ def _summarize(analysis: ProjectAnalysis, limit: int) -> str:
     return "\n".join(parts)
 
 
-def build_prompt(
-    analysis: ProjectAnalysis, rules: RatingRules, *, compact: bool = False
-) -> str:
+def build_prompt(analysis: ProjectAnalysis, rules: RatingRules, *, compact: bool = False) -> str:
     head = _instructions(rules)
     if compact:
-        limit = int(
-            rules.judge.get("max_chars_per_artifact_compact", _DEFAULT_MAX_CHARS_COMPACT)
-        )
+        limit = int(rules.judge.get("max_chars_per_artifact_compact", _DEFAULT_MAX_CHARS_COMPACT))
         body = _summarize(analysis, limit)
         label = "=== PROJECT SUMMARY ==="
     else:

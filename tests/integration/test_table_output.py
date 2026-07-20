@@ -12,8 +12,15 @@ runner = CliRunner()
 def test_default_output_is_table(project_sufficient, mock_ollama, test_catalog):
     with mock_ollama(models=["llama3.1:8b"]):
         result = runner.invoke(
-            app, [str(project_sufficient), "--judge", "llama3.1:8b", "--no-color",
-                  "--catalog", str(test_catalog)]
+            app,
+            [
+                str(project_sufficient),
+                "--judge",
+                "llama3.1:8b",
+                "--no-color",
+                "--catalog",
+                str(test_catalog),
+            ],
         )
     assert result.exit_code == 0, result.output
     out = result.output

@@ -107,8 +107,7 @@ def load_catalog(path: Path | str | None = None) -> tuple[list[CatalogModel], li
             pricing_date = str(pricing_date)
         else:
             warnings.append(
-                f"Model '{mid}' has no 'pricing_date': "
-                "price freshness is not verifiable."
+                f"Model '{mid}' has no 'pricing_date': price freshness is not verifiable."
             )
 
         price = Price(

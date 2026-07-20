@@ -15,8 +15,14 @@ def test_sufficient_project_json(project_sufficient, mock_ollama, test_catalog):
     with mock_ollama(models=["llama3.1:8b"]):
         result = runner.invoke(
             app,
-            [str(project_sufficient), "--judge", "llama3.1:8b", "--json",
-             "--catalog", str(test_catalog)],
+            [
+                str(project_sufficient),
+                "--judge",
+                "llama3.1:8b",
+                "--json",
+                "--catalog",
+                str(test_catalog),
+            ],
         )
     assert result.exit_code == 0, result.output
     data = json.loads(result.output)
@@ -34,8 +40,15 @@ def test_best_choice_is_cheapest_good(project_sufficient, mock_ollama, test_cata
     demand = {"reasoning": "medium", "size": "medium", "domain_specialization": "medium"}
     with mock_ollama(models=["llama3.1:8b"], demand=demand):
         result = runner.invoke(
-            app, [str(project_sufficient), "--judge", "llama3.1:8b", "--json",
-                  "--catalog", str(test_catalog)]
+            app,
+            [
+                str(project_sufficient),
+                "--judge",
+                "llama3.1:8b",
+                "--json",
+                "--catalog",
+                str(test_catalog),
+            ],
         )
     data = json.loads(result.output)
     assert data["best_choice"] == "balanced-mid"
@@ -44,8 +57,15 @@ def test_best_choice_is_cheapest_good(project_sufficient, mock_ollama, test_cata
 def test_json_exposes_the_podium(project_sufficient, mock_ollama, test_catalog):
     with mock_ollama(models=["llama3.1:8b"]):
         result = runner.invoke(
-            app, [str(project_sufficient), "--judge", "llama3.1:8b", "--json",
-                  "--catalog", str(test_catalog)]
+            app,
+            [
+                str(project_sufficient),
+                "--judge",
+                "llama3.1:8b",
+                "--json",
+                "--catalog",
+                str(test_catalog),
+            ],
         )
     data = json.loads(result.output)
     assert data["podium"][0] == data["best_choice"]

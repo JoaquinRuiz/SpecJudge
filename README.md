@@ -7,6 +7,7 @@
 SpecJudge reads your Spec-Driven Development artifacts and tells you which AI model actually
 fits the job — before you spend a single token implementing it.
 
+[![CI](https://github.com/JoaquinRuiz/SpecJudge/actions/workflows/ci.yml/badge.svg)](https://github.com/JoaquinRuiz/SpecJudge/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![Local-first](https://img.shields.io/badge/local--first-your%20specs%20never%20leave-brightgreen.svg)](#privacy)

@@ -44,13 +44,12 @@ def test_first_run_selects_and_persists(monkeypatch, isolate_config):
 def test_second_run_does_not_prompt(monkeypatch):
     router = _client_with(["m1", "m2"], monkeypatch)
     try:
+
         def _boom(models):
             raise AssertionError("should not prompt again")
 
         monkeypatch.setattr(cli, "_prompt_judge_selection", _boom)
-        config = UserConfig(
-            ollama_host=HOST, judge_preference=JudgePreference("m2", "2026-07-20")
-        )
+        config = UserConfig(ollama_host=HOST, judge_preference=JudgePreference("m2", "2026-07-20"))
         client = OllamaClient(host=HOST)
         chosen, _ = cli.resolve_judge(
             config, client, forced_judge=None, set_judge=False, interactive=True

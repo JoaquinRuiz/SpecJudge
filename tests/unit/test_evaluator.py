@@ -86,9 +86,17 @@ def test_missing_dimensions_key_raises_instead_of_defaulting():
 
 
 def test_invalid_level_raises_instead_of_defaulting():
-    client = _FakeClient([
-        {"dimensions": {"reasoning": "very high", "size": "medium", "domain_specialization": "low"}}
-    ])
+    client = _FakeClient(
+        [
+            {
+                "dimensions": {
+                    "reasoning": "very high",
+                    "size": "medium",
+                    "domain_specialization": "low",
+                }
+            }
+        ]
+    )
     with pytest.raises(JudgeUnavailableError):
         estimate_demand(_analysis(), _rules(), client, "judge")
 

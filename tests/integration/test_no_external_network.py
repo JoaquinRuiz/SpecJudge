@@ -30,9 +30,7 @@ def test_no_calls_outside_localhost(project_sufficient):
         # Any non-localhost host raises a connection error (never hits the real network).
         router.route(host="127.0.0.1").pass_through()
 
-        result = runner.invoke(
-            app, [str(project_sufficient), "--judge", "llama3.1:8b", "--json"]
-        )
+        result = runner.invoke(app, [str(project_sufficient), "--judge", "llama3.1:8b", "--json"])
     assert result.exit_code == 0, result.output
     # Every request made went to localhost:11434.
     for call in router.calls:

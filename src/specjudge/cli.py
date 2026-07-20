@@ -122,9 +122,7 @@ def _comparison_to_dict(comparison: Comparison) -> dict:
 
 @app.command()
 def main(
-    project_path: Path = typer.Argument(
-        Path("."), help="Root of the SDD project to analyze."
-    ),
+    project_path: Path = typer.Argument(Path("."), help="Root of the SDD project to analyze."),
     open_browser: bool = typer.Option(
         False, "--open", "-o", help="Also open the HTML matrix in your browser."
     ),
@@ -137,15 +135,14 @@ def main(
     catalog: Path | None = typer.Option(
         None, "--catalog", help="Alternative model catalog (YAML)."
     ),
-    as_json: bool = typer.Option(
-        False, "--json", help="Emit the result as JSON on stdout."
-    ),
-    no_color: bool = typer.Option(
-        False, "--no-color", help="Disable color/highlighting."
-    ),
+    as_json: bool = typer.Option(False, "--json", help="Emit the result as JSON on stdout."),
+    no_color: bool = typer.Option(False, "--no-color", help="Disable color/highlighting."),
     version: bool = typer.Option(
-        False, "--version", callback=_version_callback, is_eager=True,
-        help="Show the version and exit."
+        False,
+        "--version",
+        callback=_version_callback,
+        is_eager=True,
+        help="Show the version and exit.",
     ),
 ) -> None:
     """Analyze the project and show the model comparison."""
@@ -191,9 +188,7 @@ def _run(
     evaluations = evaluate_all(models, demand, rules)
 
     warnings = list(analysis.warnings) + list(catalog_warnings)
-    comparison = build_comparison(
-        evaluations, analysis.data_state, judge_model, warnings=warnings
-    )
+    comparison = build_comparison(evaluations, analysis.data_state, judge_model, warnings=warnings)
 
     # 5. Output.
     if as_json:

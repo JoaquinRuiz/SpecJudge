@@ -22,9 +22,7 @@ def _rules() -> RatingRules:
 
 
 def _model(caps: dict[str, str]) -> CatalogModel:
-    return CatalogModel(
-        id="m", name="M", capabilities=caps, price=Price(1, 1, "USD", "2026-07-01")
-    )
+    return CatalogModel(id="m", name="M", capabilities=caps, price=Price(1, 1, "USD", "2026-07-01"))
 
 
 def _demand(dims: dict[str, str]) -> DemandProfile:

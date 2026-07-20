@@ -11,16 +11,28 @@ from specjudge.cli import app
 runner = CliRunner()
 
 
-def test_open_generates_self_contained_html(project_sufficient, mock_ollama, tmp_path, monkeypatch, test_catalog):
+def test_open_generates_self_contained_html(
+    project_sufficient, mock_ollama, tmp_path, monkeypatch, test_catalog
+):
     written = {}
 
     # Do not open a real browser during the test (headless-safe).
-    monkeypatch.setattr("specjudge.render.html.webbrowser.open", lambda uri: written.setdefault("uri", uri))
+    monkeypatch.setattr(
+        "specjudge.render.html.webbrowser.open", lambda uri: written.setdefault("uri", uri)
+    )
 
     with mock_ollama(models=["llama3.1:8b"]):
         result = runner.invoke(
-            app, [str(project_sufficient), "--judge", "llama3.1:8b", "--no-color", "--open",
-                  "--catalog", str(test_catalog)]
+            app,
+            [
+                str(project_sufficient),
+                "--judge",
+                "llama3.1:8b",
+                "--no-color",
+                "--open",
+                "--catalog",
+                str(test_catalog),
+            ],
         )
     assert result.exit_code == 0, result.output
     assert "HTML matrix" in result.output

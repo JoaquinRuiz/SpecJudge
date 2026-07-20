@@ -25,7 +25,5 @@ def test_help_lists_flags():
 
 def test_exit_code_insufficient_is_2(project_insufficient, mock_ollama):
     with mock_ollama(models=["llama3.1:8b"]):
-        result = runner.invoke(
-            app, [str(project_insufficient), "--judge", "llama3.1:8b"]
-        )
+        result = runner.invoke(app, [str(project_insufficient), "--judge", "llama3.1:8b"])
     assert result.exit_code == 2

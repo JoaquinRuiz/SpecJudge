@@ -13,9 +13,7 @@ runner = CliRunner()
 
 def test_insufficient_exits_2_no_comparison(project_insufficient, mock_ollama):
     with mock_ollama(models=["llama3.1:8b"]):
-        result = runner.invoke(
-            app, [str(project_insufficient), "--judge", "llama3.1:8b", "--json"]
-        )
+        result = runner.invoke(app, [str(project_insufficient), "--judge", "llama3.1:8b", "--json"])
     assert result.exit_code == 2
     assert "not enough" in result.output.lower()
     # Must not emit a JSON comparison.
@@ -24,9 +22,7 @@ def test_insufficient_exits_2_no_comparison(project_insufficient, mock_ollama):
 
 def test_scarce_exits_0_with_warning(project_scarce, mock_ollama):
     with mock_ollama(models=["llama3.1:8b"]):
-        result = runner.invoke(
-            app, [str(project_scarce), "--judge", "llama3.1:8b", "--json"]
-        )
+        result = runner.invoke(app, [str(project_scarce), "--judge", "llama3.1:8b", "--json"])
     assert result.exit_code == 0, result.output
     data = json.loads(result.output)
     assert data["data_state"] == "scarce"
@@ -38,9 +34,7 @@ def test_insufficient_and_scarce_are_distinct(project_insufficient, project_scar
         r_insuf = runner.invoke(
             app, [str(project_insufficient), "--judge", "llama3.1:8b", "--json"]
         )
-        r_scarce = runner.invoke(
-            app, [str(project_scarce), "--judge", "llama3.1:8b", "--json"]
-        )
+        r_scarce = runner.invoke(app, [str(project_scarce), "--judge", "llama3.1:8b", "--json"])
     assert r_insuf.exit_code == 2
     assert r_scarce.exit_code == 0
 
