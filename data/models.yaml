@@ -1,0 +1,547 @@
+# SpecJudge model catalog
+# -----------------------
+# Community-editable reference source (Principle V / FR-017).
+# To add a model or update a price, edit THIS file: no code changes needed.
+# Every price MUST carry a `pricing_date` so its freshness is verifiable (FR-018).
+# Entries without `pricing_date` are shown but flagged as "freshness not verifiable".
+#
+# Valid capability levels: low | medium | high | top
+# Dimensions must match those in data/rating-rules.yaml.
+#
+# Prices are per million tokens, in USD, and are a MAINTAINED REFERENCE — not a
+# live feed. Verify against the provider's pricing page before relying on them.
+
+version: 1
+
+dimensions:
+  - reasoning              # reasoning complexity the project demands
+  - size                   # size / structure of the work (context, number of pieces)
+  - domain_specialization  # domain specialization required
+
+models:
+  # ---------------------------------------------------------------- Anthropic
+  - id: claude-opus-4-8
+    name: Claude Opus 4.8
+    provider: Anthropic
+    capabilities:
+      reasoning: top
+      size: top
+      domain_specialization: top
+    price:
+      input_per_million: 5.00
+      output_per_million: 25.00
+      currency: USD
+      pricing_date: 2026-07-20
+    notes: Frontier-tier reasoning and long-horizon agentic work. 1M context.
+
+  - id: claude-sonnet-5
+    name: Claude Sonnet 5
+    provider: Anthropic
+    capabilities:
+      reasoning: high
+      size: top
+      domain_specialization: high
+    price:
+      input_per_million: 3.00
+      output_per_million: 15.00
+      currency: USD
+      pricing_date: 2026-07-20
+    notes: >
+      Near-Opus quality on coding and agentic work at Sonnet cost. 1M context.
+      Introductory pricing of $2.00/$10.00 applies through 2026-08-31.
+
+  - id: claude-haiku-4-5
+    name: Claude Haiku 4.5
+    provider: Anthropic
+    capabilities:
+      reasoning: medium
+      size: medium
+      domain_specialization: medium
+    price:
+      input_per_million: 1.00
+      output_per_million: 5.00
+      currency: USD
+      pricing_date: 2026-07-20
+    notes: Fastest and most cost-effective Anthropic tier. 200K context.
+
+  # ------------------------------------------------------------------- OpenAI
+  - id: gpt-5-6-sol
+    name: GPT-5.6 Sol
+    provider: OpenAI
+    capabilities:
+      reasoning: top
+      size: top
+      domain_specialization: top
+    price:
+      input_per_million: 5.00
+      output_per_million: 30.00
+      currency: USD
+      pricing_date: 2026-07-20
+    notes: OpenAI's flagship tier.
+
+  - id: gpt-5-6-terra
+    name: GPT-5.6 Terra
+    provider: OpenAI
+    capabilities:
+      reasoning: high
+      size: high
+      domain_specialization: high
+    price:
+      input_per_million: 2.50
+      output_per_million: 15.00
+      currency: USD
+      pricing_date: 2026-07-20
+    notes: Mid tier of the GPT-5.6 family.
+
+  - id: gpt-5-6-luna
+    name: GPT-5.6 Luna
+    provider: OpenAI
+    capabilities:
+      reasoning: medium
+      size: medium
+      domain_specialization: medium
+    price:
+      input_per_million: 1.00
+      output_per_million: 6.00
+      currency: USD
+      pricing_date: 2026-07-20
+    notes: Entry tier of the GPT-5.6 family.
+
+  - id: gpt-4-1-nano
+    name: GPT-4.1 nano
+    provider: OpenAI
+    capabilities:
+      reasoning: low
+      size: low
+      domain_specialization: low
+    price:
+      input_per_million: 0.10
+      output_per_million: 0.40
+      currency: USD
+      pricing_date: 2026-07-20
+    notes: Budget floor of OpenAI's ladder; suitable only for simple, scoped work.
+
+  # ------------------------------------------------------------------- Google
+  - id: gemini-3-1-pro
+    name: Gemini 3.1 Pro
+    provider: Google
+    capabilities:
+      reasoning: high
+      size: top
+      domain_specialization: high
+    price:
+      input_per_million: 2.00
+      output_per_million: 12.00
+      currency: USD
+      pricing_date: 2026-07-20
+    notes: >
+      Google's flagship tier. Long-context pricing rises to $4.00/$18.00 above
+      200K tokens — the rate here is the standard band.
+
+  - id: gemini-3-5-flash
+    name: Gemini 3.5 Flash
+    provider: Google
+    capabilities:
+      reasoning: high
+      size: high
+      domain_specialization: medium
+    price:
+      input_per_million: 1.50
+      output_per_million: 9.00
+      currency: USD
+      pricing_date: 2026-07-20
+    notes: Fast tier with strong general capability; flat pricing at any context length.
+
+  - id: gemini-3-flash
+    name: Gemini 3 Flash
+    provider: Google
+    capabilities:
+      reasoning: medium
+      size: high
+      domain_specialization: medium
+    price:
+      input_per_million: 0.50
+      output_per_million: 3.00
+      currency: USD
+      pricing_date: 2026-07-20
+    notes: Previous-generation Flash; still available and notably cheaper.
+
+  - id: gemini-3-1-flash-lite
+    name: Gemini 3.1 Flash-Lite
+    provider: Google
+    capabilities:
+      reasoning: low
+      size: medium
+      domain_specialization: low
+    price:
+      input_per_million: 0.25
+      output_per_million: 1.50
+      currency: USD
+      pricing_date: 2026-07-20
+    notes: Google's budget tier.
+
+  # ------------------------------------------------- Local (Ollama on Apple Silicon)
+  # These run on your own machine, so the per-token price is 0.00 — the real
+  # cost is the hardware you already own plus electricity. RAM figures are for
+  # Q4 quantisation via Ollama on Apple Silicon (unified memory, so the whole
+  # pool is available to the GPU). Leave headroom for the KV cache at long
+  # context. Being free, any of these wins the value comparison outright on a
+  # project whose demand it actually meets.
+
+  - id: gemma-4-e2b-local
+    name: Gemma 4 E2B (local)
+    provider: Local / Ollama
+    capabilities:
+      reasoning: low
+      size: low
+      domain_specialization: low
+    price:
+      input_per_million: 0.00
+      output_per_million: 0.00
+      currency: USD
+      pricing_date: 2026-07-20
+    notes: >
+      2.3B effective params — the smallest practical option. Runs comfortably on
+      an 8–16GB Mac. Suitable only for small, well-scoped work.
+
+  - id: gemma-4-e4b-local
+    name: Gemma 4 E4B (local)
+    provider: Local / Ollama
+    capabilities:
+      reasoning: low
+      size: medium
+      domain_specialization: low
+    price:
+      input_per_million: 0.00
+      output_per_million: 0.00
+      currency: USD
+      pricing_date: 2026-07-20
+    notes: >
+      4.5B effective params, 128K context. ~6GB for the model, ~12.5GB in memory
+      with the full context window; ~55 tok/s on a MacBook Air M4. Good default
+      for a 16GB Mac.
+
+  - id: qwen-3-5-9b-local
+    name: Qwen 3.5 9B (local)
+    provider: Local / Ollama
+    capabilities:
+      reasoning: medium
+      size: medium
+      domain_specialization: low
+    price:
+      input_per_million: 0.00
+      output_per_million: 0.00
+      currency: USD
+      pricing_date: 2026-07-20
+    notes: >
+      ~6.6GB at Q4_K_M; fits a 16GB Mac. Punches well above its size on
+      reasoning — the strongest all-round option that fits base-tier hardware.
+
+  - id: ministral-3b-local
+    name: Ministral 3B (local)
+    provider: Local / Ollama
+    capabilities:
+      reasoning: low
+      size: low
+      domain_specialization: low
+    price:
+      input_per_million: 0.00
+      output_per_million: 0.00
+      currency: USD
+      pricing_date: 2026-07-20
+    notes: >
+      Mistral's edge/on-device tier — ~2GB at Q4, runs on almost anything.
+      Smallest practical Mistral; only for small, well-scoped work.
+
+  - id: llama-3-2-3b-local
+    name: Llama 3.2 3B (local)
+    provider: Local / Ollama
+    capabilities:
+      reasoning: low
+      size: low
+      domain_specialization: low
+    price:
+      input_per_million: 0.00
+      output_per_million: 0.00
+      currency: USD
+      pricing_date: 2026-07-20
+    notes: >
+      ~2.5GB download; the usual starting point for local Llama. Comfortable on
+      any 8GB+ Mac.
+
+  - id: ministral-8b-local
+    name: Ministral 8B (local)
+    provider: Local / Ollama
+    capabilities:
+      reasoning: low
+      size: medium
+      domain_specialization: low
+    price:
+      input_per_million: 0.00
+      output_per_million: 0.00
+      currency: USD
+      pricing_date: 2026-07-20
+    notes: ~5GB at Q4; the mid size of the Ministral 3 line. Fits a 16GB Mac.
+
+  - id: llama-3-3-8b-local
+    name: Llama 3.3 8B (local)
+    provider: Local / Ollama
+    capabilities:
+      reasoning: medium
+      size: medium
+      domain_specialization: low
+    price:
+      input_per_million: 0.00
+      output_per_million: 0.00
+      currency: USD
+      pricing_date: 2026-07-20
+    notes: >
+      ~5.5GB RAM; the strongest all-round option in the 7B/8B class. Fits a
+      16GB Mac.
+
+  - id: mistral-small-3-2-24b-local
+    name: Mistral Small 3.2 24B (local)
+    provider: Local / Ollama
+    capabilities:
+      reasoning: medium
+      size: medium
+      domain_specialization: medium
+    price:
+      input_per_million: 0.00
+      output_per_million: 0.00
+      currency: USD
+      pricing_date: 2026-07-20
+    notes: >
+      ~14GB at Q4 — needs a 24GB+ Mac. Leading model in the sub-70B class;
+      the most capable Mistral that is realistically local.
+
+  - id: gemma-4-31b-local
+    name: Gemma 4 31B (local)
+    provider: Local / Ollama
+    capabilities:
+      reasoning: high
+      size: medium
+      domain_specialization: medium
+    price:
+      input_per_million: 0.00
+      output_per_million: 0.00
+      currency: USD
+      pricing_date: 2026-07-20
+    notes: >
+      ~17.5GB at Q4_0 before runtime overhead and KV cache — needs a 32GB+ Mac
+      (M4/M5 Pro or Max). Same weights as the hosted gemma-4-31b entry; this row
+      is the self-hosted cost profile.
+
+  - id: qwen-3-6-35b-a3b-local
+    name: Qwen 3.6-35B-A3B (local)
+    provider: Local / Ollama
+    capabilities:
+      reasoning: high
+      size: high
+      domain_specialization: medium
+    price:
+      input_per_million: 0.00
+      output_per_million: 0.00
+      currency: USD
+      pricing_date: 2026-07-20
+    notes: >
+      MoE with only 3B active params per token, so throughput stays high even
+      though the file is ~20GB at Q4_K_M. Needs a 32GB+ Mac. The most capable
+      option that is realistically local.
+
+  # -------------------------------------------------------------------- Z.ai
+  # Z.ai (Zhipu AI). GLM weights are released openly, but the rates below are
+  # Z.ai's own hosted API. Cached input is billed separately and much lower
+  # (e.g. $0.26/M on GLM-5.2 vs $1.40 uncached) — not modelled here.
+  - id: glm-5-2
+    name: GLM-5.2
+    provider: Z.ai
+    capabilities:
+      reasoning: high
+      size: high
+      domain_specialization: high
+    price:
+      input_per_million: 1.40
+      output_per_million: 4.40
+      currency: USD
+      pricing_date: 2026-07-20
+    notes: >
+      Z.ai's flagship; strong coding capability at well below Western
+      frontier-tier pricing. Cached input drops to $0.26/M.
+
+  - id: glm-5-1
+    name: GLM-5.1
+    provider: Z.ai
+    capabilities:
+      reasoning: high
+      size: high
+      domain_specialization: medium
+    price:
+      input_per_million: 0.97
+      output_per_million: 3.04
+      currency: USD
+      pricing_date: 2026-07-20
+    notes: Previous flagship; still widely used and cheaper than GLM-5.2.
+
+  - id: glm-4-7
+    name: GLM-4.7
+    provider: Z.ai
+    capabilities:
+      reasoning: medium
+      size: high
+      domain_specialization: medium
+    price:
+      input_per_million: 0.60
+      output_per_million: 2.20
+      currency: USD
+      pricing_date: 2026-07-20
+    notes: Solid mid tier. Cached input as low as $0.11/M.
+
+  - id: glm-4-5-air
+    name: GLM-4.5-Air
+    provider: Z.ai
+    capabilities:
+      reasoning: medium
+      size: medium
+      domain_specialization: low
+    price:
+      input_per_million: 0.20
+      output_per_million: 1.10
+      currency: USD
+      pricing_date: 2026-07-20
+    notes: Budget tier of the GLM line.
+
+  - id: glm-4-7-flash
+    name: GLM-4.7 Flash
+    provider: Z.ai
+    capabilities:
+      reasoning: low
+      size: medium
+      domain_specialization: low
+    price:
+      input_per_million: 0.00
+      output_per_million: 0.00
+      currency: USD
+      pricing_date: 2026-07-20
+    notes: >
+      Listed at $0 for input and output on Z.ai's free tier (rate limits apply).
+      Being free, it wins the value comparison outright on any project whose
+      demand it actually meets — verify the rate limits fit your workload.
+
+  # -------------------------------------------------------- Open source / open weights
+  # Open-weight models can also be self-hosted, in which case the real cost is
+  # GPU time rather than per-token. The rates below are representative hosted
+  # API prices; substitute your provider's rate if you host elsewhere.
+
+  - id: deepseek-v4-flash
+    name: DeepSeek V4 Flash
+    provider: DeepSeek
+    capabilities:
+      reasoning: medium
+      size: medium
+      domain_specialization: medium
+    price:
+      input_per_million: 0.14
+      output_per_million: 0.28
+      currency: USD
+      pricing_date: 2026-07-20
+    notes: Among the cheapest hosted APIs available; open weights.
+
+  - id: deepseek-v3
+    name: DeepSeek V3
+    provider: DeepSeek
+    capabilities:
+      reasoning: medium
+      size: high
+      domain_specialization: medium
+    price:
+      input_per_million: 0.27
+      output_per_million: 1.10
+      currency: USD
+      pricing_date: 2026-07-20
+    notes: Widely deployed open-weight model with strong price/performance.
+
+  - id: gemma-4-31b
+    name: Gemma 4 31B
+    provider: Google
+    capabilities:
+      reasoning: high
+      size: medium
+      domain_specialization: medium
+    price:
+      input_per_million: 0.12
+      output_per_million: 0.35
+      currency: USD
+      pricing_date: 2026-07-20
+    notes: >
+      Apache 2.0 open weights (Google DeepMind). Very strong reasoning for its
+      size — among the top-ranked open models — but a 31B dense model is limited
+      on very large, multi-part projects. Rate shown is OpenRouter hosted;
+      self-hosting costs GPU time instead (roughly $0.001–$0.008/M).
+
+  - id: gemma-4-26b-moe
+    name: Gemma 4 26B MoE
+    provider: Google
+    capabilities:
+      reasoning: medium
+      size: medium
+      domain_specialization: medium
+    price:
+      input_per_million: 0.06
+      output_per_million: 0.33
+      currency: USD
+      pricing_date: 2026-07-20
+    notes: >
+      Apache 2.0 open weights; Mixture-of-Experts (3.8B active per token), so it
+      is cheap to run for its capability. Rate shown is OpenRouter hosted.
+
+  - id: qwen3-7-max
+    name: Qwen3.7 Max
+    provider: Alibaba
+    capabilities:
+      reasoning: high
+      size: high
+      domain_specialization: high
+    price:
+      input_per_million: 1.25
+      output_per_million: 3.75
+      currency: USD
+      pricing_date: 2026-07-20
+    notes: Top of the Qwen line; strong capability at open-weight pricing.
+
+  # The two entries below carry a date (the constitution requires one on every
+  # entry) but their figures are LESS RELIABLE than the rest: cost depends on the
+  # hosting provider (Groq, Fireworks, Together, self-hosted…), so treat them as
+  # placeholders and substitute your provider's rate.
+  - id: llama-4-scout
+    name: Llama 4 Scout
+    provider: Meta
+    capabilities:
+      reasoning: medium
+      size: high
+      domain_specialization: medium
+    price:
+      input_per_million: 0.20
+      output_per_million: 0.60
+      currency: USD
+      pricing_date: 2026-07-20
+    notes: >
+      Open weights; free to self-host (cost is GPU time). PLACEHOLDER RATE — the
+      real price depends on your hosting provider. Substitute your provider's
+      rate and update pricing_date.
+
+  - id: mistral-large-3
+    name: Mistral Large 3
+    provider: Mistral AI
+    capabilities:
+      reasoning: high
+      size: high
+      domain_specialization: medium
+    price:
+      input_per_million: 2.00
+      output_per_million: 6.00
+      currency: USD
+      pricing_date: 2026-07-20
+    notes: >
+      Apache 2.0 open weights. PLACEHOLDER RATE — the real price depends on your
+      hosting provider. Substitute your provider's rate and update pricing_date.

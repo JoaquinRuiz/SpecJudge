@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SpecJudge — Model comparison</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1a1a1a; --muted: #666; --border: #e2e2e2;
+    --best: #e7f7ec; --best-border: #34a853;
+    --poor: #d93025; --fair: #f29900; --good: #188038; --overkill: #1a73e8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181c; --fg: #e8e8e8; --muted: #9aa0a6; --border: #2c2f36;
+      --best: #16351f; --best-border: #34a853;
+      --poor: #f28b82; --fair: #fdd663; --good: #81c995; --overkill: #8ab4f8;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--fg); margin: 0;
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 2rem;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 1.4rem; margin: 0 0 .25rem; }
+  .meta { color: var(--muted); margin-bottom: 1.5rem; }
+  .warn {
+    background: color-mix(in srgb, var(--fair) 15%, transparent);
+    border-left: 3px solid var(--fair);
+    padding: .6rem .8rem; border-radius: 4px; margin: .5rem 0;
+  }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; min-width: 640px; }
+  th, td { text-align: left; padding: .7rem .9rem; border-bottom: 1px solid var(--border); }
+  th { font-weight: 600; color: var(--muted); font-size: .82rem; text-transform: uppercase; letter-spacing: .03em; }
+  tr.best td { background: var(--best); }
+  tr.best td:first-child { border-left: 3px solid var(--best-border); }
+  .badge {
+    display: inline-block; padding: .15rem .55rem; border-radius: 999px;
+    font-size: .8rem; font-weight: 600; color: #fff;
+  }
+  .rating-poor { background: var(--poor); }
+  .rating-fair { background: var(--fair); color: #1a1a1a; }
+  .rating-good { background: var(--good); }
+  .rating-overkill { background: var(--overkill); }
+  .medal { font-size: 1.05rem; }
+  tr.gold td { background: var(--best); }
+  tr.gold td:first-child { border-left: 3px solid var(--best-border); }
+  tr.silver td { background: color-mix(in srgb, var(--muted) 12%, transparent); }
+  tr.silver td:first-child { border-left: 3px solid var(--muted); }
+  tr.bronze td { background: color-mix(in srgb, var(--fair) 10%, transparent); }
+  tr.bronze td:first-child { border-left: 3px solid color-mix(in srgb, var(--fair) 60%, transparent); }
+  .podium { display: grid; gap: .6rem; margin: 1.4rem 0 .5rem; }
+  .podium .slot {
+    display: flex; gap: .7rem; align-items: baseline;
+    padding: .7rem .9rem; border: 1px solid var(--border); border-radius: 6px;
+  }
+  .podium .slot.gold { border-color: var(--best-border); background: var(--best); }
+  .podium .rank { font-size: 1.3rem; line-height: 1; }
+  .podium .name { font-weight: 600; }
+  .podium .why { color: var(--muted); font-size: .85rem; margin-top: .15rem; }
+  .price { white-space: nowrap; }
+  .free { color: var(--good); font-weight: 600; }
+  .stale { color: var(--muted); font-size: .85rem; }
+  .just { color: var(--muted); font-size: .85rem; margin-top: .2rem; }
+  footer {
+    margin-top: 2.5rem; padding-top: 1.1rem; border-top: 1px solid var(--border);
+    color: var(--muted); font-size: .8rem;
+  }
+  footer .note { margin: 0 0 .8rem; }
+  footer a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+  footer a:hover { color: var(--fg); }
+  .about .by { margin-bottom: .25rem; }
+  .about .books { opacity: .8; }
+  .about .book { white-space: nowrap; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>SpecJudge — Model comparison</h1>
+  <div class="meta">
+    {% if judge_model %}Local judge: <strong>{{ judge_model }}</strong> · {% endif %}
+    Data state: <strong>{{ data_state }}</strong>
+  </div>
+
+  {% for w in warnings %}
+  <div class="warn">⚠ {{ w }}</div>
+  {% endfor %}
+
+  <div class="scroll">
+  <table>
+    <thead>
+      <tr><th></th><th>Model</th><th>Rating</th><th>Price</th><th>Priced on</th></tr>
+    </thead>
+    <tbody>
+      {% for e in evaluations %}
+      {%- set medal = comparison.medal(e.model_id) %}
+      <tr class="{{ medal or '' }}">
+        <td class="medal">{% if medal == 'gold' %}🥇{% elif medal == 'silver' %}🥈{% elif medal == 'bronze' %}🥉{% endif %}</td>
+        <td>
+          {{ e.model_name }}
+          <div class="just">{{ e.justification }}</div>
+        </td>
+        <td><span class="badge rating-{{ e.rating.value }}">{{ e.rating.value }}</span></td>
+        <td class="price">
+          {%- if e.price.is_free %}
+          <span class="free">open-source/free</span>
+          {%- else %}
+          {{ '%.2f'|format(e.price.output_per_million) }} out /
+          {{ '%.2f'|format(e.price.input_per_million) }} in {{ e.price.currency }}/1M
+          {%- endif %}
+        </td>
+        <td>{% if e.price.pricing_date %}{{ e.price.pricing_date }}{% else %}<span class="stale">no date</span>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+
+  {% if comparison.podium %}
+  <div class="podium">
+    {%- set ranks = [('gold','🥇','Gold'), ('silver','🥈','Silver'), ('bronze','🥉','Bronze')] %}
+    {%- for model_id in comparison.podium %}
+    {%- set rank = ranks[loop.index0] %}
+    {%- set e = by_id[model_id] %}
+    <div class="slot {{ rank[0] }}">
+      <span class="rank">{{ rank[1] }}</span>
+      <span>
+        <span class="name">{{ rank[2] }} — {{ e.model_name }}</span>
+        <div class="why">{{ e.justification }}</div>
+      </span>
+    </div>
+    {%- endfor %}
+  </div>
+  <p>Ranked by how well each model fits this project's complexity — neither under-capable nor more powerful than needed. Price is shown for reference but does not decide the ranking.</p>
+  {% else %}
+  <p class="warn">No model in the catalog is capable enough for this project in every dimension.</p>
+  {% endif %}
+
+  <footer>
+    <p class="note">Generated locally by SpecJudge. No project information leaves your machine.</p>
+    <div class="about">
+      <div class="by">
+        SpecJudge is open source, by
+        <a href="{{ about.SITE_URL }}">{{ about.AUTHOR }}</a>
+        · <a href="{{ about.YOUTUBE_URL }}">{{ about.YOUTUBE }}</a>
+      </div>
+      <div class="books">
+        Books: {% for b in about.BOOKS %}<span class="book">{% if b.url %}<a href="{{ b.url }}">{{ b.title }}</a>{% else %}{{ b.title }}{% endif %}{% if b.note %} <em>({{ b.note }})</em>{% endif %}</span>{% if not loop.last %} · {% endif %}{% endfor %}
+      </div>
+    </div>
+  </footer>
+</div>
+</body>
+</html>

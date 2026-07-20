@@ -1,0 +1,102 @@
+# ---------------------------------------------------------------- SDD artifacts
+# Spec-Driven Development working files. Anchored with a leading slash so they
+# only match the repo root — tests/fixtures/project-*/specs/ are test data and
+# MUST stay tracked, or the suite fails on a fresh clone.
+/specs/
+
+# Local AI-assistant tooling — scaffolding, not part of the project.
+/.claude/
+
+# Ignore the Spec Kit scaffolding but KEEP the constitution: README.md and
+# CONTRIBUTING.md link to it as the project's governance document.
+# Git cannot re-include a file whose parent directory is excluded, so each level
+# is excluded and re-included in turn.
+/.specify/*
+!/.specify/memory/
+/.specify/memory/*
+!/.specify/memory/constitution.md
+
+# ------------------------------------------------------------------------ Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Packaging / build
+build/
+dist/
+sdist/
+wheels/
+*.egg-info/
+.eggs/
+*.egg
+MANIFEST
+
+# uv
+.uv/
+# NOTE: uv.lock is intentionally NOT ignored — SpecJudge ships as an application,
+# so the lockfile belongs in version control for reproducible installs.
+
+# ---------------------------------------------------------------------- Testing
+.pytest_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+*.cover
+.hypothesis/
+
+# Linting / typing caches
+.ruff_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
+.pyre/
+
+# ------------------------------------------------------------------ Environment
+.env
+.env.*
+!.env.example
+*.local
+
+# ------------------------------------------------------- SpecJudge local output
+# Generated HTML reports (normally written to a temp dir, but just in case).
+specjudge-*.html
+# A user config accidentally created inside the repo instead of the OS config dir.
+config.toml
+
+# --------------------------------------------------------------- Editors / IDEs
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
+*~
+.\#*
+\#*\#
+
+# --------------------------------------------------------------------------- OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ---------------------------------------------------------------------- Scratch
+*.log
+*.tmp
+tmp/
+scratch/

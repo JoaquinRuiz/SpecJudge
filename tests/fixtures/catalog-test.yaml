@@ -1,0 +1,64 @@
+# Synthetic catalog used by the test suite.
+# ------------------------------------------
+# Tests pin this file via --catalog so they do not depend on data/models.yaml,
+# which the community updates as real-world prices change.
+
+version: 1
+
+dimensions:
+  - reasoning
+  - size
+  - domain_specialization
+
+models:
+  - id: budget-small
+    name: Budget Small
+    provider: ExampleAI
+    capabilities:
+      reasoning: low
+      size: low
+      domain_specialization: low
+    price:
+      input_per_million: 0.10
+      output_per_million: 0.30
+      currency: USD
+      pricing_date: 2026-07-01
+
+  - id: balanced-mid
+    name: Balanced Mid
+    provider: ExampleAI
+    capabilities:
+      reasoning: medium
+      size: medium
+      domain_specialization: medium
+    price:
+      input_per_million: 0.50
+      output_per_million: 1.50
+      currency: USD
+      pricing_date: 2026-07-01
+
+  - id: capable-large
+    name: Capable Large
+    provider: ExampleAI
+    capabilities:
+      reasoning: high
+      size: high
+      domain_specialization: high
+    price:
+      input_per_million: 3.00
+      output_per_million: 15.00
+      currency: USD
+      pricing_date: 2026-07-01
+
+  - id: frontier-top
+    name: Frontier Top
+    provider: ExampleAI
+    capabilities:
+      reasoning: top
+      size: top
+      domain_specialization: top
+    price:
+      input_per_million: 10.00
+      output_per_million: 40.00
+      currency: USD
+      pricing_date: 2026-07-01

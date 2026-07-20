@@ -1,0 +1,48 @@
+# SpecJudge rating rules
+# -----------------------
+# Translates the project's demand profile (estimated by the local judge) and each
+# model's declared capability into a rating: poor / fair / good / overkill (FR-004).
+# Editable without touching the code (Principle V / FR-017).
+#
+# `dimensions` MUST match those in data/models.yaml.
+
+version: 1
+
+dimensions:
+  - reasoning
+  - size
+  - domain_specialization
+
+# Thresholds used to classify the "scarce" data state (FR-010 / Clarifications Q2).
+scarce_thresholds:
+  # Minimum number of tasks with a description to NOT be considered "thin on detail".
+  min_detailed_tasks: 3
+
+# How the project is presented to the local judge.
+judge:
+  # Judges at or below this parameter count (in billions) get a COMPACT prompt: a
+  # structured summary (counts, headings, task titles) instead of the full artifact
+  # text. Small models lose the instructions inside a long dump and start continuing
+  # the document rather than evaluating it. Larger judges get the full text, which
+  # gives them more literal context.
+  # Measured empirically: 8B and 24B judges both failed on the full text, so the
+  # default is deliberately generous. Lower it if your judge handles long prompts.
+  compact_prompt_at_or_below_params_b: 70
+  # Cap per artifact when sending the full text (characters).
+  max_chars_per_artifact: 8000
+  # Cap per artifact when sending the compact summary (characters).
+  max_chars_per_artifact_compact: 1500
+
+# Maps the ordinal difference (capability - demand) to a partial label per dimension.
+# The global rating is aggregated according to `aggregation`.
+mapping:
+  # Closed ordinal vocabulary, shared by demand and capability.
+  levels: [low, medium, high, top]
+  per_dimension:
+    below_by_2_or_more: poor      # capability far below the demand
+    below_by_1: fair              # capability one step below
+    exact: good                   # capability matches the demand
+    above_by_1_or_more: overkill  # capability above (likely overspend)
+  # 'worst_dimension': the global rating is the worst rating across dimensions, so a
+  # critical gap is never masked by strengths in other dimensions.
+  aggregation: worst_dimension

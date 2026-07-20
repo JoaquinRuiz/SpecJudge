@@ -1,0 +1,59 @@
+[project]
+name = "specjudge"
+version = "0.1.0"
+description = "CLI local-first que recomienda el modelo de IA con mejor relación calidad/precio para implementar un proyecto Spec-Driven Development."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Joaquín Ruiz" }]
+keywords = ["spec-driven-development", "llm", "ollama", "cli", "cost"]
+dependencies = [
+    "typer>=0.12",
+    "rich>=13.7",
+    "httpx>=0.27",
+    "pyyaml>=6.0",
+    "jinja2>=3.1",
+    "platformdirs>=4.2",
+]
+
+[project.scripts]
+specjudge = "specjudge.cli:app"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "respx>=0.21",
+    "ruff>=0.6",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/specjudge"]
+
+# Empaqueta los ficheros de datos y plantillas junto al paquete para que
+# `data/models.yaml`, `data/rating-rules.yaml` y la plantilla HTML viajen con la
+# distribución (FR-017 / Principio V).
+[tool.hatch.build.targets.wheel.force-include]
+"data" = "specjudge/_data"
+"templates" = "specjudge/_templates"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+# B008: patrón idiomático de Typer (typer.Option/Argument como defaults).
+# UP042: los enums heredan de (str, Enum) a propósito, para serialización cómoda.
+ignore = ["B008", "UP042"]
+
+[tool.ruff.lint.per-file-ignores]
+# Las líneas de datos de test (construcción de objetos) son naturalmente largas.
+"tests/**" = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
