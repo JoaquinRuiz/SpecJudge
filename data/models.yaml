@@ -22,6 +22,8 @@ models:
   # ---------------------------------------------------------------- Anthropic
   - id: claude-opus-4-8
     name: Claude Opus 4.8
+    family: Claude
+    open_source: false
     provider: Anthropic
     capabilities:
       reasoning: top
@@ -36,6 +38,8 @@ models:
 
   - id: claude-sonnet-5
     name: Claude Sonnet 5
+    family: Claude
+    open_source: false
     provider: Anthropic
     capabilities:
       reasoning: high
@@ -52,6 +56,8 @@ models:
 
   - id: claude-haiku-4-5
     name: Claude Haiku 4.5
+    family: Claude
+    open_source: false
     provider: Anthropic
     capabilities:
       reasoning: medium
@@ -67,6 +73,8 @@ models:
   # ------------------------------------------------------------------- OpenAI
   - id: gpt-5-6-sol
     name: GPT-5.6 Sol
+    family: GPT
+    open_source: false
     provider: OpenAI
     capabilities:
       reasoning: top
@@ -81,6 +89,8 @@ models:
 
   - id: gpt-5-6-terra
     name: GPT-5.6 Terra
+    family: GPT
+    open_source: false
     provider: OpenAI
     capabilities:
       reasoning: high
@@ -95,6 +105,8 @@ models:
 
   - id: gpt-5-6-luna
     name: GPT-5.6 Luna
+    family: GPT
+    open_source: false
     provider: OpenAI
     capabilities:
       reasoning: medium
@@ -109,6 +121,8 @@ models:
 
   - id: gpt-4-1-nano
     name: GPT-4.1 nano
+    family: GPT
+    open_source: false
     provider: OpenAI
     capabilities:
       reasoning: low
@@ -124,6 +138,8 @@ models:
   # ------------------------------------------------------------------- Google
   - id: gemini-3-1-pro
     name: Gemini 3.1 Pro
+    family: Gemini
+    open_source: false
     provider: Google
     capabilities:
       reasoning: high
@@ -140,6 +156,8 @@ models:
 
   - id: gemini-3-5-flash
     name: Gemini 3.5 Flash
+    family: Gemini
+    open_source: false
     provider: Google
     capabilities:
       reasoning: high
@@ -154,6 +172,8 @@ models:
 
   - id: gemini-3-flash
     name: Gemini 3 Flash
+    family: Gemini
+    open_source: false
     provider: Google
     capabilities:
       reasoning: medium
@@ -168,6 +188,8 @@ models:
 
   - id: gemini-3-1-flash-lite
     name: Gemini 3.1 Flash-Lite
+    family: Gemini
+    open_source: false
     provider: Google
     capabilities:
       reasoning: low
@@ -190,6 +212,8 @@ models:
 
   - id: gemma-4-e2b-local
     name: Gemma 4 E2B (local)
+    family: Gemma
+    open_source: true
     provider: Local / Ollama
     capabilities:
       reasoning: low
@@ -206,6 +230,8 @@ models:
 
   - id: gemma-4-e4b-local
     name: Gemma 4 E4B (local)
+    family: Gemma
+    open_source: true
     provider: Local / Ollama
     capabilities:
       reasoning: low
@@ -223,6 +249,8 @@ models:
 
   - id: qwen-3-5-9b-local
     name: Qwen 3.5 9B (local)
+    family: Qwen
+    open_source: true
     provider: Local / Ollama
     capabilities:
       reasoning: medium
@@ -239,6 +267,8 @@ models:
 
   - id: ministral-3b-local
     name: Ministral 3B (local)
+    family: Ministral
+    open_source: true
     provider: Local / Ollama
     capabilities:
       reasoning: low
@@ -255,6 +285,8 @@ models:
 
   - id: llama-3-2-3b-local
     name: Llama 3.2 3B (local)
+    family: Llama
+    open_source: true
     provider: Local / Ollama
     capabilities:
       reasoning: low
@@ -271,6 +303,8 @@ models:
 
   - id: ministral-8b-local
     name: Ministral 8B (local)
+    family: Ministral
+    open_source: true
     provider: Local / Ollama
     capabilities:
       reasoning: low
@@ -285,6 +319,8 @@ models:
 
   - id: llama-3-3-8b-local
     name: Llama 3.3 8B (local)
+    family: Llama
+    open_source: true
     provider: Local / Ollama
     capabilities:
       reasoning: medium
@@ -301,6 +337,8 @@ models:
 
   - id: mistral-small-3-2-24b-local
     name: Mistral Small 3.2 24B (local)
+    family: Mistral
+    open_source: true
     provider: Local / Ollama
     capabilities:
       reasoning: medium
@@ -317,6 +355,8 @@ models:
 
   - id: gemma-4-31b-local
     name: Gemma 4 31B (local)
+    family: Gemma
+    open_source: true
     provider: Local / Ollama
     capabilities:
       reasoning: high
@@ -334,6 +374,8 @@ models:
 
   - id: qwen-3-6-35b-a3b-local
     name: Qwen 3.6-35B-A3B (local)
+    family: Qwen
+    open_source: true
     provider: Local / Ollama
     capabilities:
       reasoning: high
@@ -355,6 +397,8 @@ models:
   # (e.g. $0.26/M on GLM-5.2 vs $1.40 uncached) — not modelled here.
   - id: glm-5-2
     name: GLM-5.2
+    family: GLM
+    open_source: true
     provider: Z.ai
     capabilities:
       reasoning: high
@@ -371,6 +415,8 @@ models:
 
   - id: glm-5-1
     name: GLM-5.1
+    family: GLM
+    open_source: true
     provider: Z.ai
     capabilities:
       reasoning: high
@@ -385,6 +431,8 @@ models:
 
   - id: glm-4-7
     name: GLM-4.7
+    family: GLM
+    open_source: true
     provider: Z.ai
     capabilities:
       reasoning: medium
@@ -399,6 +447,8 @@ models:
 
   - id: glm-4-5-air
     name: GLM-4.5-Air
+    family: GLM
+    open_source: true
     provider: Z.ai
     capabilities:
       reasoning: medium
@@ -413,6 +463,8 @@ models:
 
   - id: glm-4-7-flash
     name: GLM-4.7 Flash
+    family: GLM
+    open_source: true
     provider: Z.ai
     capabilities:
       reasoning: low
@@ -435,6 +487,8 @@ models:
 
   - id: deepseek-v4-flash
     name: DeepSeek V4 Flash
+    family: DeepSeek
+    open_source: true
     provider: DeepSeek
     capabilities:
       reasoning: medium
@@ -449,6 +503,8 @@ models:
 
   - id: deepseek-v3
     name: DeepSeek V3
+    family: DeepSeek
+    open_source: true
     provider: DeepSeek
     capabilities:
       reasoning: medium
@@ -463,6 +519,8 @@ models:
 
   - id: gemma-4-31b
     name: Gemma 4 31B
+    family: Gemma
+    open_source: true
     provider: Google
     capabilities:
       reasoning: high
@@ -481,6 +539,8 @@ models:
 
   - id: gemma-4-26b-moe
     name: Gemma 4 26B MoE
+    family: Gemma
+    open_source: true
     provider: Google
     capabilities:
       reasoning: medium
@@ -497,6 +557,8 @@ models:
 
   - id: qwen3-7-max
     name: Qwen3.7 Max
+    family: Qwen
+    open_source: false
     provider: Alibaba
     capabilities:
       reasoning: high
@@ -515,6 +577,8 @@ models:
   # placeholders and substitute your provider's rate.
   - id: llama-4-scout
     name: Llama 4 Scout
+    family: Llama
+    open_source: true
     provider: Meta
     capabilities:
       reasoning: medium
@@ -532,6 +596,8 @@ models:
 
   - id: mistral-large-3
     name: Mistral Large 3
+    family: Mistral
+    open_source: true
     provider: Mistral AI
     capabilities:
       reasoning: high

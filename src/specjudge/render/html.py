@@ -28,6 +28,14 @@ def _template_source() -> str:
     return repo_template.read_text(encoding="utf-8")
 
 
+def _families(comparison: Comparison) -> list[tuple[str, int]]:
+    """Families present in this comparison, with a count, ordered by size."""
+    counts: dict[str, int] = {}
+    for e in comparison.evaluations:
+        counts[e.family or "Other"] = counts.get(e.family or "Other", 0) + 1
+    return sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))
+
+
 def render_html(comparison: Comparison) -> str:
     env = Environment(autoescape=select_autoescape(["html", "xml"]))
     template = env.from_string(_template_source())
@@ -35,6 +43,8 @@ def render_html(comparison: Comparison) -> str:
         about=about,
         comparison=comparison,
         by_id={e.model_id: e for e in comparison.evaluations},
+        families=_families(comparison),
+        open_source_count=sum(1 for e in comparison.evaluations if e.open_source),
         evaluations=comparison.evaluations,
         best_choice=comparison.best_choice,
         judge_model=comparison.judge_model,

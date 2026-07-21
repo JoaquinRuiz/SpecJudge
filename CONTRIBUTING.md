@@ -11,6 +11,9 @@ Each model is an entry under `models:`:
 ```yaml
 - id: my-model             # required, unique, stable (kebab-case)
   name: My Model           # required
+  family: MyFamily         # optional; groups the model in the report filters
+                           # (Claude, GPT, Gemini, Qwen...). Falls back to `provider`.
+  open_source: false       # optional; true for downloadable, self-hostable weights
   provider: MyProvider     # optional
   capabilities:            # one key per dimension declared in `dimensions`
     reasoning: high        # valid levels: low | medium | high | top

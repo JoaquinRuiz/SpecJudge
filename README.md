@@ -7,6 +7,7 @@
 SpecJudge reads your Spec-Driven Development artifacts and tells you which AI model actually
 fits the job — before you spend a single token implementing it.
 
+[![PyPI](https://img.shields.io/pypi/v/specjudge.svg)](https://pypi.org/project/specjudge/)
 [![CI](https://github.com/JoaquinRuiz/SpecJudge/actions/workflows/ci.yml/badge.svg)](https://github.com/JoaquinRuiz/SpecJudge/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
@@ -35,7 +36,7 @@ $ specjudge .
    Right-sized: capability matches demand exactly in every dimension.
 ```
 
-Add `--open` for a visual matrix in your browser.
+Add `--open` for a visual matrix in your browser, filterable by model family and by open source.
 
 ## The problem
 
@@ -57,21 +58,22 @@ nothing has been spent yet. And it grounds the answer in *your* project, not a g
 
 ```bash
 ollama pull llama3.1:8b            # a judge to evaluate your project
-uv tool install git+https://github.com/JoaquinRuiz/SpecJudge.git
+uv tool install specjudge
 specjudge /path/to/your/project
 ```
 
 That's it. On first run SpecJudge lists your local models, asks which one to use as the judge,
 and remembers your choice.
 
-> **PyPI release pending** — once published, this becomes `uv tool install specjudge`.
-
 <details>
-<summary><b>Run without installing, or from source</b></summary>
+<summary><b>Run without installing, with pipx, or from source</b></summary>
 
 ```bash
 # Ephemeral run, no install
-uvx --from git+https://github.com/JoaquinRuiz/SpecJudge.git specjudge /path/to/project
+uvx specjudge /path/to/your/project
+
+# pipx works too
+pipx install specjudge
 
 # From source
 git clone https://github.com/JoaquinRuiz/SpecJudge.git && cd SpecJudge
@@ -170,6 +172,8 @@ human-readable data files, deliberately separate from the code. Adding a model i
 ```yaml
 - id: my-new-model
   name: My New Model
+  family: MyFamily         # groups it in the report's filters (Claude, GPT, Qwen...)
+  open_source: false       # open weights you can download and self-host?
   provider: SomeAI
   capabilities:
     reasoning: high        # low | medium | high | top

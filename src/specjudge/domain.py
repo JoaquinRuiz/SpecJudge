@@ -110,6 +110,12 @@ class CatalogModel:
     price: Price
     provider: str | None = None
     notes: str | None = None
+    # Model line the user thinks in terms of (Claude, GPT, Gemini, Qwen...). Used
+    # to filter the report; falls back to the provider when the catalog omits it.
+    family: str | None = None
+    # Open weights: downloadable and self-hostable, regardless of what a hosted
+    # API charges for it.
+    open_source: bool = False
 
 
 @dataclass
@@ -136,6 +142,8 @@ class Evaluation:
     # excess  > 0 => more capable than needed (right-sized when excess == 0).
     deficit: int = 0
     excess: int = 0
+    family: str | None = None
+    open_source: bool = False
 
     @property
     def price_stale(self) -> bool:

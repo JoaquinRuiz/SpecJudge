@@ -61,6 +61,25 @@
   .podium .rank { font-size: 1.3rem; line-height: 1; }
   .podium .name { font-weight: 600; }
   .podium .why { color: var(--muted); font-size: .85rem; margin-top: .15rem; }
+  .filters { margin: 1.4rem 0 .9rem; }
+  .filters .label {
+    font-size: .78rem; text-transform: uppercase; letter-spacing: .03em;
+    color: var(--muted); margin-bottom: .45rem;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: .4rem; }
+  .chip {
+    font: inherit; font-size: .85rem; cursor: pointer;
+    padding: .3rem .7rem; border-radius: 999px;
+    border: 1px solid var(--border); background: transparent; color: var(--fg);
+  }
+  .chip:hover { border-color: var(--muted); }
+  .chip[aria-pressed="true"] {
+    background: var(--fg); color: var(--bg); border-color: var(--fg);
+  }
+  .chip .n { opacity: .55; margin-left: .3rem; font-size: .8em; }
+  .chip[aria-pressed="true"] .n { opacity: .7; }
+  .count { color: var(--muted); font-size: .82rem; margin-top: .6rem; }
+  tr[hidden] { display: none; }
   .price { white-space: nowrap; }
   .free { color: var(--good); font-weight: 600; }
   .stale { color: var(--muted); font-size: .85rem; }
@@ -89,6 +108,20 @@
   <div class="warn">⚠ {{ w }}</div>
   {% endfor %}
 
+  <div class="filters">
+    <div class="label">Filter by family</div>
+    <div class="chips" id="family-chips">
+      <button type="button" class="chip" data-family="*" aria-pressed="true">All</button>
+      {%- for fam, n in families %}
+      <button type="button" class="chip" data-family="{{ fam }}" aria-pressed="false">{{ fam }}<span class="n">{{ n }}</span></button>
+      {%- endfor %}
+    </div>
+    <div class="chips" style="margin-top:.5rem">
+      <button type="button" class="chip" id="oss-chip" aria-pressed="false">Open source only<span class="n">{{ open_source_count }}</span></button>
+    </div>
+    <div class="count" id="count"></div>
+  </div>
+
   <div class="scroll">
   <table>
     <thead>
@@ -97,7 +130,7 @@
     <tbody>
       {% for e in evaluations %}
       {%- set medal = comparison.medal(e.model_id) %}
-      <tr class="{{ medal or '' }}">
+      <tr class="{{ medal or '' }}" data-family="{{ e.family or 'Other' }}" data-oss="{{ 'yes' if e.open_source else 'no' }}">
         <td class="medal">{% if medal == 'gold' %}🥇{% elif medal == 'silver' %}🥈{% elif medal == 'bronze' %}🥉{% endif %}</td>
         <td>
           {{ e.model_name }}
@@ -153,5 +186,48 @@
     </div>
   </footer>
 </div>
+
+<script>
+// Plain inline JS: the report must stay self-contained and load nothing.
+(function () {
+  var rows = Array.prototype.slice.call(document.querySelectorAll('tbody tr'));
+  var famChips = Array.prototype.slice.call(document.querySelectorAll('#family-chips .chip'));
+  var ossChip = document.getElementById('oss-chip');
+  var count = document.getElementById('count');
+  var family = '*';
+  var ossOnly = false;
+
+  function apply() {
+    var shown = 0;
+    rows.forEach(function (row) {
+      var okFam = family === '*' || row.dataset.family === family;
+      var okOss = !ossOnly || row.dataset.oss === 'yes';
+      var visible = okFam && okOss;
+      row.hidden = !visible;
+      if (visible) shown++;
+    });
+    famChips.forEach(function (c) {
+      c.setAttribute('aria-pressed', String(c.dataset.family === family));
+    });
+    ossChip.setAttribute('aria-pressed', String(ossOnly));
+    count.textContent = shown === rows.length
+      ? 'Showing all ' + rows.length + ' models'
+      : 'Showing ' + shown + ' of ' + rows.length + ' models';
+  }
+
+  famChips.forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      family = chip.dataset.family;
+      apply();
+    });
+  });
+  ossChip.addEventListener('click', function () {
+    ossOnly = !ossOnly;
+    apply();
+  });
+
+  apply();
+})();
+</script>
 </body>
 </html>

@@ -125,6 +125,10 @@ def load_catalog(path: Path | str | None = None) -> tuple[list[CatalogModel], li
                 price=price,
                 provider=m.get("provider"),
                 notes=m.get("notes"),
+                # `family` is optional; fall back to the provider so a catalog
+                # that predates the field still filters sensibly.
+                family=str(m["family"]) if m.get("family") else m.get("provider"),
+                open_source=bool(m.get("open_source", False)),
             )
         )
 

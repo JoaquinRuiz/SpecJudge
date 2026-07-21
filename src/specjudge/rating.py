@@ -115,6 +115,8 @@ def evaluate_model(model: CatalogModel, demand: DemandProfile, rules: RatingRule
         price=model.price,
         deficit=deficit,
         excess=excess,
+        family=model.family,
+        open_source=model.open_source,
     )
 
 

@@ -71,3 +71,57 @@ def test_footer_credits_the_author():
     assert about.YOUTUBE_URL in html
     for book in about.BOOKS:
         assert book["title"] in html
+
+
+def _mixed_comp() -> Comparison:
+    evals = [
+        Evaluation(
+            "a",
+            "Claude X",
+            Rating.GOOD,
+            "j",
+            Price(1, 2, "USD", "2026-07-20"),
+            family="Claude",
+            open_source=False,
+        ),
+        Evaluation(
+            "b",
+            "Gemma Y",
+            Rating.GOOD,
+            "j",
+            Price(0, 0, "USD", "2026-07-20"),
+            family="Gemma",
+            open_source=True,
+        ),
+        Evaluation(
+            "c",
+            "Gemma Z",
+            Rating.OVERKILL,
+            "j",
+            Price(1, 3, "USD", "2026-07-20"),
+            family="Gemma",
+            open_source=True,
+        ),
+    ]
+    return Comparison(evals, DataState.SUFFICIENT, "judge", "a", podium=["a", "b"])
+
+
+def test_rows_carry_family_and_open_source_attributes():
+    html = render_html(_mixed_comp())
+    assert 'data-family="Claude" data-oss="no"' in html
+    assert 'data-family="Gemma" data-oss="yes"' in html
+
+
+def test_family_chips_are_rendered_with_counts():
+    html = render_html(_mixed_comp())
+    assert 'data-family="*"' in html  # the "All" chip
+    assert 'data-family="Gemma"' in html
+    assert 'data-family="Claude"' in html
+    assert 'id="oss-chip"' in html
+
+
+def test_filtering_script_is_inline_not_external():
+    """Self-containment: the filter must not pull in any library."""
+    html = render_html(_mixed_comp())
+    assert "<script>" in html
+    assert not re.search(r"<script[^>]+\bsrc\s*=", html, re.I)
