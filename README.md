@@ -29,7 +29,7 @@ $ specjudge .
 │ 🥈 │ Gemma 4 31B              │ good   │ 0.35 out / 0.12 in     │ 2026-07-20 │
 │ 🥉 │ Qwen 3.6-35B-A3B (local) │ good   │ open-source/free       │ 2026-07-20 │
 │    │ GLM-5.1                  │ good   │ 3.04 out / 0.97 in     │ 2026-07-20 │
-│    │ Claude Opus 4.8          │overkill│ 25.00 out / 5.00 in    │ 2026-07-20 │
+│    │ Claude Opus 5            │overkill│ 25.00 out / 5.00 in    │ 2026-07-28 │
 └────┴──────────────────────────┴────────┴────────────────────────┴────────────┘
 
 🥇 Gold: Gemma 4 31B (local)
@@ -183,7 +183,7 @@ human-readable data files, deliberately separate from the code. Adding a model i
     input_per_million: 1.50
     output_per_million: 6.00
     currency: USD
-    pricing_date: 2026-07-20   # required — makes freshness verifiable
+    pricing_date: 2026-07-28   # required — makes freshness verifiable
 ```
 
 Open `data/models.yaml`, add it, send the PR. Contract tests validate the schema automatically,
@@ -222,9 +222,10 @@ you money must not require money to run. That's Principle III, and it isn't nego
 **Joaquín Ruiz** — [jokiruiz.com](https://jokiruiz.com) ·
 [youtube.com/@jokioki](https://youtube.com/@jokioki)
 
+📗 [Del vibe coding al Spec-Driven Development](https://amzn.eu/d/02csLpKC)
 📙 [El motor de la Inteligencia Artificial](https://amzn.eu/d/083CTN3U)
 📘 [Programar con Inteligencia Artificial](https://amzn.eu/d/eK4f73N)
-📗 *Del vibe coding al Spec-Driven Development* — **coming soon**
+📙 [Explora la Inteligencia Artificial](https://amzn.eu/d/dSwYhue)
 
 ## License
 
