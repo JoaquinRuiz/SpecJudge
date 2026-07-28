@@ -20,8 +20,27 @@ dimensions:
 
 models:
   # ---------------------------------------------------------------- Anthropic
-  - id: claude-opus-4-8
-    name: Claude Opus 4.8
+  - id: claude-fable-5
+    name: Claude Fable 5
+    family: Claude
+    open_source: false
+    provider: Anthropic
+    capabilities:
+      reasoning: top
+      size: top
+      domain_specialization: top
+    price:
+      input_per_million: 10.00
+      output_per_million: 50.00
+      currency: USD
+      pricing_date: 2026-07-28
+    notes: >
+      Anthropic's most capable widely released model, aimed at long-running
+      agents and the most demanding reasoning. 1M context, 128K max output.
+      Thinking is always on. Only worth it when Opus 5 falls short.
+
+  - id: claude-opus-5
+    name: Claude Opus 5
     family: Claude
     open_source: false
     provider: Anthropic
@@ -33,8 +52,10 @@ models:
       input_per_million: 5.00
       output_per_million: 25.00
       currency: USD
-      pricing_date: 2026-07-20
-    notes: Frontier-tier reasoning and long-horizon agentic work. 1M context.
+      pricing_date: 2026-07-28
+    notes: >
+      Frontier tier for complex agentic coding and enterprise work, at half the
+      cost of Fable 5. Supersedes Opus 4.8 at the same price. 1M context.
 
   - id: claude-sonnet-5
     name: Claude Sonnet 5
@@ -49,7 +70,7 @@ models:
       input_per_million: 3.00
       output_per_million: 15.00
       currency: USD
-      pricing_date: 2026-07-20
+      pricing_date: 2026-07-28
     notes: >
       Near-Opus quality on coding and agentic work at Sonnet cost. 1M context.
       Introductory pricing of $2.00/$10.00 applies through 2026-08-31.
@@ -67,7 +88,7 @@ models:
       input_per_million: 1.00
       output_per_million: 5.00
       currency: USD
-      pricing_date: 2026-07-20
+      pricing_date: 2026-07-28
     notes: Fastest and most cost-effective Anthropic tier. 200K context.
 
   # ------------------------------------------------------------------- OpenAI
@@ -84,8 +105,10 @@ models:
       input_per_million: 5.00
       output_per_million: 30.00
       currency: USD
-      pricing_date: 2026-07-20
-    notes: OpenAI's flagship tier.
+      pricing_date: 2026-07-28
+    notes: >
+      OpenAI's flagship tier (GPT-5.6 family, GA 2026-07-09). 1M context.
+      Long-context pricing rises to $10.00/$45.00 above ~272K input tokens.
 
   - id: gpt-5-6-terra
     name: GPT-5.6 Terra
@@ -100,8 +123,8 @@ models:
       input_per_million: 2.50
       output_per_million: 15.00
       currency: USD
-      pricing_date: 2026-07-20
-    notes: Mid tier of the GPT-5.6 family.
+      pricing_date: 2026-07-28
+    notes: Mid tier of the GPT-5.6 family. 1M context.
 
   - id: gpt-5-6-luna
     name: GPT-5.6 Luna
@@ -116,11 +139,27 @@ models:
       input_per_million: 1.00
       output_per_million: 6.00
       currency: USD
-      pricing_date: 2026-07-20
-    notes: Entry tier of the GPT-5.6 family.
+      pricing_date: 2026-07-28
+    notes: Entry tier of the GPT-5.6 family. 1M context.
 
-  - id: gpt-4-1-nano
-    name: GPT-4.1 nano
+  - id: gpt-5-4-mini
+    name: GPT-5.4 mini
+    family: GPT
+    open_source: false
+    provider: OpenAI
+    capabilities:
+      reasoning: medium
+      size: medium
+      domain_specialization: low
+    price:
+      input_per_million: 0.75
+      output_per_million: 4.50
+      currency: USD
+      pricing_date: 2026-07-28
+    notes: Low-cost tier of OpenAI's ladder; previous generation but far cheaper.
+
+  - id: gpt-5-4-nano
+    name: GPT-5.4 nano
     family: GPT
     open_source: false
     provider: OpenAI
@@ -129,10 +168,10 @@ models:
       size: low
       domain_specialization: low
     price:
-      input_per_million: 0.10
-      output_per_million: 0.40
+      input_per_million: 0.20
+      output_per_million: 1.25
       currency: USD
-      pricing_date: 2026-07-20
+      pricing_date: 2026-07-28
     notes: Budget floor of OpenAI's ladder; suitable only for simple, scoped work.
 
   # ------------------------------------------------------------------- Google
@@ -149,13 +188,13 @@ models:
       input_per_million: 2.00
       output_per_million: 12.00
       currency: USD
-      pricing_date: 2026-07-20
+      pricing_date: 2026-07-28
     notes: >
       Google's flagship tier. Long-context pricing rises to $4.00/$18.00 above
       200K tokens — the rate here is the standard band.
 
-  - id: gemini-3-5-flash
-    name: Gemini 3.5 Flash
+  - id: gemini-3-6-flash
+    name: Gemini 3.6 Flash
     family: Gemini
     open_source: false
     provider: Google
@@ -165,10 +204,13 @@ models:
       domain_specialization: medium
     price:
       input_per_million: 1.50
-      output_per_million: 9.00
+      output_per_million: 7.50
       currency: USD
-      pricing_date: 2026-07-20
-    notes: Fast tier with strong general capability; flat pricing at any context length.
+      pricing_date: 2026-07-28
+    notes: >
+      Released 2026-07-21; beats Gemini 3.1 Pro on coding at a lower rate.
+      Flat pricing at any context length. Supersedes Gemini 3.5 Flash
+      ($1.50/$9.00), which it matches on input and undercuts on output.
 
   - id: gemini-3-flash
     name: Gemini 3 Flash
@@ -183,8 +225,24 @@ models:
       input_per_million: 0.50
       output_per_million: 3.00
       currency: USD
-      pricing_date: 2026-07-20
+      pricing_date: 2026-07-28
     notes: Previous-generation Flash; still available and notably cheaper.
+
+  - id: gemini-3-5-flash-lite
+    name: Gemini 3.5 Flash-Lite
+    family: Gemini
+    open_source: false
+    provider: Google
+    capabilities:
+      reasoning: medium
+      size: medium
+      domain_specialization: low
+    price:
+      input_per_million: 0.30
+      output_per_million: 2.50
+      currency: USD
+      pricing_date: 2026-07-28
+    notes: Current Flash-Lite generation; high-volume tier.
 
   - id: gemini-3-1-flash-lite
     name: Gemini 3.1 Flash-Lite
@@ -199,8 +257,10 @@ models:
       input_per_million: 0.25
       output_per_million: 1.50
       currency: USD
-      pricing_date: 2026-07-20
-    notes: Google's budget tier.
+      pricing_date: 2026-07-28
+    notes: >
+      Google's budget floor. Previous Flash-Lite generation, still available and
+      cheaper than 3.5 Flash-Lite.
 
   # ------------------------------------------------- Local (Ollama on Apple Silicon)
   # These run on your own machine, so the per-token price is 0.00 — the real
@@ -498,24 +558,47 @@ models:
       input_per_million: 0.14
       output_per_million: 0.28
       currency: USD
-      pricing_date: 2026-07-20
-    notes: Among the cheapest hosted APIs available; open weights.
+      pricing_date: 2026-07-28
+    notes: >
+      Among the cheapest hosted APIs available; open weights, 1M context.
+      Cached input drops to $0.0028/M.
 
-  - id: deepseek-v3
-    name: DeepSeek V3
+  - id: deepseek-v4-pro
+    name: DeepSeek V4 Pro
     family: DeepSeek
     open_source: true
     provider: DeepSeek
     capabilities:
-      reasoning: medium
+      reasoning: high
       size: high
       domain_specialization: medium
     price:
-      input_per_million: 0.27
-      output_per_million: 1.10
+      input_per_million: 0.435
+      output_per_million: 0.87
       currency: USD
-      pricing_date: 2026-07-20
-    notes: Widely deployed open-weight model with strong price/performance.
+      pricing_date: 2026-07-28
+    notes: >
+      MIT-licensed open weights, 1M context, strong on code and math. Supersedes
+      DeepSeek V3. Cached input drops to $0.0036/M.
+
+  - id: kimi-k3
+    name: Kimi K3
+    family: Kimi
+    open_source: true
+    provider: Moonshot AI
+    capabilities:
+      reasoning: high
+      size: top
+      domain_specialization: high
+    price:
+      input_per_million: 3.00
+      output_per_million: 15.00
+      currency: USD
+      pricing_date: 2026-07-28
+    notes: >
+      Released 2026-07-16. 2.8T-param open-weight MoE with native vision and a
+      1M context window; flat pricing at any context length (no long-context
+      premium). Cached input drops to $0.30/M.
 
   - id: gemma-4-31b
     name: Gemma 4 31B
