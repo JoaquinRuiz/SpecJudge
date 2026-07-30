@@ -82,6 +82,20 @@ uv run specjudge --help
 ```
 </details>
 
+📺 Prefer to watch? There's a
+[walkthrough on YouTube](https://www.youtube.com/watch?v=T53zvm08zUg) — in Spanish.
+
+## Roadmap
+
+What's being worked on, what's next, and where help is wanted lives in a single
+[public roadmap issue](https://github.com/JoaquinRuiz/SpecJudge/issues/8) — kept current there
+rather than duplicated here, where it would rot.
+
+The most useful contribution is keeping the model catalog accurate: models and prices change every
+few weeks, and updating them takes **zero Python**. Several issues tagged
+[`good first issue`](https://github.com/JoaquinRuiz/SpecJudge/labels/good%20first%20issue) don't
+require touching the code either.
+
 ## Privacy
 
 The judge runs **on your machine** through Ollama. Your specs — your business logic, your design
