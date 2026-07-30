@@ -15,7 +15,7 @@ over a better-fitting one.
 
 from __future__ import annotations
 
-from .domain import Comparison, DataState, Evaluation
+from .domain import Comparison, DataState, DemandProfile, Evaluation
 
 
 def _fit_key(e: Evaluation) -> tuple[int, int, tuple[float, float], str]:
@@ -52,6 +52,7 @@ def build_comparison(
     data_state: DataState,
     judge_model: str | None,
     warnings: list[str] | None = None,
+    demand: DemandProfile | None = None,
 ) -> Comparison:
     warnings = list(warnings or [])
     podium = choose_podium(evaluations)
@@ -70,4 +71,5 @@ def build_comparison(
         best_choice=podium[0] if podium else None,
         warnings=warnings,
         podium=podium,
+        demand=demand,
     )

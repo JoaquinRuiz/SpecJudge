@@ -19,7 +19,7 @@ from .artifacts import read_project
 from .catalog import check_freshness, load_catalog
 from .config import DEFAULT_HOST, load_config, save_config
 from .domain import Comparison, DataState, JudgePreference, UserConfig
-from .judge.evaluator import estimate_demand
+from .judge.evaluator import estimate_demand, evidence_warnings
 from .judge.ollama import OllamaClient
 from .rating import assert_dimensions_match, evaluate_all, load_rules
 from .recommend import build_comparison
@@ -94,12 +94,36 @@ def _prompt_judge_selection(models: list[str]) -> str:
         typer.echo("Invalid selection, please try again.")
 
 
+def _demand_to_dict(demand) -> dict | None:
+    """The judge's assessment and how well it was grounded (FR-020).
+
+    Additive: the demand profile was previously computed and thrown away, so no
+    existing consumer of --json loses a field.
+    """
+    if demand is None:
+        return None
+    return {
+        "dimensions": demand.dimensions,
+        "justification": demand.justification,
+        "coverage": demand.coverage,
+        "evidence": {
+            dim: {
+                "status": ev.status.value,
+                "fragment_id": ev.fragment_id,
+                "quote": ev.quote,
+            }
+            for dim, ev in demand.evidence.items()
+        },
+    }
+
+
 def _comparison_to_dict(comparison: Comparison) -> dict:
     return {
         "data_state": comparison.data_state.value,
         "judge_model": comparison.judge_model,
         "best_choice": comparison.best_choice,
         "podium": comparison.podium,
+        "demand": _demand_to_dict(comparison.demand),
         "warnings": comparison.warnings,
         "evaluations": [
             {
@@ -187,10 +211,24 @@ def _run(
 
     # 4. Estimate demand and rate the catalog.
     demand = estimate_demand(analysis, rules, client, judge_model)
+
+    # No dimension the judge could ground means no demand profile to rank against.
+    # That is the same "not enough information" outcome as a project without tasks.
+    if not demand.scored_dimensions:
+        raise errors.no_supported_dimensions(judge_model)
+
     evaluations = evaluate_all(models, demand, rules)
 
-    warnings = list(analysis.warnings) + list(catalog_warnings)
-    comparison = build_comparison(evaluations, analysis.data_state, judge_model, warnings=warnings)
+    warnings = list(analysis.warnings) + list(catalog_warnings) + evidence_warnings(demand)
+    # Ungrounded dimensions make the assessment thinner than it looks, which is
+    # exactly what `scarce` communicates (FR-020).
+    data_state = analysis.data_state
+    if demand.unsupported_dimensions and data_state == DataState.SUFFICIENT:
+        data_state = DataState.SCARCE
+
+    comparison = build_comparison(
+        evaluations, data_state, judge_model, warnings=warnings, demand=demand
+    )
 
     # 5. Output.
     if as_json:
