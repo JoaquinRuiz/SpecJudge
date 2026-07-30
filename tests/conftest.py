@@ -7,6 +7,7 @@ depend on a locally installed model.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import httpx
@@ -52,8 +53,29 @@ def project_insufficient() -> Path:
     return FIXTURES / "project-insufficient"
 
 
-def _demand_response(dimensions: dict[str, str], justification: str) -> httpx.Response:
-    content = json.dumps({"dimensions": dimensions, "justification": justification})
+_FRAGMENT_ID = re.compile(r"^\s*\[([^\]]+)\]", re.MULTILINE)
+
+
+def _first_fragment_id(prompt: str) -> str | None:
+    """The first id the prompt offered as citable, if any.
+
+    The mock judge cites what it was actually shown, so the suite exercises the real
+    validation path (issue #1) without any test needing to know which fragment ids a
+    given fixture project happens to produce.
+    """
+    parts = prompt.split("=== CITABLE FRAGMENTS ===", 1)
+    if len(parts) < 2:
+        return None
+    match = _FRAGMENT_ID.search(parts[1])
+    return match.group(1) if match else None
+
+
+def _demand_response(prompt: str, dimensions: dict[str, str], justification: str) -> httpx.Response:
+    payload: dict[str, object] = {"dimensions": dimensions, "justification": justification}
+    fragment_id = _first_fragment_id(prompt)
+    if fragment_id is not None:
+        payload["evidence"] = dict.fromkeys(dimensions, fragment_id)
+    content = json.dumps(payload)
     return httpx.Response(200, json={"message": {"role": "assistant", "content": content}})
 
 
@@ -90,7 +112,11 @@ def mock_ollama():
                 )
             else:
                 router.post("/api/chat").mock(
-                    return_value=_demand_response(self.demand, self.justification)
+                    side_effect=lambda request: _demand_response(
+                        json.loads(request.content)["messages"][0]["content"],
+                        self.demand,
+                        self.justification,
+                    )
                 )
             return router
 

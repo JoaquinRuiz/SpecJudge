@@ -93,3 +93,23 @@ def test_fresh_catalog_shows_no_staleness_warning(project_sufficient, mock_ollam
         )
     assert result.exit_code == 0, result.output
     assert "older than" not in result.output
+
+
+def test_table_shows_the_evidence_coverage(project_sufficient, mock_ollama, test_catalog):
+    """The grounding must be visible without reaching for --json (issue #1)."""
+    with mock_ollama(models=["llama3.1:8b"]):
+        result = runner.invoke(
+            app,
+            [
+                str(project_sufficient),
+                "--judge",
+                "llama3.1:8b",
+                "--no-color",
+                "--catalog",
+                str(test_catalog),
+            ],
+        )
+    assert result.exit_code == 0, result.output
+    assert "Evidence:" in result.output
+    assert "dimensions grounded" in result.output
+    assert "cites" in result.output

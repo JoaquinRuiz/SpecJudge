@@ -88,3 +88,60 @@ def test_stale_pricing_warns_without_changing_the_exit_code(
     # A dated-but-old price is still verifiable: price_stale keeps its meaning.
     assert data["evaluations"][0]["price_stale"] is False
     assert data["best_choice"], "a stale catalog must still yield a recommendation"
+
+
+def _judge_answer(dimensions, evidence=None):
+    payload = {"dimensions": dimensions, "justification": "ok"}
+    if evidence:
+        payload["evidence"] = evidence
+    return json.dumps(payload)
+
+
+def _fixed_judge(monkeypatch, content: str):
+    """Force one exact judge answer, bypassing the well-behaved mock in conftest."""
+    import httpx
+    import respx
+
+    router = respx.mock(base_url="http://localhost:11434", assert_all_called=False)
+    router.get("/api/tags").mock(
+        return_value=httpx.Response(200, json={"models": [{"name": "llama3.1:8b"}]})
+    )
+    router.post("/api/chat").mock(
+        return_value=httpx.Response(200, json={"message": {"content": content}})
+    )
+    return router
+
+
+def test_all_unsupported_exits_2_without_a_recommendation(project_sufficient, tmp_path):
+    """No grounded dimension means no demand profile — the same outcome as no tasks."""
+    dims = {
+        "reasoning": "unsupported",
+        "size": "unsupported",
+        "domain_specialization": "unsupported",
+    }
+    with _fixed_judge(None, _judge_answer(dims)):
+        result = runner.invoke(app, [str(project_sufficient), "--judge", "llama3.1:8b", "--json"])
+    assert result.exit_code == 2, result.output
+    assert "no evidence" in result.output.lower()
+
+
+def test_some_unsupported_degrades_to_scarce(project_sufficient):
+    dims = {"reasoning": "medium", "size": "medium", "domain_specialization": "unsupported"}
+    evidence = {"reasoning": "T:T001", "size": "T:T001"}
+    with _fixed_judge(None, _judge_answer(dims, evidence)):
+        result = runner.invoke(app, [str(project_sufficient), "--judge", "llama3.1:8b", "--json"])
+    assert result.exit_code == 0, result.output
+    data = json.loads(result.output)
+    assert data["data_state"] == "scarce"
+    assert any("no supporting evidence" in w for w in data["warnings"])
+    assert data["best_choice"], "a partially grounded profile must still recommend"
+
+
+def test_fabricated_citation_exits_3(project_sufficient):
+    """A judge that invents a span is unusable, not merely warned about."""
+    dims = {"reasoning": "medium", "size": "medium", "domain_specialization": "medium"}
+    evidence = dict.fromkeys(dims, "S:FR-404")
+    with _fixed_judge(None, _judge_answer(dims, evidence)):
+        result = runner.invoke(app, [str(project_sufficient), "--judge", "llama3.1:8b", "--json"])
+    assert result.exit_code == 3, result.output
+    assert "S:FR-404" in result.output
