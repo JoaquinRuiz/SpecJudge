@@ -1,0 +1,126 @@
+"""Citable fragments of the project text (FR-020).
+
+The judge is asked to cite the fragment supporting each dimension. For that to be
+verifiable rather than decorative, three things must agree on what "the fragments"
+are: the compact prompt, the full prompt, and the validator that checks the answer.
+This module is that single source.
+
+Two consequences shape the design:
+
+* **Fragments are derived from the text actually sent**, truncation included. A
+  fragment that was cut from the prompt is not in the set, so citing it is a
+  fabrication from the judge's point of view — and is treated as one.
+* **Ids are short and closed.** The judge picks from an enumerated list instead of
+  reproducing prose, which is what makes validation set membership rather than
+  fuzzy matching. It is also the only shape that survives the compact prompt,
+  which sends a digest and no prose at all.
+"""
+
+from __future__ import annotations
+
+import re
+import unicodedata
+
+from ..domain import Fragment, ProjectAnalysis
+
+# Natural identifiers the SDD artifacts already carry.
+_REQUIREMENT = re.compile(r"\b((?:FR|SC|RF|RNF|NFR)-\d+)\b")
+_TASK_ID = re.compile(r"\b(T\d{3,})\b")
+_HEADING = re.compile(r"^#{1,3}\s+(.*\S)\s*$", re.MULTILINE)
+_CHECKLIST = re.compile(r"^\s*-\s*\[[ xX]\]\s+(.*\S)\s*$", re.MULTILINE)
+_BULLET = re.compile(r"^\s*[-*]\s+(?!\[[ xX]\])(.*\S)\s*$", re.MULTILINE)
+
+# Fragment text is capped so the prompt stays affordable; the cap is applied
+# identically when validating a quote, so the two never disagree.
+MAX_FRAGMENT_CHARS = 240
+
+_ARTIFACT_PREFIX = {"constitution": "C", "spec": "S", "tasks": "T"}
+
+
+def _normalize(text: str) -> str:
+    """Fold the differences a model routinely introduces when copying text.
+
+    Collapses whitespace, unifies the punctuation that word processors and models
+    swap freely (curly quotes, dashes), and lowercases. Deliberately conservative:
+    it must never make two genuinely different fragments compare equal.
+    """
+    text = unicodedata.normalize("NFKC", text)
+    for fancy, plain in (("‘", "'"), ("’", "'"), ("“", '"'), ("”", '"')):
+        text = text.replace(fancy, plain)
+    for dash in ("–", "—", "−"):
+        text = text.replace(dash, "-")
+    return " ".join(text.split()).lower()
+
+
+def _label(line: str) -> str | None:
+    """The natural id carried by a line of text, if it has one."""
+    req = _REQUIREMENT.search(line)
+    if req:
+        return req.group(1)
+    task = _TASK_ID.search(line)
+    if task:
+        return task.group(1)
+    return None
+
+
+def _artifact_fragments(artifact_type: str, text: str) -> list[Fragment]:
+    """Citable units of one artifact, in document order, deduplicated by id."""
+    prefix = _ARTIFACT_PREFIX.get(artifact_type, artifact_type[:1].upper())
+    found: dict[str, Fragment] = {}
+    counter = 0
+
+    # Requirement- and task-bearing lines first: they are the units a reader would
+    # cite, and they already have stable names in the document.
+    for pattern in (_CHECKLIST, _BULLET, _HEADING):
+        for raw in pattern.findall(text):
+            body = raw.strip()
+            if not body:
+                continue
+            natural = _label(body)
+            if natural:
+                frag_id = f"{prefix}:{natural}"
+            else:
+                counter += 1
+                frag_id = f"{prefix}:{counter}"
+            if frag_id in found:
+                continue
+            found[frag_id] = Fragment(
+                id=frag_id,
+                artifact_type=artifact_type,
+                text=body[:MAX_FRAGMENT_CHARS],
+            )
+    return list(found.values())
+
+
+def extract_fragments(analysis: ProjectAnalysis, limit: int) -> list[Fragment]:
+    """Every citable fragment, derived from the artifact text truncated to `limit`.
+
+    `limit` must be the same per-artifact cap the prompt uses, or the validator
+    would accept ids the judge never saw — or reject ids it did.
+    """
+    fragments: list[Fragment] = []
+    for artifact in analysis.artifacts:
+        if not (artifact.readable and artifact.content):
+            continue
+        fragments.extend(_artifact_fragments(artifact.type, artifact.content[:limit]))
+    return fragments
+
+
+def render_catalogue(fragments: list[Fragment]) -> str:
+    """The citable list as shown to the judge."""
+    if not fragments:
+        return "(no citable fragments were found in this project)"
+    return "\n".join(f"  [{f.id}] {f.text}" for f in fragments)
+
+
+def quote_matches(quote: str, fragment: Fragment) -> bool:
+    """Whether a quoted phrase is genuinely present in the cited fragment.
+
+    Compared after normalization, so trivial copying differences do not read as
+    fabrication. A quote that still does not match is reported rather than fatal:
+    the fragment id is the load-bearing citation.
+    """
+    needle = _normalize(quote)
+    if not needle:
+        return False
+    return needle in _normalize(fragment.text)
