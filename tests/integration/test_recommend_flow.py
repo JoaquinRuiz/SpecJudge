@@ -70,3 +70,21 @@ def test_json_exposes_the_podium(project_sufficient, mock_ollama, test_catalog):
     data = json.loads(result.output)
     assert data["podium"][0] == data["best_choice"]
     assert 1 <= len(data["podium"]) <= 3
+
+
+def test_example_project_classifies_as_sufficient():
+    """The README example must stay a *worked* example (issue #7).
+
+    If examples/task-manager ever degrades to `scarce`, the README would be
+    demonstrating the degraded path while claiming to show the normal one.
+    """
+    from pathlib import Path
+
+    from specjudge.artifacts import read_project
+    from specjudge.domain import DataState
+    from specjudge.rating import load_rules
+
+    project = Path(__file__).resolve().parents[2] / "examples" / "task-manager"
+    analysis = read_project(project, load_rules())
+    assert analysis.data_state == DataState.SUFFICIENT
+    assert not analysis.warnings
