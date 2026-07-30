@@ -12,7 +12,15 @@ from pathlib import Path
 
 import yaml
 
-from .domain import LEVELS, CatalogModel, DemandProfile, Evaluation, Rating, RatingRules
+from .domain import (
+    DEFAULT_MAX_PRICING_AGE_DAYS,
+    LEVELS,
+    CatalogModel,
+    DemandProfile,
+    Evaluation,
+    Rating,
+    RatingRules,
+)
 from .errors import CatalogError
 
 
@@ -57,7 +65,23 @@ def load_rules(path: Path | str | None = None) -> RatingRules:
         aggregation=str(mapping.get("aggregation", "worst_dimension")),
         levels=[str(x) for x in levels],
         judge=raw.get("judge") or {},
+        max_pricing_age_days=_max_pricing_age_days(raw.get("catalog_freshness")),
     )
+
+
+def _max_pricing_age_days(raw: object) -> int:
+    """Read catalog_freshness.max_age_days, falling back to the default (FR-019).
+
+    A missing, malformed or non-positive value degrades to the default rather
+    than raising: a bad freshness knob must not stop a recommendation.
+    """
+    if not isinstance(raw, dict):
+        return DEFAULT_MAX_PRICING_AGE_DAYS
+    try:
+        value = int(raw["max_age_days"])
+    except (KeyError, TypeError, ValueError):
+        return DEFAULT_MAX_PRICING_AGE_DAYS
+    return value if value >= 1 else DEFAULT_MAX_PRICING_AGE_DAYS
 
 
 def assert_dimensions_match(models: list[CatalogModel], rules: RatingRules) -> None:
