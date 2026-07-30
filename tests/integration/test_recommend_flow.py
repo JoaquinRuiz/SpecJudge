@@ -88,3 +88,30 @@ def test_example_project_classifies_as_sufficient():
     analysis = read_project(project, load_rules())
     assert analysis.data_state == DataState.SUFFICIENT
     assert not analysis.warnings
+
+
+def test_json_exposes_the_evidence_behind_each_dimension(
+    project_sufficient, mock_ollama, test_catalog
+):
+    """Criterion 4 of issue #1: coverage is in the output, not just used internally."""
+    with mock_ollama(models=["llama3.1:8b"]):
+        result = runner.invoke(
+            app,
+            [
+                str(project_sufficient),
+                "--judge",
+                "llama3.1:8b",
+                "--json",
+                "--catalog",
+                str(test_catalog),
+            ],
+        )
+    assert result.exit_code == 0, result.output
+    demand = json.loads(result.output)["demand"]
+
+    assert demand["dimensions"], "the judge's assessment must reach the output"
+    assert "dimensions grounded" in demand["coverage"]
+    for dim in demand["dimensions"]:
+        entry = demand["evidence"][dim]
+        assert entry["status"] == "grounded"
+        assert entry["fragment_id"], "a grounded dimension must name its fragment"

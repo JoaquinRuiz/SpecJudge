@@ -26,6 +26,17 @@ catalog_freshness:
   # raise it if the noise outweighs the signal. Missing or invalid => 90.
   max_age_days: 90
 
+# Evidence the judge must provide for its assessment (FR-019 / issue #1).
+evidence:
+  # When true, the judge must cite the id of a project fragment supporting each
+  # dimension, and the code checks that the fragment really exists in the text it
+  # was given. A dimension it cannot ground is answered `unsupported` instead of
+  # guessed, which degrades the run to `scarce` rather than inventing a level.
+  #
+  # Turn it off if your judge is too small to manage the citation schema: you get
+  # the older, unverified behaviour back, and lose the grounding check with it.
+  require_spans: true
+
 # How the project is presented to the local judge.
 judge:
   # Judges at or below this parameter count (in billions) get a COMPACT prompt: a

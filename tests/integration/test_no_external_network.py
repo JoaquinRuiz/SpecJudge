@@ -23,7 +23,14 @@ def test_no_calls_outside_localhost(project_sufficient):
         router.get(f"{HOST}/api/tags").mock(
             return_value=httpx.Response(200, json={"models": [{"name": "llama3.1:8b"}]})
         )
-        content = '{"dimensions": {"reasoning": "medium", "size": "medium", "domain_specialization": "medium"}, "justification": "ok"}'
+        # Rated dimensions must cite a fragment the prompt offered (issue #1);
+        # 'unsupported' is the shape that needs no citation, which keeps this test
+        # about network egress rather than about evidence.
+        content = (
+            '{"dimensions": {"reasoning": "unsupported", "size": "medium", '
+            '"domain_specialization": "unsupported"}, "evidence": {"size": "T:T001"}, '
+            '"justification": "ok"}'
+        )
         router.post(f"{HOST}/api/chat").mock(
             return_value=httpx.Response(200, json={"message": {"content": content}})
         )

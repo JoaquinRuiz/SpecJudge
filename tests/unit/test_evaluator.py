@@ -9,9 +9,20 @@ from __future__ import annotations
 
 import pytest
 
-from specjudge.domain import DataState, ProjectAnalysis, RatingRules, SDDArtifact
+from specjudge.domain import (
+    DataState,
+    EvidenceStatus,
+    ProjectAnalysis,
+    RatingRules,
+    SDDArtifact,
+)
 from specjudge.errors import JudgeUnavailableError
-from specjudge.judge.evaluator import build_prompt, estimate_demand, use_compact_prompt
+from specjudge.judge.evaluator import (
+    build_prompt,
+    estimate_demand,
+    evidence_warnings,
+    use_compact_prompt,
+)
 
 
 def _rules(**judge) -> RatingRules:
@@ -59,10 +70,25 @@ class _FakeClient:
         return self._responses.pop(0)
 
 
+# A fragment id that _analysis() really produces. Asserted below, so a change to the
+# id scheme fails loudly here instead of quietly making every judge answer invalid.
+_CITED = "T:T001"
+
 _VALID = {
     "dimensions": {"reasoning": "high", "size": "medium", "domain_specialization": "low"},
+    "evidence": dict.fromkeys(["reasoning", "size", "domain_specialization"], _CITED),
     "justification": "because",
 }
+
+
+def test_analysis_fixture_offers_the_cited_fragment():
+    """Guards the id scheme the rest of this module hardcodes."""
+    from specjudge.judge.evaluator import artifact_limit
+    from specjudge.judge.fragments import extract_fragments
+
+    rules = _rules()
+    ids = {f.id for f in extract_fragments(_analysis(), artifact_limit(rules, compact=True))}
+    assert _CITED in ids
 
 
 def test_valid_response_is_parsed():
@@ -171,3 +197,131 @@ def test_instructions_appear_at_both_ends_of_every_prompt():
         prompt = build_prompt(_realistic_analysis(), rules, compact=compact)
         assert prompt.count("Calibration:") == 2
         assert prompt.rstrip().endswith('"<one or two sentences>"}')
+
+
+# ----------------------------------------------- evidence spans (issue #1 / FR-020)
+
+
+def _answer(dimensions, evidence=None, quotes=None, justification="because"):
+    payload = {"dimensions": dimensions, "justification": justification}
+    if evidence is not None:
+        payload["evidence"] = evidence
+    if quotes is not None:
+        payload["quotes"] = quotes
+    return payload
+
+
+_ALL_DIMS = ["reasoning", "size", "domain_specialization"]
+
+
+def test_prompt_offers_a_citable_fragment_list():
+    prompt = build_prompt(_analysis(), _rules(), compact=True)
+    assert "CITABLE FRAGMENTS" in prompt
+    assert f"[{_CITED}]" in prompt
+
+
+def test_prompt_omits_the_list_when_spans_are_not_required():
+    rules = _rules()
+    rules.require_spans = False
+    prompt = build_prompt(_analysis(), rules, compact=True)
+    assert "CITABLE FRAGMENTS" not in prompt
+    assert "unsupported" not in prompt
+
+
+def test_rated_dimension_without_evidence_is_rejected():
+    """A level with no citation is exactly what this feature exists to stop."""
+    client = _FakeClient([_answer(dict.fromkeys(_ALL_DIMS, "medium"))])
+    with pytest.raises(JudgeUnavailableError) as exc:
+        estimate_demand(_analysis(), _rules(), client, "judge")
+    assert "no evidence" in exc.value.render()
+
+
+def test_fabricated_fragment_id_is_rejected():
+    client = _FakeClient(
+        [_answer(dict.fromkeys(_ALL_DIMS, "medium"), dict.fromkeys(_ALL_DIMS, "S:FR-999"))]
+    )
+    with pytest.raises(JudgeUnavailableError) as exc:
+        estimate_demand(_analysis(), _rules(), client, "judge")
+    rendered = exc.value.render()
+    assert "S:FR-999" in rendered
+    assert "not in the text" in rendered
+
+
+def test_one_fabricated_citation_rejects_the_whole_profile():
+    """Whole-profile rejection: a judge that invents one citation is not trustworthy."""
+    evidence = {"reasoning": _CITED, "size": _CITED, "domain_specialization": "T:NOPE"}
+    client = _FakeClient([_answer(dict.fromkeys(_ALL_DIMS, "medium"), evidence)])
+    with pytest.raises(JudgeUnavailableError):
+        estimate_demand(_analysis(), _rules(), client, "judge")
+
+
+def test_unsupported_needs_no_citation():
+    dims = {"reasoning": "unsupported", "size": "medium", "domain_specialization": "high"}
+    client = _FakeClient([_answer(dims, {"size": _CITED, "domain_specialization": _CITED})])
+    demand = estimate_demand(_analysis(), _rules(), client, "judge")
+
+    assert demand.dimensions["reasoning"] == "unsupported"
+    assert demand.unsupported_dimensions == ["reasoning"]
+    assert demand.scored_dimensions == {"size": "medium", "domain_specialization": "high"}
+    assert demand.evidence["reasoning"].status is EvidenceStatus.UNSUPPORTED
+    assert demand.evidence["reasoning"].fragment_id is None
+
+
+def test_matching_quote_is_grounded():
+    quotes = dict.fromkeys(_ALL_DIMS, "Do the thing number 1")
+    client = _FakeClient(
+        [_answer(dict.fromkeys(_ALL_DIMS, "medium"), dict.fromkeys(_ALL_DIMS, _CITED), quotes)]
+    )
+    demand = estimate_demand(_analysis(), _rules(), client, "judge")
+    assert all(e.status is EvidenceStatus.GROUNDED for e in demand.evidence.values())
+
+
+def test_mismatched_quote_warns_but_is_accepted():
+    """The id is the load-bearing citation; a paraphrased quote is reported, not fatal."""
+    quotes = dict.fromkeys(_ALL_DIMS, "something the fragment never said")
+    client = _FakeClient(
+        [_answer(dict.fromkeys(_ALL_DIMS, "medium"), dict.fromkeys(_ALL_DIMS, _CITED), quotes)]
+    )
+    demand = estimate_demand(_analysis(), _rules(), client, "judge")
+
+    assert all(e.status is EvidenceStatus.QUOTE_UNVERIFIED for e in demand.evidence.values())
+    assert any("did not match" in w for w in evidence_warnings(demand))
+
+
+def test_quote_survives_whitespace_and_smart_punctuation():
+    quotes = dict.fromkeys(_ALL_DIMS, "do   the THING   number 1")
+    client = _FakeClient(
+        [_answer(dict.fromkeys(_ALL_DIMS, "medium"), dict.fromkeys(_ALL_DIMS, _CITED), quotes)]
+    )
+    demand = estimate_demand(_analysis(), _rules(), client, "judge")
+    assert all(e.status is EvidenceStatus.GROUNDED for e in demand.evidence.values())
+
+
+def test_require_spans_off_accepts_the_older_shape():
+    """The escape hatch for judges too small for the citation schema."""
+    rules = _rules()
+    rules.require_spans = False
+    client = _FakeClient([_answer(dict.fromkeys(_ALL_DIMS, "medium"))])
+    demand = estimate_demand(_analysis(), rules, client, "judge")
+    assert demand.dimensions == dict.fromkeys(_ALL_DIMS, "medium")
+    assert demand.evidence == {}
+
+
+def test_all_unsupported_is_reported_as_zero_coverage():
+    client = _FakeClient([_answer(dict.fromkeys(_ALL_DIMS, "unsupported"))])
+    demand = estimate_demand(_analysis(), _rules(), client, "judge")
+    assert demand.scored_dimensions == {}
+    assert "0 of 3" in demand.coverage
+
+
+def test_coverage_counts_only_grounded_dimensions():
+    dims = {"reasoning": "unsupported", "size": "medium", "domain_specialization": "high"}
+    client = _FakeClient([_answer(dims, {"size": _CITED, "domain_specialization": _CITED})])
+    demand = estimate_demand(_analysis(), _rules(), client, "judge")
+    assert "2 of 3" in demand.coverage
+
+
+def test_evidence_warnings_are_silent_on_a_fully_grounded_profile():
+    client = _FakeClient([_VALID])
+    demand = estimate_demand(_analysis(), _rules(), client, "judge")
+    assert evidence_warnings(demand) == []

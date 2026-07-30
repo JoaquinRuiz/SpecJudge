@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from specjudge.domain import CatalogModel, DemandProfile, Price, Rating, RatingRules
 
 
@@ -114,3 +116,43 @@ def test_invalid_freshness_threshold_degrades_to_the_default(tmp_path):
     for bad in ("max_age_days: not-a-number", "max_age_days: 0", "max_age_days: -5"):
         path = _write_rules(tmp_path, f"catalog_freshness:\n  {bad}\n")
         assert load_rules(path).max_pricing_age_days == DEFAULT_MAX_PRICING_AGE_DAYS
+
+
+# -------------------------------------- unsupported dimensions (issue #1 / FR-020)
+
+
+def test_unsupported_dimension_is_excluded_from_the_fit_arithmetic():
+    """It must not fall through to the weakest level and make projects look easy.
+
+    Before this, an unknown level silently indexed to 0 (= low), so an ungrounded
+    dimension made every model look capable there.
+    """
+    from specjudge.rating import evaluate_model
+
+    rules = _rules()
+    model = _model({"reasoning": "low", "size": "low", "domain_specialization": "low"})
+
+    grounded = _demand({"reasoning": "top", "size": "low", "domain_specialization": "low"})
+    ungrounded = _demand(
+        {"reasoning": "unsupported", "size": "low", "domain_specialization": "low"}
+    )
+
+    # With the demanding dimension scored, the weak model is short by 3 steps.
+    assert evaluate_model(model, grounded, rules).deficit == 3
+    # Ungrounded, that dimension simply does not participate — it is not treated as
+    # satisfied, it is absent, and the remaining dimensions still fit exactly.
+    assert evaluate_model(model, ungrounded, rules).deficit == 0
+    assert evaluate_model(model, ungrounded, rules).rating == Rating.GOOD
+
+
+def test_rating_a_profile_with_no_supported_dimension_fails_loudly():
+    """Callers refuse this earlier; reaching here must not crash on an empty min()."""
+    from specjudge.errors import CatalogError
+    from specjudge.rating import evaluate_model
+
+    rules = _rules()
+    model = _model({"reasoning": "high", "size": "high", "domain_specialization": "high"})
+    demand = _demand(dict.fromkeys(rules.dimensions, "unsupported"))
+
+    with pytest.raises(CatalogError, match="no supported dimension"):
+        evaluate_model(model, demand, rules)

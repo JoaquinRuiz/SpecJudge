@@ -11,7 +11,7 @@ from rich.table import Table
 from rich.text import Text
 
 from ..about import TERMINAL_CREDIT
-from ..domain import Comparison, Evaluation, Rating
+from ..domain import Comparison, Evaluation, EvidenceStatus, Rating
 
 _MEDAL = {"gold": ("🥇", "bold yellow"), "silver": ("🥈", "bold white"), "bronze": ("🥉", "bold")}
 
@@ -86,5 +86,33 @@ def render_comparison(comparison: Comparison, *, no_color: bool = False) -> None
             if "No model" in w:
                 console.print(Text(f"⚠  {w}", style=None if no_color else "yellow"))
 
+    _print_evidence(console, comparison, no_color=no_color)
+
     console.print()
     console.print(Text(TERMINAL_CREDIT, style=None if no_color else "dim"))
+
+
+def _print_evidence(console: Console, comparison: Comparison, *, no_color: bool) -> None:
+    """Show what the judge's assessment was grounded in (FR-020).
+
+    The coverage line is the point: a rating nobody could trace back to the spec is
+    worth less than one that cites it, and the user should be able to see which
+    they got without reaching for --json.
+    """
+    demand = comparison.demand
+    if demand is None or not demand.evidence:
+        return
+
+    console.print()
+    console.print(Text(f"Evidence: {demand.coverage}", style=None if no_color else "bold"))
+    for dim, level in demand.dimensions.items():
+        ev = demand.evidence.get(dim)
+        if ev is None:
+            continue
+        if ev.status is EvidenceStatus.UNSUPPORTED:
+            detail = "no supporting fragment found"
+        elif ev.status is EvidenceStatus.QUOTE_UNVERIFIED:
+            detail = f"cites {ev.fragment_id} (quoted wording unconfirmed)"
+        else:
+            detail = f"cites {ev.fragment_id}"
+        console.print(Text(f"   {dim}: {level} — {detail}", style=None if no_color else "dim"))

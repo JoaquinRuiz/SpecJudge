@@ -113,3 +113,24 @@ def insufficient_project() -> InsufficientInfoError:
             "(e.g. with /speckit-tasks) and run again."
         ),
     )
+
+
+def no_supported_dimensions(model: str) -> InsufficientInfoError:
+    """The judge could not ground a single dimension in the project text (FR-020).
+
+    Rating on this would mean rating on nothing: with no supported dimension there
+    is no demand profile to compare capabilities against. Declining is the honest
+    outcome, and it is the same exit code as a project with no tasks.
+    """
+    return InsufficientInfoError(
+        "The judge found no evidence in this project for any dimension.",
+        hint=(
+            f"'{model}' answered 'unsupported' for every dimension, so there is no\n"
+            "demand profile to compare models against. Usually this means the\n"
+            "artifacts describe the project too thinly to assess. Options:\n"
+            "  - flesh out the spec and tasks with concrete requirements\n"
+            "  - try a larger judge, which reads the artifact text rather than a digest\n"
+            "  - set evidence.require_spans: false in data/rating-rules.yaml to rate\n"
+            "    without citations (you lose the grounding check)"
+        ),
+    )
