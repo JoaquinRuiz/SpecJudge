@@ -7,6 +7,7 @@ No business logic: just the shape of the data and its basic invariants.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import date
 from enum import Enum
 
 
@@ -49,6 +50,10 @@ class JudgeAvailability(str, Enum):
 # Ordinal vocabulary of capability/demand levels.
 LEVELS = ["low", "medium", "high", "top"]
 
+# Prices move every few weeks, so a quarter-old catalog is worth flagging. Short
+# enough to catch real drift, long enough not to cry wolf on every run.
+DEFAULT_MAX_PRICING_AGE_DAYS = 90
+
 
 @dataclass
 class Price:
@@ -59,7 +64,28 @@ class Price:
 
     @property
     def stale(self) -> bool:
+        """True when there is no date at all: freshness cannot be verified (FR-018).
+
+        This is NOT "the price is old" — for that, see `age_days`. The two are
+        reported separately and must not be collapsed: a missing date is
+        *unverifiable*, an old date is *verifiably out of date*.
+        """
         return self.pricing_date is None
+
+    def age_days(self, today: date) -> int | None:
+        """Days elapsed since `pricing_date` (FR-019).
+
+        Returns None when the date is absent or not a parseable ISO date — an
+        unusable date is treated as unverifiable, never as age zero. A date in
+        the future clamps to 0 rather than going negative.
+        """
+        if self.pricing_date is None:
+            return None
+        try:
+            priced_on = date.fromisoformat(self.pricing_date)
+        except ValueError:
+            return None
+        return max(0, (today - priced_on).days)
 
     @property
     def is_free(self) -> bool:
@@ -128,6 +154,8 @@ class RatingRules:
     levels: list[str] = field(default_factory=lambda: list(LEVELS))
     # How the project is presented to the judge (see data/rating-rules.yaml).
     judge: dict = field(default_factory=dict)
+    # Days since pricing_date before the catalog is called out as stale (FR-019).
+    max_pricing_age_days: int = DEFAULT_MAX_PRICING_AGE_DAYS
 
 
 @dataclass
