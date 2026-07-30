@@ -80,3 +80,6 @@ ignore = ["B008", "UP042"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+# `scripts/` holds repo tooling (the README example generator), not shipped code.
+# Putting it on the path lets the contract tests import and exercise it.
+pythonpath = ["scripts"]
