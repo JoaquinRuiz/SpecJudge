@@ -16,7 +16,7 @@ import typer
 
 from . import __version__, errors
 from .artifacts import read_project
-from .catalog import load_catalog
+from .catalog import check_freshness, load_catalog
 from .config import DEFAULT_HOST, load_config, save_config
 from .domain import Comparison, DataState, JudgePreference, UserConfig
 from .judge.evaluator import estimate_demand
@@ -174,6 +174,8 @@ def _run(
     if not models:
         raise errors.catalog_empty(str(catalog) if catalog else "data/models.yaml")
     assert_dimensions_match(models, rules)
+    # Stale prices don't block a recommendation, they qualify it (FR-019).
+    catalog_warnings += check_freshness(models, rules.max_pricing_age_days)
 
     # 3. Resolve the local judge (critical dependency).
     config = load_config()

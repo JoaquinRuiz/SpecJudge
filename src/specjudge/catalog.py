@@ -6,6 +6,7 @@ error produces an actionable message pointing at file/model/field.
 
 from __future__ import annotations
 
+from datetime import date
 from importlib.resources import files
 from pathlib import Path
 
@@ -133,3 +134,42 @@ def load_catalog(path: Path | str | None = None) -> tuple[list[CatalogModel], li
         )
 
     return models, warnings
+
+
+def check_freshness(
+    models: list[CatalogModel],
+    max_age_days: int,
+    *,
+    today: date | None = None,
+) -> list[str]:
+    """Warn when catalog prices have aged past `max_age_days` (FR-019).
+
+    Deliberately kept out of `load_catalog`: the loader validates shape and has no
+    business knowing the freshness policy, which lives in the rating rules.
+
+    Models without a usable `pricing_date` are ignored here — their freshness is
+    already reported as unverifiable by the loader, and counting them as stale
+    would double-report the same entry under two different meanings.
+
+    `today` is injectable so the result is deterministic under test.
+    """
+    today = today or date.today()
+
+    aged = [
+        (model, age)
+        for model in models
+        if (age := model.price.age_days(today)) is not None and age > max_age_days
+    ]
+    if not aged:
+        return []
+
+    oldest, oldest_age = max(aged, key=lambda pair: pair[1])
+    count = f"{len(aged)} of {len(models)} catalog prices are"
+    if len(aged) == 1:
+        count = f"1 of {len(models)} catalog prices is"
+
+    return [
+        f"{count} older than {max_age_days} days "
+        f"(oldest: {oldest.name}, {oldest_age} days). "
+        f"Verify against the provider's pricing page before relying on them."
+    ]
