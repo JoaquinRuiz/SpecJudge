@@ -33,12 +33,20 @@ Each model is an entry under `models:`:
 - Any price change MUST update `pricing_date` so its freshness stays verifiable.
 - `capabilities` MUST cover every dimension declared in `dimensions`.
 - The `dimensions` set in `models.yaml` and in `rating-rules.yaml` MUST match.
+- The README's worked example is generated from this catalog. If your edit changes the
+  podium or the prices it quotes, regenerate it — a contract test fails otherwise:
+
+  ```bash
+  uv run python scripts/render_example.py --write
+  ```
 
 ## Tuning the rating rules — `data/rating-rules.yaml`
 
 - `mapping.per_dimension` translates the difference (capability − demand) into a partial label.
 - `mapping.aggregation` combines the dimensions (`worst_dimension` by default).
 - `scarce_thresholds.min_detailed_tasks` sets when a project counts as "thin on detail".
+- `catalog_freshness.max_age_days` sets how old a `pricing_date` may get before the tool
+  warns that the catalog is going stale.
 
 The rating scale is a **fixed, closed vocabulary** — `poor` / `fair` / `good` / `overkill` — defined
 in the project constitution. Changing it requires a constitution amendment, not just a data edit.

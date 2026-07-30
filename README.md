@@ -18,23 +18,44 @@ fits the job — before you spend a single token implementing it.
 
 ---
 
+Here it is on a real spec — [`examples/task-manager`](./examples/task-manager), a small
+CRUD web app, is included in this repo so you can run it yourself:
+
+<!-- BEGIN generated-example: run `uv run python scripts/render_example.py --write` -->
 ```console
-$ specjudge .
+$ specjudge examples/task-manager
 
-             Model comparison (SpecJudge) - judge: devstral-small-2
-┏━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
-┃    ┃ Model                    ┃ Rating ┃ Price                  ┃ Priced on  ┃
-┡━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━┩
-│ 🥇 │ Gemma 4 31B (local)      │ good   │ open-source/free       │ 2026-07-20 │
-│ 🥈 │ Gemma 4 31B              │ good   │ 0.35 out / 0.12 in     │ 2026-07-20 │
-│ 🥉 │ Qwen 3.6-35B-A3B (local) │ good   │ open-source/free       │ 2026-07-20 │
-│    │ GLM-5.1                  │ good   │ 3.04 out / 0.97 in     │ 2026-07-20 │
-│    │ Claude Opus 5            │overkill│ 25.00 out / 5.00 in    │ 2026-07-28 │
-└────┴──────────────────────────┴────────┴────────────────────────┴────────────┘
+                   Model comparison (SpecJudge) - judge: devstral-small-2                   
+┏━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
+┃    ┃ Model                         ┃ Rating   ┃ Price                       ┃ Priced on  ┃
+┡━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━┩
+│ 🥇 │ Mistral Small 3.2 24B (local) │ good     │ open-source/free            │ 2026-07-20 │
+│ 🥈 │ DeepSeek V4 Flash             │ good     │ 0.28 out / 0.14 in USD/1M   │ 2026-07-28 │
+│ 🥉 │ Gemma 4 26B MoE               │ good     │ 0.33 out / 0.06 in USD/1M   │ 2026-07-20 │
+│    │ Claude Fable 5                │ overkill │ 50.00 out / 10.00 in USD/1M │ 2026-07-28 │
+└────┴───────────────────────────────┴──────────┴─────────────────────────────┴────────────┘
 
-🥇 Gold: Gemma 4 31B (local)
-   Right-sized: capability matches demand exactly in every dimension.
+🥇 Gold: Mistral Small 3.2 24B (local)
+   Mistral Small 3.2 24B (local) is a good fit for this project. Right-sized: capability 
+matches demand exactly in every dimension. Deciding dimension: 'reasoning' (demand=medium, 
+capability=medium -> good).
+🥈 Silver: DeepSeek V4 Flash
+   DeepSeek V4 Flash is a good fit for this project. Right-sized: capability matches demand 
+exactly in every dimension. Deciding dimension: 'reasoning' (demand=medium, 
+capability=medium -> good).
+🥉 Bronze: Gemma 4 26B MoE
+   Gemma 4 26B MoE is a good fit for this project. Right-sized: capability matches demand 
+exactly in every dimension. Deciding dimension: 'reasoning' (demand=medium, 
+capability=medium -> good).
 ```
+
+Abridged: the real run scores all 37 models in the catalog and lists every one of them. Prices and ratings above are generated from [`data/models.yaml`](./data/models.yaml), so they cannot go stale silently.
+
+**Mistral Small 3.2 24B (local)** is right-sized for this project and costs nothing per token — it runs on your own hardware. **Claude Fable 5**, the priciest option this project does not need, bills $50.00/M output, $10.00/M input. If you would rather not self-host, the cheapest hosted model that still fits is **DeepSeek V4 Flash** at $0.28/M output, $0.14/M input — **179× cheaper on output** than reaching for the frontier.
+<!-- END generated-example -->
+
+The demand profile was estimated once by a local judge and pinned, so this example is
+reproducible without Ollama; everything else is generated from the live catalog.
 
 Add `--open` for a visual matrix in your browser, filterable by model family and by open source.
 
