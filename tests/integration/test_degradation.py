@@ -49,3 +49,42 @@ def test_empty_catalog_exits_4(project_sufficient, mock_ollama, tmp_path):
         )
     assert result.exit_code == 4
     assert "catalog" in result.output.lower()
+
+
+def test_stale_pricing_warns_without_changing_the_exit_code(
+    project_sufficient, mock_ollama, tmp_path
+):
+    """FR-019: staleness qualifies the recommendation, it does not fail the run."""
+    catalog = tmp_path / "stale-catalog.yaml"
+    catalog.write_text(
+        "version: 1\n"
+        "dimensions: [reasoning, size, domain_specialization]\n"
+        "models:\n"
+        "  - id: ancient\n"
+        "    name: Ancient Model\n"
+        "    capabilities: {reasoning: medium, size: medium, domain_specialization: medium}\n"
+        "    price:\n"
+        "      input_per_million: 1\n"
+        "      output_per_million: 2\n"
+        "      currency: USD\n"
+        "      pricing_date: 2020-01-01\n",
+        encoding="utf-8",
+    )
+    with mock_ollama(models=["llama3.1:8b"]):
+        result = runner.invoke(
+            app,
+            [
+                str(project_sufficient),
+                "--judge",
+                "llama3.1:8b",
+                "--json",
+                "--catalog",
+                str(catalog),
+            ],
+        )
+    assert result.exit_code == 0, result.output
+    data = json.loads(result.output)
+    assert any("older than" in w for w in data["warnings"])
+    # A dated-but-old price is still verifiable: price_stale keeps its meaning.
+    assert data["evaluations"][0]["price_stale"] is False
+    assert data["best_choice"], "a stale catalog must still yield a recommendation"
