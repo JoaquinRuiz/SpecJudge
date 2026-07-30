@@ -15,6 +15,7 @@ import yaml
 from .domain import (
     DEFAULT_MAX_PRICING_AGE_DAYS,
     LEVELS,
+    UNSUPPORTED,
     CatalogModel,
     DemandProfile,
     Evaluation,
@@ -66,7 +67,15 @@ def load_rules(path: Path | str | None = None) -> RatingRules:
         levels=[str(x) for x in levels],
         judge=raw.get("judge") or {},
         max_pricing_age_days=_max_pricing_age_days(raw.get("catalog_freshness")),
+        require_spans=_require_spans(raw.get("evidence")),
     )
+
+
+def _require_spans(raw: object) -> bool:
+    """Read evidence.require_spans, defaulting to on (FR-020)."""
+    if not isinstance(raw, dict) or "require_spans" not in raw:
+        return True
+    return bool(raw["require_spans"])
 
 
 def _max_pricing_age_days(raw: object) -> int:
@@ -117,6 +126,12 @@ def evaluate_model(model: CatalogModel, demand: DemandProfile, rules: RatingRule
     excess = 0
     for dim in rules.dimensions:
         demand_level = demand.dimensions.get(dim, levels[0])
+        # An unsupported dimension has UNKNOWN demand, not low demand. It carries no
+        # position on the ordinal scale, so it takes no part in the fit arithmetic —
+        # letting it fall through to index 0 would quietly make every project look
+        # easier, which is the silent degradation Principle IV forbids.
+        if demand_level == UNSUPPORTED:
+            continue
         cap_level = model.capabilities.get(dim, levels[0])
         d_idx = levels.index(demand_level) if demand_level in levels else 0
         c_idx = levels.index(cap_level) if cap_level in levels else 0
@@ -124,6 +139,16 @@ def evaluate_model(model: CatalogModel, demand: DemandProfile, rules: RatingRule
         deficit += max(0, -diff)
         excess += max(0, diff)
         partials[dim] = _rating_for_diff(diff, rules.per_dimension)
+
+    if not partials:
+        # Every dimension came back unsupported, so there is nothing to compare
+        # against. Callers are expected to refuse the run before reaching here
+        # (see errors.no_supported_dimensions); crashing on an empty min() would
+        # bury that in a traceback.
+        raise CatalogError(
+            f"Cannot rate '{model.id}': the demand profile has no supported dimension.",
+            hint="A profile where every dimension is 'unsupported' cannot rank models.",
+        )
 
     if rules.aggregation == "worst_dimension":
         global_rating = min(partials.values(), key=lambda r: r.order)
