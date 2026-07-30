@@ -37,7 +37,10 @@ def _pricing_date_str(e: Evaluation) -> str:
 def render_comparison(comparison: Comparison, *, no_color: bool = False) -> None:
     console = Console(no_color=no_color, highlight=False)
 
-    if comparison.data_state.value == "scarce":
+    # Every warning is printed, whatever the data state. Gating this on "scarce"
+    # silently swallowed catalog warnings (missing or stale pricing dates) on
+    # exactly the healthy projects where the price data still matters.
+    if comparison.warnings:
         for w in comparison.warnings:
             console.print(Text(f"⚠  {w}", style="yellow" if not no_color else None))
         console.print()
