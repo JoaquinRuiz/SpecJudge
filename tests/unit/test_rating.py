@@ -65,3 +65,52 @@ def test_justification_is_non_empty():
     demand = _demand({"reasoning": "medium", "size": "medium", "domain_specialization": "medium"})
     model = _model({"reasoning": "medium", "size": "medium", "domain_specialization": "medium"})
     assert evaluate_model(model, demand, rules).justification.strip()
+
+
+# ------------------------------------- catalog_freshness threshold (T061/FR-019)
+
+_MINIMAL_RULES = (
+    "version: 1\n"
+    "dimensions: [reasoning, size, domain_specialization]\n"
+    "mapping:\n"
+    "  levels: [low, medium, high, top]\n"
+    "  per_dimension: {exact: good}\n"
+)
+
+
+def _write_rules(tmp_path, extra: str = ""):
+    path = tmp_path / "rating-rules.yaml"
+    path.write_text(_MINIMAL_RULES + extra, encoding="utf-8")
+    return path
+
+
+def test_freshness_threshold_is_read_from_the_rules(tmp_path):
+    from specjudge.rating import load_rules
+
+    path = _write_rules(tmp_path, "catalog_freshness:\n  max_age_days: 30\n")
+    assert load_rules(path).max_pricing_age_days == 30
+
+
+def test_freshness_threshold_defaults_when_absent(tmp_path):
+    """Editing the knob is optional; omitting it must not break the load."""
+    from specjudge.domain import DEFAULT_MAX_PRICING_AGE_DAYS
+    from specjudge.rating import load_rules
+
+    path = _write_rules(tmp_path)
+    assert load_rules(path).max_pricing_age_days == DEFAULT_MAX_PRICING_AGE_DAYS
+
+
+def test_shipped_rules_declare_the_freshness_threshold():
+    from specjudge.rating import load_rules
+
+    assert load_rules().max_pricing_age_days >= 1
+
+
+def test_invalid_freshness_threshold_degrades_to_the_default(tmp_path):
+    """A bad knob must not stop a recommendation (Principle IV)."""
+    from specjudge.domain import DEFAULT_MAX_PRICING_AGE_DAYS
+    from specjudge.rating import load_rules
+
+    for bad in ("max_age_days: not-a-number", "max_age_days: 0", "max_age_days: -5"):
+        path = _write_rules(tmp_path, f"catalog_freshness:\n  {bad}\n")
+        assert load_rules(path).max_pricing_age_days == DEFAULT_MAX_PRICING_AGE_DAYS

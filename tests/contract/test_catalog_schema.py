@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from specjudge.catalog import load_catalog
+from specjudge.catalog import check_freshness, load_catalog
 from specjudge.errors import CatalogError
 from specjudge.rating import assert_dimensions_match, load_rules
 
@@ -13,6 +13,18 @@ def test_shipped_catalog_is_valid():
     models, warnings = load_catalog()
     assert models
     assert all(m.price.pricing_date for m in models), "Every price must have a date"
+
+
+def test_shipped_catalog_is_not_stale():
+    """The catalog we ship must pass its own freshness bar (FR-019).
+
+    This is the canary for the whole project: if nobody refreshes prices, this
+    fails and says so, instead of shipping a confidently outdated recommendation.
+    """
+    models, _ = load_catalog()
+    rules = load_rules()
+    warnings = check_freshness(models, rules.max_pricing_age_days)
+    assert not warnings, warnings[0] if warnings else ""
 
 
 def test_shipped_dimensions_match_rules():
