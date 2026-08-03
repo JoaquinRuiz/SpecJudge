@@ -12,6 +12,17 @@ import httpx
 
 from .. import errors
 
+# Sampling is pinned so the same project yields the same assessment twice (FR-021).
+# Two runs disagreeing about which model to buy is hard to defend in a tool about
+# spending money, and without it the judge evaluation suite cannot tell a prompt
+# change from sampling noise.
+#
+# This pins *sampling*, not the world: a different Ollama release, quantisation or
+# context size can still move the answer. Reproducible on one machine, not
+# comparable across two.
+JUDGE_SEED = 20260803
+JUDGE_OPTIONS = {"temperature": 0, "seed": JUDGE_SEED}
+
 
 class OllamaClient:
     def __init__(self, host: str = "http://localhost:11434", timeout: float = 120.0) -> None:
@@ -81,6 +92,7 @@ class OllamaClient:
             "model": model,
             "stream": False,
             "format": "json",
+            "options": dict(JUDGE_OPTIONS),
             "messages": [{"role": "user", "content": prompt}],
         }
         try:
