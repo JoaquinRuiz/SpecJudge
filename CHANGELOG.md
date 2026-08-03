@@ -9,6 +9,93 @@ Entries before 0.1.4 were reconstructed from the git tags and the GitHub release
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-03
+
+The judge now has to show its work. Every dimension it rates must cite the fragment of
+your spec that supports it, and the citation is checked against the text it was actually
+given — so a fluent explanation is no longer enough to pass for an assessment.
+
+**This release has breaking changes. See [Migration](#migration-from-014) below.**
+
+### Added
+
+- The judge must cite a project fragment per dimension, and code verifies the fragment
+  exists in the text it was given. A citation naming something absent invalidates the
+  whole assessment rather than that one field ([#1], [#12]).
+- `unsupported` as a peer value in the judge's answer vocabulary: a dimension it cannot
+  ground is answered, not guessed. Ungrounded dimensions leave the fit calculation
+  instead of quietly counting as low demand ([#1], [#12]).
+- `demand` in `--json`, carrying the assessment, its evidence and a coverage summary. The
+  profile was previously computed and discarded ([#1], [#12]).
+- Evidence coverage in the terminal output, so the grounding is visible without `--json`
+  ([#1], [#12]).
+- `evidence.require_spans` in `data/rating-rules.yaml` — set it to `false` to rate without
+  citations if your judge cannot manage the schema ([#1], [#12]).
+- A judge evaluation corpus of twelve projects with expected profiles, covering
+  well-specified, thin, task-less and adversarial specs ([#5], [#13]).
+- A deterministic regression suite running in CI as its own `Judge regression` job:
+  classification, frozen rankings and prompt invariants ([#5], [#13]).
+- `scripts/eval_judge.py`, which runs the corpus against a real local judge and reports
+  accuracy and abstention quality separately ([#5], [#13]).
+
+### Changed
+
+- **Ollama 0.5.0 or newer is required** for the default cited-assessment mode. The judge
+  request now carries a JSON schema, which older versions reject ([#14], [#15]).
+- Judge sampling is pinned (`temperature: 0`, fixed seed), so the same project and judge
+  produce the same assessment twice. Two runs could previously recommend different models
+  ([#5], [#13]).
+- A project whose judge could not ground every dimension is reported as `scarce` rather
+  than `sufficient`, with a warning naming the dimensions ([#1], [#12]).
+- Fragment ids are offered to the judge without surrounding brackets, and citations are
+  normalised before lookup ([#14], [#15]).
+- The project constitution is amended to 3.1.0: changes to the judge prompt or the rating
+  rules must be evaluated against the corpus ([#5], [#13]).
+
+### Fixed
+
+- Citations were impossible for 8B judges, the most common local setup. `format: "json"`
+  guarantees valid JSON but not the requested shape, so the model returned the right
+  ratings with `[true]` where a fragment id belonged, and every run was rejected with no
+  recommendation. Measured on the corpus: `llama3.1` went from 0 of 9 usable cases to 9 of
+  9, `devstral-small-2` from 5 of 9 to 9 of 9 ([#14], [#15]).
+- An Ollama too old for structured outputs now produces an error naming the version
+  requirement and both ways out, instead of a bare HTTP failure ([#14], [#15]).
+
+### Migration from 0.1.4
+
+**Upgrade Ollama to 0.5.0 or newer.** This is the one change that turns a working setup
+into a failing one: the judge request now carries a JSON schema, and older versions reject
+it. You will get exit code 3 with an error naming the requirement. If you cannot upgrade,
+set `require_spans: false` (below).
+
+**Expect some judges to be refused.** A judge that cannot cite evidence now fails loudly
+rather than returning an unverified assessment:
+
+| What the judge does | Result |
+|---|---|
+| Cites a fragment that does not exist | Exit 3, naming the dimension and the invented id |
+| Answers `unsupported` for every dimension | Exit 2, no recommendation |
+| Grounds some dimensions but not all | Exit 0, warning, `data_state` becomes `scarce` |
+
+If your judge cannot manage this, add to `data/rating-rules.yaml`:
+
+```yaml
+evidence:
+  require_spans: false
+```
+
+That restores 0.1.4 behaviour and loses the grounding check with it.
+
+**If you script against `--json`:** the schema gains a `demand` key — additive, nothing
+was removed. But `data_state` can now be `scarce` on a project that reported `sufficient`
+in 0.1.4, when the judge grounds only part of its assessment. `price_stale` is unchanged
+and still means "this entry carries no date", not "this price is old".
+
+**If you compare runs:** results are now deterministic for a given project, judge and
+catalog. A recommendation that used to vary between runs will settle on one answer — which
+may not be the one you saw last time.
+
 ## [0.1.4] - 2026-07-30
 
 Two things stop going stale on their own: the prices in the catalog, and the
@@ -103,7 +190,8 @@ community-maintained catalog by how well each model **fits** the job.
 - Explicit degradation with distinct exit codes when project data is insufficient,
   the judge is unavailable, or the catalog is empty.
 
-[Unreleased]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.1.4...HEAD
+[Unreleased]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.1.4...v0.2.0
 [0.1.4]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.1.1...v0.1.2
@@ -112,3 +200,9 @@ community-maintained catalog by how well each model **fits** the job.
 [#7]: https://github.com/JoaquinRuiz/SpecJudge/issues/7
 [#9]: https://github.com/JoaquinRuiz/SpecJudge/pull/9
 [#10]: https://github.com/JoaquinRuiz/SpecJudge/pull/10
+[#1]: https://github.com/JoaquinRuiz/SpecJudge/issues/1
+[#5]: https://github.com/JoaquinRuiz/SpecJudge/issues/5
+[#12]: https://github.com/JoaquinRuiz/SpecJudge/pull/12
+[#13]: https://github.com/JoaquinRuiz/SpecJudge/pull/13
+[#14]: https://github.com/JoaquinRuiz/SpecJudge/issues/14
+[#15]: https://github.com/JoaquinRuiz/SpecJudge/pull/15
