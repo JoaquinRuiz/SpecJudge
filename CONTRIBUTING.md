@@ -51,6 +51,39 @@ Each model is an entry under `models:`:
 The rating scale is a **fixed, closed vocabulary** — `poor` / `fair` / `good` / `overkill` — defined
 in the project constitution. Changing it requires a constitution amendment, not just a data edit.
 
+## Changing the judge prompt or the rating rules
+
+These two decide the recommendation, so a change to either is evaluated against a
+corpus of projects with expected profiles (`tests/fixtures/corpus/`).
+
+```bash
+# Deterministic half — runs in CI too. Contract, not judgement.
+uv run pytest tests/regression
+
+# Live half — needs Ollama. This is the one that tells you whether your change
+# is an improvement.
+uv run python scripts/eval_judge.py --judge <your-model>
+```
+
+The live run reports **accuracy** (did the level land in the expected band) and
+**abstention quality** (did it abstain when it should, and only then) separately,
+because they fail in opposite directions: a judge that abstains on everything
+scores perfectly on accuracy alone.
+
+Run it before and after your change and compare. Sampling is pinned, but Ollama
+version and quantisation are not, so compare against **your own** baseline rather
+than someone else's numbers.
+
+If you intentionally change how the rules rank models, regenerate the snapshot and
+read the diff:
+
+```bash
+uv run pytest tests/regression/test_rules_golden.py --snapshot-update
+```
+
+Adding a corpus case is a welcome contribution and needs no Python: a project
+directory plus an `expected.yaml` with a `rationale` explaining the label.
+
 ## Before opening a PR
 
 ```bash
