@@ -32,7 +32,12 @@ from ..domain import (
     answer_levels,
 )
 from ..judge.ollama import OllamaClient
-from .fragments import extract_fragments, quote_matches, render_catalogue
+from .fragments import (
+    extract_fragments,
+    normalize_citation,
+    quote_matches,
+    render_catalogue,
+)
 
 _DEFAULT_MAX_CHARS = 8000
 _DEFAULT_MAX_CHARS_COMPACT = 1500
@@ -95,6 +100,46 @@ def _instructions(rules: RatingRules) -> str:
         f'{{"evidence": {{{ev_shape}}}, "dimensions": {{{dim_shape}}}, '
         '"justification": "<one or two sentences>"}'
     )
+
+
+def response_schema(rules: RatingRules) -> dict:
+    """JSON schema constraining the judge's answer (issue #14).
+
+    Ollama's `format: "json"` guarantees valid JSON, not the JSON we asked for.
+    The shape only ever lived in the prompt text, and an 8B judge does not honour
+    it: measured on the evaluation corpus, `llama3.1` rated every project
+    correctly and then put `[true]` where a fragment id belongs, so every run was
+    rejected. Constraining generation fixes the type outright.
+    """
+    dims = list(rules.dimensions)
+    levels = answer_levels(rules.levels)
+
+    properties: dict[str, object] = {
+        "dimensions": {
+            "type": "object",
+            "properties": {d: {"type": "string", "enum": levels} for d in dims},
+            "required": dims,
+        },
+        "justification": {"type": "string"},
+    }
+    required = ["dimensions", "justification"]
+
+    if rules.require_spans:
+        # Required so the model fills every slot; a dimension it answers
+        # `unsupported` may carry anything here, since the parser ignores
+        # evidence for abstained dimensions.
+        properties["evidence"] = {
+            "type": "object",
+            "properties": {d: {"type": "string"} for d in dims},
+            "required": dims,
+        }
+        properties["quotes"] = {
+            "type": "object",
+            "properties": {d: {"type": "string"} for d in dims},
+        }
+        required.append("evidence")
+
+    return {"type": "object", "properties": properties, "required": required}
 
 
 def _summarize(analysis: ProjectAnalysis, limit: int) -> str:
@@ -225,7 +270,7 @@ def _parse_demand(
             profile.evidence[dim] = Evidence(status=EvidenceStatus.UNSUPPORTED)
             continue
 
-        cited = str(raw_evidence.get(dim, "")).strip()
+        cited = normalize_citation(str(raw_evidence.get(dim, "")))
         if not cited:
             return (
                 f"Dimension '{dim}' was rated '{level}' with no evidence. Every rated "
@@ -297,7 +342,11 @@ def estimate_demand(
         # The fragment set must come from the same text this attempt sends, so it is
         # rebuilt per attempt: the two shapes truncate at different limits.
         fragments = extract_fragments(analysis, artifact_limit(rules, compact=is_compact))
-        raw = client.chat_json(judge_model, build_prompt(analysis, rules, compact=is_compact))
+        raw = client.chat_json(
+            judge_model,
+            build_prompt(analysis, rules, compact=is_compact),
+            schema=response_schema(rules),
+        )
         parsed = _parse_demand(raw, rules, fragments)
         if isinstance(parsed, DemandProfile):
             parsed.judge_model = judge_model

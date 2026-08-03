@@ -115,6 +115,26 @@ def insufficient_project() -> InsufficientInfoError:
     )
 
 
+def ollama_too_old_for_schema(host: str, found: str | None) -> JudgeUnavailableError:
+    """Ollama rejected the response schema, almost certainly because it is old.
+
+    Structured outputs landed in Ollama 0.5.0. Without them the judge is free to
+    answer with the wrong types, which is what made citations unusable on small
+    models in the first place (issue #14).
+    """
+    version = f"found {found}" if found else "version unknown"
+    return JudgeUnavailableError(
+        f"Ollama at {host} rejected the judge response schema ({version}).",
+        hint=(
+            "Requesting a cited assessment needs structured outputs, added in\n"
+            "Ollama 0.5.0. Options:\n"
+            "  - upgrade Ollama:  https://ollama.com/download\n"
+            "  - or set evidence.require_spans: false in data/rating-rules.yaml to\n"
+            "    rate without citations (you lose the grounding check)"
+        ),
+    )
+
+
 def no_supported_dimensions(model: str) -> InsufficientInfoError:
     """The judge could not ground a single dimension in the project text (FR-020).
 

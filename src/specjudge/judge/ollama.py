@@ -23,6 +23,25 @@ from .. import errors
 JUDGE_SEED = 20260803
 JUDGE_OPTIONS = {"temperature": 0, "seed": JUDGE_SEED}
 
+# Structured outputs — a JSON schema in `format` rather than the string "json" —
+# arrived in Ollama 0.5.0. Below that the schema is rejected, so the requirement is
+# stated up front instead of surfacing as a 400 mid-run (issue #14).
+MIN_OLLAMA_VERSION = (0, 5, 0)
+
+
+def parse_version(raw: str) -> tuple[int, ...] | None:
+    """Ollama's version string as comparable integers, or None if unrecognisable.
+
+    Unrecognisable is not an error: a fork or a dev build should not be blocked
+    from running on the strength of a version string we failed to parse.
+    """
+    cleaned = raw.strip().lstrip("v").split("-")[0].split("+")[0]
+    parts = cleaned.split(".")
+    try:
+        return tuple(int(p) for p in parts[:3])
+    except ValueError:
+        return None
+
 
 class OllamaClient:
     def __init__(self, host: str = "http://localhost:11434", timeout: float = 120.0) -> None:
@@ -71,6 +90,31 @@ class OllamaClient:
                 return None
         return None
 
+    def version(self) -> str | None:
+        """Ollama's reported version (GET /api/version), or None if unavailable."""
+        try:
+            resp = httpx.get(f"{self.host}/api/version", timeout=self.timeout)
+            resp.raise_for_status()
+        except httpx.HTTPError:
+            return None
+        raw = resp.json().get("version")
+        return str(raw) if raw else None
+
+    def supports_structured_output(self) -> bool:
+        """Whether this Ollama accepts a JSON schema in `format` (issue #14).
+
+        An unreadable or unparseable version is treated as supported: refusing to
+        run because a version string was not recognised would be worse than
+        letting the request fail with the actionable error in `chat_json`.
+        """
+        raw = self.version()
+        if raw is None:
+            return True
+        parsed = parse_version(raw)
+        if parsed is None:
+            return True
+        return parsed >= MIN_OLLAMA_VERSION
+
     def ensure_available(self, required_model: str | None = None) -> list[str]:
         """Full availability check (FR-011). Returns the list of models.
 
@@ -85,13 +129,19 @@ class OllamaClient:
             raise errors.selected_model_missing(required_model)
         return models
 
-    def chat_json(self, model: str, prompt: str) -> dict:
-        """Ask the model for a JSON response (POST /api/chat, stream=false)."""
+    def chat_json(self, model: str, prompt: str, schema: dict | None = None) -> dict:
+        """Ask the model for a JSON response (POST /api/chat, stream=false).
+
+        With a `schema`, generation is constrained to it (Ollama structured
+        outputs). Without one, `format: "json"` only guarantees *some* valid JSON
+        — which is how an 8B judge came to answer with `[true]` where a fragment
+        id belonged (issue #14).
+        """
         url = f"{self.host}/api/chat"
         payload = {
             "model": model,
             "stream": False,
-            "format": "json",
+            "format": schema if schema is not None else "json",
             "options": dict(JUDGE_OPTIONS),
             "messages": [{"role": "user", "content": prompt}],
         }
@@ -101,6 +151,10 @@ class OllamaClient:
         except (httpx.ConnectError, httpx.ConnectTimeout) as exc:
             raise errors.ollama_not_running(self.host) from exc
         except httpx.HTTPError as exc:
+            if schema is not None:
+                # The likeliest cause by far: an Ollama too old to accept a schema
+                # in `format`. Saying so beats echoing a bare 400 (Principle IV).
+                raise errors.ollama_too_old_for_schema(self.host, self.version()) from exc
             raise errors.JudgeUnavailableError(
                 f"Ollama failed to evaluate with model '{model}': {exc}",
                 hint="Check that the model is installed:  ollama pull " + model,
