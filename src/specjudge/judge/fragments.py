@@ -107,10 +107,27 @@ def extract_fragments(analysis: ProjectAnalysis, limit: int) -> list[Fragment]:
 
 
 def render_catalogue(fragments: list[Fragment]) -> str:
-    """The citable list as shown to the judge."""
+    """The citable list as shown to the judge.
+
+    Ids are rendered bare, with no brackets around them. They used to be written
+    `[S:FR-001]`, and `llama3.1` cited them back with the brackets attached —
+    a valid id the validator then rejected. Offering nothing to copy is a surer
+    fix than teaching the parser to forgive it (issue #14).
+    """
     if not fragments:
         return "(no citable fragments were found in this project)"
-    return "\n".join(f"  [{f.id}] {f.text}" for f in fragments)
+    return "\n".join(f"  {f.id}  {f.text}" for f in fragments)
+
+
+def normalize_citation(cited: str) -> str:
+    """Fold the decoration a model may wrap an id in before looking it up.
+
+    Belt and braces alongside the bare rendering above: a model that decides to
+    add brackets, quotes or backticks on its own has still identified the right
+    fragment, and rejecting it over punctuation would be pedantry rather than
+    validation.
+    """
+    return cited.strip().strip("[]()<>\"'`").strip()
 
 
 def quote_matches(quote: str, fragment: Fragment) -> bool:
