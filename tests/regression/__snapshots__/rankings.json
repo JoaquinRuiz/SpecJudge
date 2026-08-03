@@ -1,0 +1,151 @@
+{
+  "all_low": {
+    "best_choice": "budget-small",
+    "fit": {
+      "balanced-mid": [
+        0,
+        3
+      ],
+      "budget-small": [
+        0,
+        0
+      ],
+      "capable-large": [
+        0,
+        6
+      ],
+      "frontier-top": [
+        0,
+        9
+      ]
+    },
+    "order": [
+      "budget-small",
+      "balanced-mid",
+      "capable-large",
+      "frontier-top"
+    ],
+    "podium": [
+      "budget-small",
+      "balanced-mid",
+      "capable-large"
+    ],
+    "ratings": {
+      "balanced-mid": "overkill",
+      "budget-small": "good",
+      "capable-large": "overkill",
+      "frontier-top": "overkill"
+    }
+  },
+  "all_medium": {
+    "best_choice": "balanced-mid",
+    "fit": {
+      "balanced-mid": [
+        0,
+        0
+      ],
+      "budget-small": [
+        3,
+        0
+      ],
+      "capable-large": [
+        0,
+        3
+      ],
+      "frontier-top": [
+        0,
+        6
+      ]
+    },
+    "order": [
+      "balanced-mid",
+      "capable-large",
+      "frontier-top",
+      "budget-small"
+    ],
+    "podium": [
+      "balanced-mid",
+      "capable-large",
+      "frontier-top"
+    ],
+    "ratings": {
+      "balanced-mid": "good",
+      "budget-small": "fair",
+      "capable-large": "overkill",
+      "frontier-top": "overkill"
+    }
+  },
+  "all_top": {
+    "best_choice": "frontier-top",
+    "fit": {
+      "balanced-mid": [
+        6,
+        0
+      ],
+      "budget-small": [
+        9,
+        0
+      ],
+      "capable-large": [
+        3,
+        0
+      ],
+      "frontier-top": [
+        0,
+        0
+      ]
+    },
+    "order": [
+      "frontier-top",
+      "capable-large",
+      "balanced-mid",
+      "budget-small"
+    ],
+    "podium": [
+      "frontier-top"
+    ],
+    "ratings": {
+      "balanced-mid": "poor",
+      "budget-small": "poor",
+      "capable-large": "fair",
+      "frontier-top": "good"
+    }
+  },
+  "mixed_high_reasoning": {
+    "best_choice": "capable-large",
+    "fit": {
+      "balanced-mid": [
+        1,
+        1
+      ],
+      "budget-small": [
+        3,
+        0
+      ],
+      "capable-large": [
+        0,
+        3
+      ],
+      "frontier-top": [
+        0,
+        6
+      ]
+    },
+    "order": [
+      "capable-large",
+      "frontier-top",
+      "balanced-mid",
+      "budget-small"
+    ],
+    "podium": [
+      "capable-large",
+      "frontier-top"
+    ],
+    "ratings": {
+      "balanced-mid": "fair",
+      "budget-small": "poor",
+      "capable-large": "good",
+      "frontier-top": "overkill"
+    }
+  }
+}
