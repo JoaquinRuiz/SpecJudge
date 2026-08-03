@@ -1,0 +1,9 @@
+category: thin
+data_state: scarce
+rationale: >
+  Tasks and spec are present and detailed, but there is no constitution. The
+  classifier must warn without refusing; the judge still has enough to rate.
+dimensions:
+  reasoning: {max: medium}
+  size: {max: medium}
+  domain_specialization: {max: medium}

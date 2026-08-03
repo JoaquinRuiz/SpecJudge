@@ -1,0 +1,8 @@
+category: thin
+data_state: scarce
+rationale: >
+  Tasks and constitution present, no specification. The tasks mention offline
+  conflict resolution, so demand is not trivial despite the missing artifact.
+dimensions:
+  reasoning: {min: medium}
+  size: {max: medium}

@@ -1,0 +1,14 @@
+category: adversarial
+data_state: sufficient
+rationale: >
+  HIDDEN DIFFICULTY: FR-004 and T005. Everything else is a tidy CRUD notes app,
+  and the document reads like one — short summary, four routine requirements,
+  seven ordinary tasks. But "both keep their work, converge on every device,
+  without a server round trip" is conflict-free replication, which is research
+  -grade next to the rest of the file.
+
+  The failure this fixture catches is the judge rating `medium` because the
+  document is well organised. Reasoning must come out high or above.
+dimensions:
+  reasoning: {min: high}
+  size: {max: high}

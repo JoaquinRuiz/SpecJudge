@@ -1,0 +1,4 @@
+category: insufficient
+data_state: insufficient
+rationale: >
+  The tasks file was never generated. The tool must refuse before the judge runs.

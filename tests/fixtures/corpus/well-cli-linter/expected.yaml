@@ -1,0 +1,10 @@
+category: well_specified
+data_state: sufficient
+rationale: >
+  A small, self-contained CLI over a fixed schema. Five tasks, no external
+  systems. This is the low end of the scale and exists to check the judge can
+  still say `low` — a judge that never rates anything low is not discriminating.
+dimensions:
+  reasoning: {max: medium}
+  size: {max: low}
+  domain_specialization: {max: low}
