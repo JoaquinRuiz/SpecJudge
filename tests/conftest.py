@@ -53,7 +53,7 @@ def project_insufficient() -> Path:
     return FIXTURES / "project-insufficient"
 
 
-_FRAGMENT_ID = re.compile(r"^\s*\[([^\]]+)\]", re.MULTILINE)
+_FRAGMENT_ID = re.compile(r"^ {2}(\S+) {2}\S", re.MULTILINE)
 
 
 def _first_fragment_id(prompt: str) -> str | None:

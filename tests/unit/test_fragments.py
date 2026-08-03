@@ -139,9 +139,40 @@ def test_empty_quote_never_matches():
 def test_catalogue_lists_every_fragment_with_its_id():
     analysis = _analysis(_artifact("tasks", "- [ ] T001 Build it\n"))
     rendered = render_catalogue(extract_fragments(analysis, LIMIT))
-    assert "[T:T001]" in rendered
+    assert "T:T001" in rendered
     assert "Build it" in rendered
+
+
+def test_catalogue_does_not_wrap_ids_in_anything_copyable():
+    """Brackets around the id were cited back verbatim by llama3.1 (issue #14)."""
+    analysis = _analysis(_artifact("tasks", "- [ ] T001 Build it\n"))
+    rendered = render_catalogue(extract_fragments(analysis, LIMIT))
+    assert "[T:T001]" not in rendered
+    assert "(T:T001)" not in rendered
 
 
 def test_catalogue_says_so_when_there_is_nothing_to_cite():
     assert "no citable fragments" in render_catalogue([])
+
+
+# ------------------------------------------------- citation normalization
+
+
+def test_normalize_strips_the_decoration_a_model_may_add():
+    from specjudge.judge.fragments import normalize_citation
+
+    for decorated in ("[T:T001]", " T:T001 ", "'T:T001'", '"T:T001"', "`T:T001`", "(T:T001)"):
+        assert normalize_citation(decorated) == "T:T001"
+
+
+def test_normalize_leaves_a_clean_id_alone():
+    from specjudge.judge.fragments import normalize_citation
+
+    assert normalize_citation("S:FR-001") == "S:FR-001"
+
+
+def test_normalize_does_not_invent_an_id_from_nothing():
+    from specjudge.judge.fragments import normalize_citation
+
+    assert normalize_citation("   ") == ""
+    assert normalize_citation("[]") == ""

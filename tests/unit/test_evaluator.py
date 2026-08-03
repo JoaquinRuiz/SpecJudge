@@ -61,12 +61,14 @@ class _FakeClient:
         self._responses = list(responses)
         self._params_b = params_b
         self.prompts: list[str] = []
+        self.schemas: list[dict | None] = []
 
     def model_params_b(self, model):  # noqa: ARG002
         return self._params_b
 
-    def chat_json(self, model, prompt):  # noqa: ARG002
+    def chat_json(self, model, prompt, schema=None):  # noqa: ARG002
         self.prompts.append(prompt)
+        self.schemas.append(schema)
         return self._responses.pop(0)
 
 
@@ -217,7 +219,7 @@ _ALL_DIMS = ["reasoning", "size", "domain_specialization"]
 def test_prompt_offers_a_citable_fragment_list():
     prompt = build_prompt(_analysis(), _rules(), compact=True)
     assert "CITABLE FRAGMENTS" in prompt
-    assert f"[{_CITED}]" in prompt
+    assert _CITED in prompt
 
 
 def test_prompt_omits_the_list_when_spans_are_not_required():
@@ -325,3 +327,60 @@ def test_evidence_warnings_are_silent_on_a_fully_grounded_profile():
     client = _FakeClient([_VALID])
     demand = estimate_demand(_analysis(), _rules(), client, "judge")
     assert evidence_warnings(demand) == []
+
+
+# ----------------------------------------------- response schema (issue #14)
+
+
+def test_the_schema_constrains_levels_to_the_answer_vocabulary():
+    from specjudge.judge.evaluator import response_schema
+
+    rules = _rules()
+    schema = response_schema(rules)
+    levels = schema["properties"]["dimensions"]["properties"]["reasoning"]["enum"]
+    assert set(levels) == set(rules.levels) | {"unsupported"}
+
+
+def test_the_schema_types_evidence_as_strings():
+    """The whole bug: an 8B answered `[true]` where a fragment id belonged."""
+    from specjudge.judge.evaluator import response_schema
+
+    evidence = response_schema(_rules())["properties"]["evidence"]
+    assert all(prop["type"] == "string" for prop in evidence["properties"].values())
+    assert set(evidence["required"]) == set(_rules().dimensions)
+
+
+def test_the_schema_drops_evidence_when_spans_are_not_required():
+    from specjudge.judge.evaluator import response_schema
+
+    rules = _rules()
+    rules.require_spans = False
+    schema = response_schema(rules)
+    assert "evidence" not in schema["properties"]
+    assert "evidence" not in schema["required"]
+
+
+def test_the_schema_is_sent_with_every_judge_call():
+    from specjudge.judge.evaluator import response_schema
+
+    client = _FakeClient([_VALID])
+    estimate_demand(_analysis(), _rules(), client, "judge")
+    assert client.schemas == [response_schema(_rules())]
+
+
+def test_a_bracketed_citation_of_a_real_fragment_is_accepted():
+    """llama3.1 copies the brackets it sees; punctuation should not fail a valid id."""
+    evidence = dict.fromkeys(_ALL_DIMS, f"[{_CITED}]")
+    client = _FakeClient([_answer(dict.fromkeys(_ALL_DIMS, "medium"), evidence)])
+    demand = estimate_demand(_analysis(), _rules(), client, "judge")
+
+    assert all(e.status is EvidenceStatus.GROUNDED for e in demand.evidence.values())
+    assert demand.evidence["reasoning"].fragment_id == _CITED
+
+
+def test_decoration_does_not_rescue_a_fabricated_id():
+    """Normalising punctuation must not become forgiving about the id itself."""
+    evidence = dict.fromkeys(_ALL_DIMS, "[S:FR-999]")
+    client = _FakeClient([_answer(dict.fromkeys(_ALL_DIMS, "medium"), evidence)])
+    with pytest.raises(JudgeUnavailableError):
+        estimate_demand(_analysis(), _rules(), client, "judge")
