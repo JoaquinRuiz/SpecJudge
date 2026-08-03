@@ -1,0 +1,14 @@
+category: adversarial
+data_state: sufficient
+rationale: >
+  HIDDEN DIFFICULTY: FR-002 and FR-003. The summary calls it "straightforward:
+  read, write, switch the pointer", and a reader skimming stops there. The
+  requirements then ask for zero downtime, dual-write consistency under
+  concurrency, reconciliation when the stores disagree, and rollback after
+  writes have landed in the new store — an online migration, not a copy.
+
+  The failure this fixture catches is the judge trusting the summary over the
+  requirements.
+dimensions:
+  reasoning: {min: high}
+  size: {min: medium}

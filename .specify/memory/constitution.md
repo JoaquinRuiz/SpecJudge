@@ -1,4 +1,37 @@
 <!--
+Sync Impact Report — Amendment 3 (2026-08-03)
+=============================================
+Version change: 3.0.0 → 3.1.0 (MINOR)
+
+Motivación: los Estándares de Calidad ya obligan a cubrir la degradación ante artefactos
+u Ollama ausentes, pero no dicen nada sobre el juicio en sí. El prompt del juez y las
+reglas de valoración son las dos piezas que deciden la recomendación, y hasta ahora
+cambiarlas era adivinar: nada distinguía una mejora de una regresión.
+
+Cambio: se añade un estándar de calidad que obliga a evaluar todo cambio en el prompt o
+en las reglas contra un corpus de proyectos con perfil esperado, midiendo por separado
+el acierto y la calidad de la abstención.
+
+Bump MINOR porque añade una obligación de contribución sustancial sin redefinir ni
+eliminar ningún principio. La evaluación que exige es local y opcional en CI por una
+limitación real —CI no dispone de un juez— y ese límite se declara en el propio estándar
+para no aparentar una garantía que no existe.
+
+Secciones modificadas:
+  - Estándares de Calidad y Contribución — un estándar nuevo
+
+Artefactos alineados con la enmienda:
+  ✅ specs/001-model-recommendation/contracts/eval-corpus.schema.md — formato del corpus
+  ✅ specs/001-model-recommendation/tasks.md — fase nueva
+  ✅ tests/regression/ y scripts/eval_judge.py — implementación de los dos niveles
+  ✅ CONTRIBUTING.md — cómo ejecutar el nivel vivo antes de tocar el prompt
+
+Nota: los principios I–V no cambian, ni el propósito ni las restricciones de alcance.
+
+Follow-up TODOs: ninguno.
+-->
+
+<!--
 Sync Impact Report — Amendment 2 (2026-07-20)
 =============================================
 Version change: 2.0.0 → 3.0.0 (MAJOR)
@@ -201,6 +234,12 @@ separación datos/código es lo que permite que la comunidad lo mantenga vivo.
   su vigencia sea verificable.
 - El comportamiento del programa ante la ausencia de artefactos o de Ollama DEBE estar cubierto de
   forma que un cambio no lo rompa silenciosamente.
+- Todo cambio en el prompt del juez o en las reglas de valoración DEBE evaluarse contra un corpus
+  de proyectos con perfil esperado, informando por separado del **acierto** y de la **calidad de la
+  abstención** (cuándo la herramienta se niega a estimar y cuándo debería haberlo hecho). La parte
+  determinista de esa evaluación DEBE ejecutarse en integración continua; la parte que exige un juez
+  real DEBE poder ejecutarse en local, y su ausencia en CI DEBE declararse en lugar de presentar la
+  suite como una garantía de calidad de juicio.
 - La justificación mostrada al usuario DEBE ser suficiente para que este entienda la recomendación
   sin leer el código.
 - Las contribuciones que añadan dependencias de pago obligatorias al núcleo se rechazan por
@@ -222,4 +261,4 @@ Las enmiendas a esta constitución requieren:
    - **PATCH**: aclaraciones y correcciones que no cambian el significado.
 3. Revisión de que los artefactos dependientes sigan alineados.
 
-**Version**: 3.0.0 | **Ratified**: 2026-07-20 | **Last Amended**: 2026-07-20
+**Version**: 3.1.0 | **Ratified**: 2026-07-20 | **Last Amended**: 2026-08-03

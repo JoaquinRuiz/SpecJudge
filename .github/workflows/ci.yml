@@ -81,6 +81,31 @@ jobs:
       - name: Validate model catalog
         run: uv run --extra dev pytest tests/contract -q
 
+  regression:
+    name: Judge regression
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      # The deterministic half of the judge regression suite: corpus
+      # classification, frozen rankings and prompt invariants. It proves a
+      # change did not break the contract.
+      #
+      # It does NOT measure whether a prompt change improved the judgement —
+      # that needs a real judge, which this runner has no way to provide. Run
+      # `scripts/eval_judge.py` locally for that. A green job here is not a
+      # statement about judgement quality.
+      - name: Run the deterministic regression suite
+        run: uv run --extra dev pytest tests/regression -q
+
   build:
     name: Build package
     runs-on: ubuntu-latest

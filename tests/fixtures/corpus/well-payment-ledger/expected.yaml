@@ -1,0 +1,11 @@
+category: well_specified
+data_state: sufficient
+rationale: >
+  Double-entry invariants, idempotency under concurrent retries, point-in-time
+  reconstruction and FX rounding that must not create value. The difficulty is
+  stated openly, so this is the easy end of "hard": a judge that reads the
+  requirements at all should rate reasoning high or above.
+dimensions:
+  reasoning: {min: high}
+  size: {min: medium}
+  domain_specialization: {min: medium}

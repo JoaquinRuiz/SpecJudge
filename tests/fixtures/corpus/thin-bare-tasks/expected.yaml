@@ -1,0 +1,11 @@
+category: thin
+data_state: scarce
+rationale: >
+  All three artifacts exist but only two tasks carry a description, below the
+  min_detailed_tasks threshold. The spec is one sentence. There is genuinely
+  little to judge here, so abstaining on domain specialization is the honest
+  answer rather than a failure.
+dimensions:
+  reasoning: {max: medium}
+  size: {max: low}
+  domain_specialization: abstain

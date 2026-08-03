@@ -1,0 +1,4 @@
+category: insufficient
+data_state: insufficient
+rationale: >
+  The tasks file is prose with no checklist items, so task_count is zero. A plan written as a paragraph is not a task list, and guessing from it would be inventing.

@@ -1,0 +1,14 @@
+category: adversarial
+data_state: sufficient
+rationale: >
+  CONTRADICTION: FR-002 requires all processing on-device because no personal
+  data may leave it; FR-003 and FR-004 require server-side cross-device rollup
+  and server-sent email. The spec says outright that these were not reconciled.
+
+  There is no correct demand level for a project that cannot be built as
+  written. Abstaining on reasoning is the right answer; a confident level is
+  the failure, because it means the judge did not notice the contradiction and
+  is estimating an impossible project.
+dimensions:
+  reasoning: abstain
+  size: {max: medium}

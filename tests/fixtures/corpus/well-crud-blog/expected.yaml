@@ -1,0 +1,10 @@
+category: well_specified
+data_state: sufficient
+rationale: >
+  Ordinary CRUD with an explicit out-of-scope section. Familiar domain, no
+  concurrency and no distributed state, so a mid-tier model should suffice.
+  A judge rating this `top` is over-estimating a blog.
+dimensions:
+  reasoning: {max: medium}
+  size: {max: medium}
+  domain_specialization: {max: medium}

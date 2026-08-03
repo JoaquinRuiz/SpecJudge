@@ -1,0 +1,4 @@
+category: insufficient
+data_state: insufficient
+rationale: >
+  The tasks file exists but is empty. Same refusal as a missing file.
