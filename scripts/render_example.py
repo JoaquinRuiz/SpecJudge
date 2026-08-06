@@ -26,8 +26,8 @@ from contextlib import redirect_stdout
 from dataclasses import replace
 from pathlib import Path
 
+from specjudge.api import Comparison, DataState, DemandProfile, Evaluation, Rating
 from specjudge.catalog import load_catalog
-from specjudge.domain import Comparison, DataState, DemandProfile, Evaluation, Rating
 from specjudge.rating import evaluate_all, load_rules
 from specjudge.recommend import build_comparison
 from specjudge.render.table import render_comparison
