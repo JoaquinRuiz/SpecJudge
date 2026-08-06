@@ -91,3 +91,15 @@ def test_every_judged_project_offers_something_to_cite(case):
     analysis = read_project(case.path, rules)
     fragments = extract_fragments(analysis, artifact_limit(rules, compact=True))
     assert fragments, f"{case.name} offers no citable fragment"
+
+
+@pytest.mark.parametrize("case", [c for c in CASES if c.category == "thin"], ids=lambda c: c.name)
+def test_thin_corpus_projects_get_actionable_gaps(case):
+    """FR-023: "thin on detail" is a diagnosis; these must name a prescription."""
+    from specjudge.gaps import find_gaps
+
+    rules = load_rules()
+    gaps = find_gaps(read_project(case.path, rules), rules)
+    assert gaps, f"{case.name} is thin but nothing concrete was reported"
+    for gap in gaps:
+        assert gap.fix, f"{case.name}: gap '{gap.code}' says what is wrong but not what to do"
