@@ -9,6 +9,55 @@ Entries before 0.1.4 were reconstructed from the git tags and the GitHub release
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-06
+
+You can now build on SpecJudge instead of only running it: the machine-readable output
+has a versioned schema you can fetch without touching Python, and there is a small
+documented Python entry point with an explicit list of what semver covers.
+
+Nothing here is breaking. Upgrading from 0.2.0 needs no action.
+
+### Added
+
+- A versioned JSON output contract. Every `--json` payload now carries
+  `schema_version` (currently `1.0`), independent of the package version ([#2], [#17]).
+- A formal JSON Schema for that payload, shipped inside the package and printable with
+  **`specjudge --print-schema`** — so a TypeScript, Go or shell consumer can target the
+  contract without cloning the repo or reading Python ([#2], [#17]).
+- `specjudge.api`, a documented public Python surface: `analyze()` runs the same
+  pipeline as the CLI and returns a `Comparison`, `to_dict()` produces the same payload
+  as `--json`, and the typed errors carry the CLI's exit codes so a caller can branch on
+  the failure without parsing messages ([#2], [#17]).
+- [`docs/api.md`](docs/api.md), listing exactly what semantic versioning covers — and
+  what it deliberately does not ([#2], [#17]).
+
+### Changed
+
+- The README states the **Ollama 0.5.0+** requirement introduced in 0.2.0, which had
+  only ever appeared in the changelog and in the error message, and documents the cited
+  evidence the judge now has to provide.
+- `data_state` semantics are spelled out in the README: an ungrounded dimension degrades
+  a run to `scarce` even when all three artifacts are present.
+
+### Fixed
+
+- The HTML report advertised *Del vibe coding al Spec-Driven Development* as forthcoming,
+  with no link, when it had been on sale since July, and omitted *Explora la Inteligencia
+  Artificial* altogether. Both shipped that way in 0.1.4 and 0.2.0. The cause was the same
+  list living in two places with nothing tying them together; a contract test now compares
+  them and rejects a book that is both linked and marked as forthcoming.
+
+### Compatibility
+
+No breaking changes. `schema_version` is a new field, and adding one is additive by the
+contract's own rules — a consumer written against the 0.2.0 payload keeps working
+unchanged, it simply gains a version to pin against.
+
+The public Python surface is `specjudge.api` and nothing else. Anything imported from
+another `specjudge.*` module is internal and may change in any release, including patch
+ones; if you were reaching into `specjudge.cli` for the serialiser, it now lives in
+`specjudge.serialize` and is re-exported as `api.to_dict`.
+
 ## [0.2.0] - 2026-08-03
 
 The judge now has to show its work. Every dimension it rates must cite the fragment of
@@ -190,7 +239,8 @@ community-maintained catalog by how well each model **fits** the job.
 - Explicit degradation with distinct exit codes when project data is insufficient,
   the judge is unavailable, or the catalog is empty.
 
-[Unreleased]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.1.4...v0.2.0
 [0.1.4]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.1.2...v0.1.3
@@ -206,3 +256,5 @@ community-maintained catalog by how well each model **fits** the job.
 [#13]: https://github.com/JoaquinRuiz/SpecJudge/pull/13
 [#14]: https://github.com/JoaquinRuiz/SpecJudge/issues/14
 [#15]: https://github.com/JoaquinRuiz/SpecJudge/pull/15
+[#17]: https://github.com/JoaquinRuiz/SpecJudge/pull/17
+[#2]: https://github.com/JoaquinRuiz/SpecJudge/issues/2
