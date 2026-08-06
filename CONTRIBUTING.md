@@ -84,6 +84,21 @@ uv run pytest tests/regression/test_rules_golden.py --snapshot-update
 Adding a corpus case is a welcome contribution and needs no Python: a project
 directory plus an `expected.yaml` with a `rationale` explaining the label.
 
+## Changing the JSON output or the public API
+
+Both are contracts other people build on, so changes carry a version, not just a diff.
+
+- The `--json` payload is described by `src/specjudge/_schema/output.schema.json`.
+  **Adding** a field bumps `SCHEMA_VERSION` MINOR; **removing** one, changing its type,
+  or changing what an existing value means bumps MAJOR. Contract tests validate real
+  runs against the schema, including the degraded shapes.
+- `specjudge.api.__all__` is the public Python surface, pinned against a literal list in
+  `tests/contract/test_public_api.py` and documented in `docs/api.md`. Adding a symbol
+  means committing to it — the test fails until the docs list it too.
+
+Anything not exported from `specjudge.api` is internal. If you need it from outside,
+open an issue rather than importing around it.
+
 ## Before opening a PR
 
 ```bash

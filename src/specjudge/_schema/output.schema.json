@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/JoaquinRuiz/SpecJudge/main/src/specjudge/_schema/output.schema.json",
+  "title": "SpecJudge comparison output",
+  "description": "Payload emitted by `specjudge --json` and by specjudge.api.to_dict(). Version 1.0. Adding a field is a MINOR bump; removing one, changing its type, or changing what an existing value means is MAJOR. Obtain this file without cloning the repo: `specjudge --print-schema`.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "data_state",
+    "judge_model",
+    "best_choice",
+    "podium",
+    "demand",
+    "warnings",
+    "evaluations"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "description": "Version of this payload contract, independent of the specjudge package version.",
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+$"
+    },
+    "data_state": {
+      "description": "How much the project told us. `scarce` also covers a judge that could not ground every dimension.",
+      "type": "string",
+      "enum": ["sufficient", "scarce", "insufficient"]
+    },
+    "judge_model": {
+      "description": "Local model used as the judge.",
+      "type": ["string", "null"]
+    },
+    "best_choice": {
+      "description": "model_id of the best-fitting model, or null when no model in the catalog is capable enough.",
+      "type": ["string", "null"]
+    },
+    "podium": {
+      "description": "Up to three model_ids by fit, gold first. Shorter when fewer models qualify, empty when none does.",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "demand": {
+      "description": "The judge's assessment of how demanding the project is, and the evidence behind it.",
+      "oneOf": [{ "$ref": "#/$defs/demand" }, { "type": "null" }]
+    },
+    "warnings": {
+      "description": "Human-readable warnings. Wording is not covered by the schema version.",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "evaluations": {
+      "description": "One entry per catalog model, ordered best fit first.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/evaluation" }
+    }
+  },
+  "$defs": {
+    "demand": {
+      "type": "object",
+      "required": ["dimensions", "justification", "coverage", "evidence"],
+      "additionalProperties": false,
+      "properties": {
+        "dimensions": {
+          "description": "Dimension name to demand level, or the literal `unsupported`. Dimension names and level vocabulary both come from data/rating-rules.yaml, so neither is enumerated here.",
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "justification": {
+          "description": "The judge's own summary. Free text.",
+          "type": "string"
+        },
+        "coverage": {
+          "description": "Human-readable grounding ratio. Free text; parse `evidence` instead.",
+          "type": "string"
+        },
+        "evidence": {
+          "description": "Dimension name to the citation backing it.",
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/evidence" }
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["status", "fragment_id", "quote"],
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "description": "grounded: the cited fragment exists and any quote matched. quote_unverified: fragment exists, quoted wording did not match. unsupported: the judge found nothing to cite.",
+          "type": "string",
+          "enum": ["grounded", "quote_unverified", "unsupported"]
+        },
+        "fragment_id": {
+          "description": "Id of the cited project fragment. Null when the dimension is unsupported.",
+          "type": ["string", "null"]
+        },
+        "quote": {
+          "description": "Optional literal quote the judge offered alongside the id.",
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "evaluation": {
+      "type": "object",
+      "required": [
+        "model_id",
+        "model_name",
+        "rating",
+        "justification",
+        "price",
+        "price_stale"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "model_id": { "type": "string" },
+        "model_name": { "type": "string" },
+        "rating": {
+          "description": "Closed vocabulary fixed by the project constitution: changing it requires a constitutional amendment, not just a release.",
+          "type": "string",
+          "enum": ["poor", "fair", "good", "overkill"]
+        },
+        "justification": {
+          "description": "Why this model got this rating. Free text.",
+          "type": "string"
+        },
+        "price": { "$ref": "#/$defs/price" },
+        "price_stale": {
+          "description": "True when the entry carries no pricing_date, so freshness cannot be verified. NOT a statement that the price is old.",
+          "type": "boolean"
+        }
+      }
+    },
+    "price": {
+      "type": "object",
+      "required": [
+        "input_per_million",
+        "output_per_million",
+        "currency",
+        "pricing_date"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "input_per_million": { "type": "number", "minimum": 0 },
+        "output_per_million": { "type": "number", "minimum": 0 },
+        "currency": { "type": "string" },
+        "pricing_date": {
+          "description": "ISO date the price was verified, or null when the catalog entry carries none.",
+          "type": ["string", "null"]
+        }
+      }
+    }
+  }
+}

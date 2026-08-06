@@ -201,6 +201,7 @@ specjudge [PROJECT_PATH] [OPTIONS]
 | `--catalog <path>` | Use an alternative model catalog |
 | `--json` | Emit the result as JSON (for scripting) |
 | `--no-color` | Disable color/highlighting |
+| `--print-schema` | Print the JSON Schema of the `--json` output and exit |
 
 **Data states** — SpecJudge is explicit about how much it can be trusted:
 
@@ -223,6 +224,29 @@ If your judge cannot manage cited evidence, set `evidence.require_spans: false` 
 | `3` | Judge unavailable (Ollama not running or too old, no local models, unusable answer) |
 | `4` | Model catalog missing or empty |
 </details>
+
+## Using it from your own code
+
+`--json` emits a payload with its own versioned schema, which you can fetch without
+cloning anything:
+
+```bash
+specjudge . --judge llama3.1:8b --json      # the result
+specjudge --print-schema                     # the contract it conforms to
+```
+
+That covers any language. From Python there is a small documented entry point:
+
+```python
+from specjudge import api
+
+comparison = api.analyze("path/to/project", judge_model="llama3.1:8b")
+print(comparison.best_choice)
+```
+
+Everything exported from `specjudge.api` is covered by semantic versioning; everything
+else under `specjudge.*` is internal and changes without notice. The full surface, the
+schema rules and what is deliberately *not* promised are in [`docs/api.md`](./docs/api.md).
 
 ## Contributing
 
