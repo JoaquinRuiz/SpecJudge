@@ -13,7 +13,15 @@ SITE_URL = "https://jokiruiz.com"
 YOUTUBE = "youtube.com/@jokioki"
 YOUTUBE_URL = "https://youtube.com/@jokioki"
 
+# Keep in step with the book list in README.md — a contract test compares the two.
+# They drifted apart once, and the HTML report went on advertising a published book
+# as forthcoming across two releases.
 BOOKS: list[dict[str, str]] = [
+    {
+        "title": "Del vibe coding al Spec-Driven Development",
+        "url": "https://amzn.eu/d/02csLpKC",
+        "note": "",
+    },
     {
         "title": "El motor de la Inteligencia Artificial",
         "url": "https://amzn.eu/d/083CTN3U",
@@ -25,9 +33,9 @@ BOOKS: list[dict[str, str]] = [
         "note": "",
     },
     {
-        "title": "Del vibe coding al Spec-Driven Development",
-        "url": "",
-        "note": "próximamente",
+        "title": "Explora la Inteligencia Artificial",
+        "url": "https://amzn.eu/d/dSwYhue",
+        "note": "",
     },
 ]
 
