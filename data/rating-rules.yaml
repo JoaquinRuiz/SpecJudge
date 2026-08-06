@@ -17,6 +17,10 @@ dimensions:
 scarce_thresholds:
   # Minimum number of tasks with a description to NOT be considered "thin on detail".
   min_detailed_tasks: 3
+  # Below this many characters, the specification is called out as too short to
+  # judge on (FR-023). A one-paragraph spec produces a confident-looking ranking
+  # built on almost nothing, which is the failure this warns about.
+  min_spec_chars: 400
 
 # When to warn that the catalog's prices are getting old (FR-019).
 catalog_freshness:
