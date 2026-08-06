@@ -75,7 +75,9 @@ nothing has been spent yet. And it grounds the answer in *your* project, not a g
 ## Quick start
 
 **Requirements:** Python 3.11+, [uv](https://docs.astral.sh/uv/), and
-[Ollama](https://ollama.com) with at least one local model.
+[Ollama 0.5.0+](https://ollama.com) with at least one local model. The version matters:
+asking the judge for cited evidence needs structured outputs, added in 0.5.0. On an older
+Ollama the run stops with an error saying so — and how to proceed without citations.
 
 ```bash
 ollama pull llama3.1:8b            # a judge to evaluate your project
@@ -143,6 +145,25 @@ The judge estimates how demanding your project is across a few dimensions. Decla
 `rating-rules.yaml` cross that demand against each model's declared capability. The best **fit**
 wins — no black box, and every verdict comes with a reason you can read.
 
+And the reason has to be more than well written. For each dimension the judge must **cite the
+fragment of your spec** that supports its rating, and SpecJudge checks that fragment really exists
+in the text it was given:
+
+```
+Evidence: 3 of 3 dimensions grounded in cited evidence
+   reasoning: medium — cites S:FR-004
+   size: medium — cites T:T009
+   domain_specialization: low — cites S:FR-001
+```
+
+A judge that invents a citation has its whole assessment rejected, and one that cannot ground a
+dimension answers `unsupported` rather than guessing — that dimension then leaves the calculation
+instead of quietly counting as easy work.
+
+This checks **grounding, not relevance**: a judge can cite something that exists but doesn't really
+support the level, and no automatic check catches that. It is still a great deal more than a
+paragraph that sounds convincing.
+
 ## Reading the output
 
 Every model gets a rating on a fixed scale:
@@ -183,9 +204,15 @@ specjudge [PROJECT_PATH] [OPTIONS]
 
 **Data states** — SpecJudge is explicit about how much it can be trusted:
 
-- **Sufficient** — constitution, spec and tasks present: reliable recommendation.
-- **Scarce** — artifacts missing or thin on detail: recommendation issued, with a warning.
-- **Insufficient** — no tasks to evaluate: no recommendation at all.
+- **Sufficient** — constitution, spec and tasks present, and every dimension grounded in cited
+  evidence: reliable recommendation.
+- **Scarce** — artifacts missing or thin on detail, **or** the judge could not ground some
+  dimension: recommendation issued, with a warning naming what is weak.
+- **Insufficient** — no tasks to evaluate, or nothing the judge could ground at all: no
+  recommendation.
+
+If your judge cannot manage cited evidence, set `evidence.require_spans: false` in
+`data/rating-rules.yaml` to rate without it — you lose the grounding check in exchange.
 
 **Exit codes** — degradation is distinguishable programmatically:
 
@@ -193,7 +220,7 @@ specjudge [PROJECT_PATH] [OPTIONS]
 |------|---------|
 | `0` | Success (includes *scarce* and "no model is sufficient") |
 | `2` | Insufficient project information — no recommendation |
-| `3` | Judge unavailable (Ollama not running, no local models, unusable answer) |
+| `3` | Judge unavailable (Ollama not running or too old, no local models, unusable answer) |
 | `4` | Model catalog missing or empty |
 </details>
 
@@ -231,6 +258,7 @@ so a mistake can't slip through unnoticed.
 | 🟢 No code | Update a price that has changed | `data/models.yaml` |
 | 🟢 No code | Add a model that's missing | `data/models.yaml` |
 | 🟢 No code | Fix a capability rating you disagree with | `data/models.yaml` |
+| 🟢 No code | Add a project to the judge evaluation corpus | `tests/fixtures/corpus/` |
 | 🟡 No code | Tune the rating rules or thresholds | `data/rating-rules.yaml` |
 | 🟡 Light | Improve the judge prompt for small models | `src/specjudge/judge/evaluator.py` |
 | 🔴 Code | Support another local runtime besides Ollama | `src/specjudge/judge/` |
