@@ -12,6 +12,7 @@ from rich.text import Text
 
 from ..about import TERMINAL_CREDIT
 from ..domain import Comparison, Evaluation, EvidenceStatus, Rating
+from ..gaps import Gap
 
 _MEDAL = {"gold": ("🥇", "bold yellow"), "silver": ("🥈", "bold white"), "bronze": ("🥉", "bold")}
 
@@ -34,7 +35,19 @@ def _pricing_date_str(e: Evaluation) -> str:
     return e.price.pricing_date if e.price.pricing_date else "no date"
 
 
-def render_comparison(comparison: Comparison, *, no_color: bool = False) -> None:
+def render_comparison(
+    comparison: Comparison,
+    *,
+    no_color: bool = False,
+    gaps: list[Gap] | None = None,
+) -> None:
+    """Render the comparison, and what would make it more trustworthy (FR-023).
+
+    Output order is deliberate. Warnings used to print above the table and lose:
+    one line of caveat against a ranked table is not a fair fight, and the table
+    is what people act on. The gaps now print *last*, because that is where
+    reading actually ends.
+    """
     console = Console(no_color=no_color, highlight=False)
 
     # Every warning is printed, whatever the data state. Gating this on "scarce"
@@ -87,9 +100,32 @@ def render_comparison(comparison: Comparison, *, no_color: bool = False) -> None
                 console.print(Text(f"⚠  {w}", style=None if no_color else "yellow"))
 
     _print_evidence(console, comparison, no_color=no_color)
+    _print_gaps(console, gaps, no_color=no_color)
 
     console.print()
     console.print(Text(TERMINAL_CREDIT, style=None if no_color else "dim"))
+
+
+def _print_gaps(console: Console, gaps: list[Gap] | None, *, no_color: bool) -> None:
+    """What to go and write, printed after the podium (FR-023).
+
+    Last on purpose. A caveat above a ranked table competes with the exact thing
+    the reader came for and loses every time; a reader who gets to the end of the
+    output gets this instead.
+    """
+    if not gaps:
+        return
+
+    console.print()
+    console.print(
+        Text(
+            "This ranking rests on a thin definition. Before acting on it:",
+            style=None if no_color else "bold yellow",
+        )
+    )
+    for gap in gaps:
+        console.print(Text(f"   • {gap.what}", style=None if no_color else "yellow"))
+        console.print(Text(f"     → {gap.fix}", style=None if no_color else "dim"))
 
 
 def _print_evidence(console: Console, comparison: Comparison, *, no_color: bool) -> None:

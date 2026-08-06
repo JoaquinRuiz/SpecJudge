@@ -113,3 +113,68 @@ def test_table_shows_the_evidence_coverage(project_sufficient, mock_ollama, test
     assert "Evidence:" in result.output
     assert "dimensions grounded" in result.output
     assert "cites" in result.output
+
+
+def _thin_project(tmp_path):
+    """A project with tasks but a one-line spec: the middle case issue #11 is about."""
+    feature = tmp_path / "specs" / "001-f"
+    feature.mkdir(parents=True)
+    (feature / "spec.md").write_text("# Spec: Dashboard\n\n## Summary\nShow some charts.\n")
+    (feature / "tasks.md").write_text(
+        "# Tasks\n- [ ] T001 Build the chart component\n- [ ] T002 Wire the data source\n"
+    )
+    memory = tmp_path / ".specify" / "memory"
+    memory.mkdir(parents=True)
+    (memory / "constitution.md").write_text("# Constitution\n\n## I. Fast\nUnder a second.\n")
+    return tmp_path
+
+
+def test_a_thin_project_says_what_is_missing_after_the_table(tmp_path, mock_ollama, test_catalog):
+    """FR-023: the caveat must land where reading ends, not above the podium.
+
+    The whole point of the issue: one line above a ranked table loses to the table.
+    """
+    project = _thin_project(tmp_path)
+    with mock_ollama(models=["llama3.1:8b"]):
+        result = runner.invoke(
+            app,
+            [str(project), "--judge", "llama3.1:8b", "--no-color", "--catalog", str(test_catalog)],
+        )
+    assert result.exit_code == 0, result.output
+    out = result.output
+
+    assert "This ranking rests on a thin definition" in out
+    # Named concretely, and saying what it searched for.
+    assert "FR-NNN" in out
+    assert "SC-NNN" in out
+    # And after the table, not before it.
+    assert out.index("Model comparison") < out.index("This ranking rests on")
+    assert out.index("🥇 Gold:") < out.index("This ranking rests on")
+
+
+def test_every_gap_is_followed_by_what_to_write(tmp_path, mock_ollama, test_catalog):
+    project = _thin_project(tmp_path)
+    with mock_ollama(models=["llama3.1:8b"]):
+        result = runner.invoke(
+            app,
+            [str(project), "--judge", "llama3.1:8b", "--no-color", "--catalog", str(test_catalog)],
+        )
+    assert "→" in result.output, "a gap without a fix is just a complaint"
+
+
+def test_a_well_defined_project_gets_no_gap_block(project_sufficient, mock_ollama, test_catalog):
+    """Firing on a healthy project would train people to skip the block entirely."""
+    with mock_ollama(models=["llama3.1:8b"]):
+        result = runner.invoke(
+            app,
+            [
+                str(project_sufficient),
+                "--judge",
+                "llama3.1:8b",
+                "--no-color",
+                "--catalog",
+                str(test_catalog),
+            ],
+        )
+    assert result.exit_code == 0, result.output
+    assert "This ranking rests on" not in result.output

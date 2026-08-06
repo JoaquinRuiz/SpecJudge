@@ -89,6 +89,14 @@
     color: var(--muted); font-size: .8rem;
   }
   footer .note { margin: 0 0 .8rem; }
+  .gaps { margin: 2rem 0 0; padding: 1rem 1.2rem; border-left: 4px solid #d19a00;
+          background: rgba(209,154,0,.08); border-radius: 4px; }
+  .gaps h2 { margin: 0 0 .3rem; font-size: 1rem; }
+  .gaps p { margin: 0 0 .6rem; opacity: .85; }
+  .gaps ul { margin: 0; padding-left: 1.1rem; }
+  .gaps li { margin-bottom: .5rem; }
+  .gaps .fix { opacity: .75; }
+
   footer a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
   footer a:hover { color: var(--fg); }
   .about .by { margin-bottom: .25rem; }
@@ -170,6 +178,16 @@
   <p>Ranked by how well each model fits this project's complexity — neither under-capable nor more powerful than needed. Price is shown for reference but does not decide the ranking.</p>
   {% else %}
   <p class="warn">No model in the catalog is capable enough for this project in every dimension.</p>
+  {% endif %}
+
+  {% if gaps %}
+  <section class="gaps">
+    <h2>This ranking rests on a thin definition</h2>
+    <p>Before acting on it:</p>
+    <ul>
+      {% for g in gaps %}<li><strong>{{ g.what }}</strong><br><span class="fix">&rarr; {{ g.fix }}</span></li>{% endfor %}
+    </ul>
+  </section>
   {% endif %}
 
   <footer>

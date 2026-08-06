@@ -15,6 +15,7 @@ from jinja2 import Environment, select_autoescape
 
 from .. import about
 from ..domain import Comparison
+from ..gaps import Gap
 
 
 def _template_source() -> str:
@@ -36,7 +37,7 @@ def _families(comparison: Comparison) -> list[tuple[str, int]]:
     return sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))
 
 
-def render_html(comparison: Comparison) -> str:
+def render_html(comparison: Comparison, gaps: list[Gap] | None = None) -> str:
     env = Environment(autoescape=select_autoescape(["html", "xml"]))
     template = env.from_string(_template_source())
     return template.render(
@@ -50,11 +51,14 @@ def render_html(comparison: Comparison) -> str:
         judge_model=comparison.judge_model,
         data_state=comparison.data_state.value,
         warnings=comparison.warnings,
+        gaps=gaps or [],
     )
 
 
-def write_html(comparison: Comparison, path: Path | None = None) -> Path:
-    html = render_html(comparison)
+def write_html(
+    comparison: Comparison, path: Path | None = None, gaps: list[Gap] | None = None
+) -> Path:
+    html = render_html(comparison, gaps)
     if path is None:
         fd, name = tempfile.mkstemp(suffix=".html", prefix="specjudge-")
         path = Path(name)
@@ -65,9 +69,11 @@ def write_html(comparison: Comparison, path: Path | None = None) -> Path:
     return path
 
 
-def open_in_browser(comparison: Comparison, path: Path | None = None) -> Path:
+def open_in_browser(
+    comparison: Comparison, path: Path | None = None, gaps: list[Gap] | None = None
+) -> Path:
     """Write the HTML and try to open it. Headless-safe (just returns the path)."""
-    out = write_html(comparison, path)
+    out = write_html(comparison, path, gaps)
     try:
         webbrowser.open(out.as_uri())
     except Exception:

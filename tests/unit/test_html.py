@@ -125,3 +125,34 @@ def test_filtering_script_is_inline_not_external():
     html = render_html(_mixed_comp())
     assert "<script>" in html
     assert not re.search(r"<script[^>]+\bsrc\s*=", html, re.I)
+
+
+def test_html_shows_the_gaps_after_the_table(tmp_path):
+    """The report had the same problem as the terminal: caveat on top, table below."""
+    from specjudge.gaps import Gap
+    from specjudge.render.html import render_html
+
+    gaps = [Gap(code="no_spec", what="no specification found", fix="write one")]
+    html = render_html(_comp(), gaps)
+
+    assert "This ranking rests on a thin definition" in html
+    assert "no specification found" in html
+    assert "write one" in html
+    assert html.index("<table") < html.index("This ranking rests on")
+
+
+def test_html_omits_the_block_when_there_is_nothing_to_report():
+    from specjudge.render.html import render_html
+
+    assert "This ranking rests on" not in render_html(_comp())
+
+
+def test_html_escapes_gap_text():
+    """Gap text is derived from user files; it must not become markup."""
+    from specjudge.gaps import Gap
+    from specjudge.render.html import render_html
+
+    gaps = [Gap(code="x", what="<script>alert(1)</script>", fix="fix <b>it</b>")]
+    html = render_html(_comp(), gaps)
+    assert "<script>alert(1)</script>" not in html
+    assert "&lt;script&gt;" in html

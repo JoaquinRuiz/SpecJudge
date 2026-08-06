@@ -19,6 +19,7 @@ from .artifacts import read_project
 from .catalog import check_freshness, load_catalog
 from .config import DEFAULT_HOST, load_config, save_config
 from .domain import DataState, JudgePreference, UserConfig
+from .gaps import find_gaps
 from .judge.evaluator import estimate_demand, evidence_warnings
 from .judge.ollama import OllamaClient
 from .rating import assert_dimensions_match, evaluate_all, load_rules
@@ -196,13 +197,19 @@ def _run(
     )
 
     # 5. Output.
+    # Gaps are a presentation concern for a thin project, so they are computed here
+    # and passed to the renderers rather than added to Comparison: the JSON contract
+    # is frozen at 1.0 (FR-022) and this issue is about how the caveat lands, not
+    # about what the payload carries.
+    gaps = find_gaps(analysis, rules) if data_state == DataState.SCARCE else []
+
     if as_json:
         typer.echo(json.dumps(comparison_to_dict(comparison), ensure_ascii=False, indent=2))
     else:
-        render_comparison(comparison, no_color=no_color)
+        render_comparison(comparison, no_color=no_color, gaps=gaps)
 
     if open_browser:
-        out = open_in_browser(comparison)
+        out = open_in_browser(comparison, gaps=gaps)
         if not as_json:
             typer.echo(f"\nHTML matrix: {out}")
 
