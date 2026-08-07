@@ -9,6 +9,108 @@ Entries before 0.1.4 were reconstructed from the git tags and the GitHub release
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-07
+
+A spec is no longer the price of entry. SpecJudge reads whatever written context a
+repository already has — `AGENTS.md`, `CLAUDE.md`, editor rules, architecture decision
+records, and spec-kit's `plan.md` — so a project that never adopted Spec-Driven
+Development gets an answer instead of exit code 2.
+
+The reason this is safe to do is [#1], shipped in 0.2.0: every rated dimension must cite
+a fragment that exists in the input, and a dimension that cannot be grounded drops out of
+the calculation. The source stops mattering; only what is citable does. Without that,
+mixing formats would have needed per-format trust rules — deciding in advance how much to
+believe a `.cursorrules` file versus a spec — which is unmaintainable across formats that
+each evolve separately.
+
+### Added
+
+- **Context files are read wherever they are** ([#16], [#21], [#22]):
+
+  | Source | Where it looks |
+  |---|---|
+  | spec-kit artifacts | `constitution.md`, `spec.md`, `plan.md`, `tasks.md` |
+  | agent-context files | `AGENTS.md`, `CLAUDE.md`, including nested ones in a monorepo |
+  | editor rules | `.cursorrules`, `.github/copilot-instructions.md` |
+  | decision records | `docs/adr/`, `docs/decisions/`, `adr/` |
+
+  They are read *together*, never one instead of another: the artifacts describe the work
+  about to be done, the rest describes how demanding the codebase is to work in at all.
+  `plan.md` had been sitting beside the spec and the tasks all along, unread.
+
+- **A repository with no spec now gets a floor**, not a refusal ([#16], [#21]). When
+  nothing describes the work, the run is `scarce` and says out loud that the answer is a
+  floor for the codebase rather than a recommendation for a piece of work, and the gap
+  block asks for the one thing that would change that.
+
+- **`sources_read` and `environment_only` in the JSON payload**, schema **1.1** ([#16],
+  [#21]). Both additive, so a 1.0 consumer is unaffected. `sources_read` lists the kinds
+  that contributed, deduplicated; `environment_only` is the flag worth branching on,
+  because it marks the run that answers a different question than usual.
+
+- **`sources.max_context_files`** in `data/rating-rules.yaml` ([#16], [#22]).
+
+### Changed
+
+- **Context sources share one prompt budget** instead of each getting its own cap
+  ([#16], [#22]). Twelve caps of 8000 characters is a 96k-character prompt, which is not a
+  cap. Sharing is by water-filling, so a 200-character `.cursorrules` costs 200 characters
+  and the room it does not need goes to a long root `AGENTS.md`. Work artifacts keep their
+  own cap. Truncation now lands on a line boundary rather than mid-clause.
+
+- **The files read are named in the output** — `Read: 3× AGENTS.md, ADR` in the terminal
+  and in the HTML report ([#16], [#21], [#22]). A thin answer should be traceable to a
+  thin input rather than looking like a confident one.
+
+- **Discovery is bounded and says so.** Dependency and build directories are pruned, depth
+  is limited, at most 12 context files are read with reserved room for both agent-context
+  files and ADRs — so a monorepo's 88 `AGENTS.md` cannot bury its decisions — and anything
+  left out is reported rather than silently dropped ([#16], [#22]).
+
+- **Context files that announce a tool generated them are skipped**, with a warning
+  ([#16], [#22]). Generated context largely restates what the code already shows, and it
+  would take its share of the budget from the hand-written file next to it. Detection is
+  limited to an explicit marker; guessing from similarity to the README would infer intent
+  from style, and the cost of a false positive is discarding a repository's only context.
+
+- `docs/` is **not** read wholesale — only decision records, by convention. A user guide is
+  length with little bearing on how demanding the work is, and every low-signal character
+  is one the judge can cite instead of something that matters ([#16], [#22]).
+
+### Fixed
+
+- **Fragment prefixes were assigned per source kind**, so several files of one kind would
+  have shared a prefix ([#16], [#22]). Latent while a project had one file of each; with
+  nested discovery it would have made one file's citable fragments disappear into
+  another's, and the judge is then either rejected for citing a fragment it was shown or
+  validated against text it never saw. Prefixes are now per file, and uniqueness is
+  enforced rather than assumed.
+
+### Measured
+
+`scripts/eval_judge.py --judge devstral-small-2` over the corpus, grown from 12 cases to
+16: **28/28 dimensions in band**, 0 steps of ordinal distance, over-abstention 1. No
+existing case regressed.
+
+One regression was caught by that harness during development and fixed before merge:
+labelling every source with its path moved `thin-no-constitution` from correct to
+over-abstaining, on a project whose input had not changed at all. Prompt text is an input.
+Labels now disambiguate only when a kind has more than one file.
+
+Over-confidence rose from 1 to 4: the three environment-only cases answer `size` rather
+than abstaining when nothing in the input describes an amount of work. That is a real
+prompt-calibration gap, left visible in the corpus rather than labelled away.
+
+### Compatibility
+
+No action needed to keep current behaviour: a project with `.specify/` artifacts is read
+exactly as before, and the two new payload fields are additive.
+
+Worth knowing if you run SpecJudge on a large repository: it now reads context files
+outside `.specify/`, so a run in a monorepo may pick up per-package `AGENTS.md` files it
+previously ignored. Set `sources.max_context_files` in `data/rating-rules.yaml` to bound
+that.
+
 ## [0.3.1] - 2026-08-07
 
 A correctness fix that had been quietly degrading every cited assessment since 0.2.0, and a
@@ -293,7 +395,8 @@ community-maintained catalog by how well each model **fits** the job.
 - Explicit degradation with distinct exit codes when project data is insufficient,
   the judge is unavailable, or the catalog is empty.
 
-[Unreleased]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.1.4...v0.2.0
@@ -317,3 +420,6 @@ community-maintained catalog by how well each model **fits** the job.
 [#19]: https://github.com/JoaquinRuiz/SpecJudge/issues/19
 [#20]: https://github.com/JoaquinRuiz/SpecJudge/pull/20
 [#2]: https://github.com/JoaquinRuiz/SpecJudge/issues/2
+[#16]: https://github.com/JoaquinRuiz/SpecJudge/issues/16
+[#21]: https://github.com/JoaquinRuiz/SpecJudge/pull/21
+[#22]: https://github.com/JoaquinRuiz/SpecJudge/pull/22
