@@ -143,11 +143,23 @@ This isn't a nice-to-have; it's Principle I of the [project constitution](./.spe
                                                           🥇 🥈 🥉 podium
 ```
 
-SpecJudge reads whatever written context your project already has: the spec-kit artifacts
-(`constitution.md`, `spec.md`, `plan.md`, `tasks.md`) **and** the agent-context files most
-repositories now carry — `AGENTS.md`, `CLAUDE.md`. They are read together, because they say
-different things: the artifacts describe the work you are about to do, and `AGENTS.md` describes
-how demanding the codebase is to work in at all.
+SpecJudge reads whatever written context your project already has:
+
+| Source | Where it looks |
+|---|---|
+| spec-kit artifacts | `constitution.md`, `spec.md`, `plan.md`, `tasks.md` |
+| agent-context files | `AGENTS.md` and `CLAUDE.md`, including nested ones in a monorepo |
+| editor rules | `.cursorrules`, `.github/copilot-instructions.md` |
+| decision records | `docs/adr/`, `docs/decisions/`, `adr/` |
+
+They are read together, because they say different things: the artifacts describe the work you are
+about to do, and the rest describes how demanding the codebase is to work in at all.
+
+A repository can carry dozens of these, so they share one budget rather than each getting its own:
+the files nearest the root are kept first, up to `sources.max_context_files` in
+`data/rating-rules.yaml`, and anything left out is reported rather than silently dropped. Context
+files that announce a tool generated them are skipped — generated context mostly restates what the
+code already shows, and prompt space is the scarce resource.
 
 So you do not need a full Spec-Driven Development setup to get an answer. A repository with only
 an `AGENTS.md` gets a **floor** — how much model this codebase asks for before anyone writes a
