@@ -47,6 +47,8 @@ capability=medium -> good).
    Gemma 4 26B MoE is a good fit for this project. Right-sized: capability matches demand 
 exactly in every dimension. Deciding dimension: 'reasoning' (demand=medium, 
 capability=medium -> good).
+
+Read: constitution, spec, tasks
 ```
 
 Abridged: the real run scores all 37 models in the catalog and lists every one of them. Prices and ratings above are generated from [`data/models.yaml`](./data/models.yaml), so they cannot go stale silently.

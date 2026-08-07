@@ -17,6 +17,16 @@ from .. import about
 from ..domain import Comparison
 from ..gaps import Gap
 
+# How each source type is named to a reader, who thinks in filenames.
+_SOURCE_LABEL = {
+    "constitution": "constitution",
+    "spec": "spec",
+    "tasks": "tasks",
+    "plan": "plan",
+    "agents": "AGENTS.md",
+    "claude": "CLAUDE.md",
+}
+
 
 def _template_source() -> str:
     try:
@@ -50,6 +60,7 @@ def render_html(comparison: Comparison, gaps: list[Gap] | None = None) -> str:
         best_choice=comparison.best_choice,
         judge_model=comparison.judge_model,
         data_state=comparison.data_state.value,
+        sources_read=[_SOURCE_LABEL.get(s, s) for s in comparison.sources_read],
         warnings=comparison.warnings,
         gaps=gaps or [],
     )
