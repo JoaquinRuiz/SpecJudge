@@ -1,0 +1,13 @@
+category: thin
+data_state: scarce
+rationale: >
+  No spec, no tasks, no .specify at all — only the AGENTS.md this repository
+  already had. That file describes a securities settlement engine with
+  determinism and market-convention rules, so the demand it justifies is a
+  floor for working in this codebase at all. `size` must abstain: nothing here
+  describes a piece of work, and a judge that invents a size for it is inventing
+  the input.
+dimensions:
+  reasoning: {min: medium}
+  domain_specialization: {min: medium}
+  size: abstain

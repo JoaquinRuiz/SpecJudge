@@ -1,0 +1,13 @@
+category: well_specified
+data_state: sufficient
+rationale: >
+  Constitution, spec, plan and tasks, plus the AGENTS.md the repository already
+  carried. The two sources do not overlap: the spec describes the export, and
+  only the AGENTS.md says this is IEC 62304 class B software that may not bundle
+  crypto. Reading one and ignoring the other loses signal, which is why
+  domain_specialization is banded above medium here — a judge that reads only
+  the spec sees a file writer.
+dimensions:
+  reasoning: {min: medium}
+  domain_specialization: {min: medium}
+  size: {min: low, max: high}
