@@ -37,7 +37,39 @@ _HEADING_START = re.compile(r"^\s*#{1,6}\s")
 # identically when validating a quote, so the two never disagree.
 MAX_FRAGMENT_CHARS = 240
 
-_ARTIFACT_PREFIX = {"constitution": "C", "spec": "S", "tasks": "T"}
+# Explicit per-source prefixes. Deriving them from the first letter used to be enough
+# for three sources; with agent-context files it is not — `claude` and `constitution`
+# both start with C, and two sources sharing a prefix would silently drop each other's
+# fragments when ids are deduplicated (FR-024).
+_ARTIFACT_PREFIX = {
+    "constitution": "C",
+    "spec": "S",
+    "tasks": "T",
+    "plan": "P",
+    "agents": "AG",
+    "claude": "CL",
+}
+
+
+def _assign_prefixes(artifact_types: list[str]) -> dict[str, str]:
+    """A distinct prefix per source, stable across runs.
+
+    Uniqueness is enforced rather than assumed: an id collision does not fail
+    loudly, it makes one source's fragments disappear into another's, and the
+    judge is then rejected for citing something that "does not exist".
+    """
+    assigned: dict[str, str] = {}
+    taken: set[str] = set()
+    for artifact_type in artifact_types:
+        base = _ARTIFACT_PREFIX.get(artifact_type) or artifact_type[:2].upper() or "X"
+        prefix = base
+        suffix = 2
+        while prefix in taken:
+            prefix = f"{base}{suffix}"
+            suffix += 1
+        taken.add(prefix)
+        assigned[artifact_type] = prefix
+    return assigned
 
 
 def _normalize(text: str) -> str:
@@ -112,9 +144,8 @@ def _label(line: str) -> str | None:
     return None
 
 
-def _artifact_fragments(artifact_type: str, text: str) -> list[Fragment]:
+def _artifact_fragments(artifact_type: str, text: str, prefix: str) -> list[Fragment]:
     """Citable units of one artifact, in document order, deduplicated by id."""
-    prefix = _ARTIFACT_PREFIX.get(artifact_type, artifact_type[:1].upper())
     found: dict[str, Fragment] = {}
     counter = 0
 
@@ -153,11 +184,14 @@ def extract_fragments(analysis: ProjectAnalysis, limit: int) -> list[Fragment]:
     `limit` must be the same per-artifact cap the prompt uses, or the validator
     would accept ids the judge never saw — or reject ids it did.
     """
+    usable = [a for a in analysis.artifacts if a.readable and a.content]
+    prefixes = _assign_prefixes([a.type for a in usable])
+
     fragments: list[Fragment] = []
-    for artifact in analysis.artifacts:
-        if not (artifact.readable and artifact.content):
-            continue
-        fragments.extend(_artifact_fragments(artifact.type, artifact.content[:limit]))
+    for artifact in usable:
+        fragments.extend(
+            _artifact_fragments(artifact.type, artifact.content[:limit], prefixes[artifact.type])
+        )
     return fragments
 
 
