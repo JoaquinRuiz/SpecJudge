@@ -139,6 +139,37 @@ def test_a_missing_constitution():
     assert "no_constitution" in _codes(_analysis("", _GOOD_SPEC, _GOOD_TASKS))
 
 
+# ------------------------------------------------- environment-only (issue #16)
+
+
+def _environment_analysis() -> ProjectAnalysis:
+    return ProjectAnalysis(
+        artifacts=[
+            SDDArtifact("constitution", "c.md", False, False, ""),
+            SDDArtifact("spec", "s.md", False, False, ""),
+            SDDArtifact("tasks", "t.md", False, False, ""),
+            SDDArtifact("agents", "AGENTS.md", True, True, "# AGENTS.md\n\n- Be careful.\n"),
+        ],
+        data_state=DataState.SCARCE,
+    )
+
+
+def test_a_repository_with_only_an_agents_file_is_told_one_thing():
+    """Every check below the guard looks for Spec Kit conventions.
+
+    Run against a repository that never claimed to use Spec Kit, they produce four
+    accusations for one fact, each phrased as something the user failed to do.
+    """
+    gaps = find_gaps(_environment_analysis(), _rules())
+    assert [g.code for g in gaps] == ["no_work_source"]
+
+
+def test_the_environment_only_gap_asks_for_the_missing_thing():
+    (gap,) = find_gaps(_environment_analysis(), _rules())
+    assert "work" in gap.what
+    assert gap.fix
+
+
 # --------------------------------------------------------------- phrasing
 
 

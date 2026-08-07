@@ -69,6 +69,23 @@ def find_gaps(analysis: ProjectAnalysis, rules: RatingRules) -> list[Gap]:
     Ordered by how much closing one would improve the assessment: requirements
     first, then criteria, then task detail.
     """
+    if analysis.environment_only:
+        # Every check below looks for Spec Kit conventions. Running them against a
+        # repository that never claimed to use Spec Kit produces four accusations
+        # ("no spec", "no requirements", "no criteria", "no constitution") for one
+        # underlying fact, phrased as if the user had done something wrong. Say the
+        # fact once instead (FR-024).
+        return [
+            Gap(
+                code="no_work_source",
+                what="nothing describes the work in progress; only the repository's "
+                "own context files were read",
+                fix="describe what you are about to build — a spec, a task list, or "
+                "even a paragraph — so the answer is about that work and not just "
+                "about the codebase around it",
+            )
+        ]
+
     gaps: list[Gap] = []
     spec = _text(analysis, "spec")
     tasks = _text(analysis, "tasks")
