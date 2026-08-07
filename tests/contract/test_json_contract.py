@@ -71,6 +71,28 @@ def test_the_schema_documents_the_version_it_describes():
     assert f"Version {SCHEMA_VERSION}." in SCHEMA["description"]
 
 
+def test_the_payload_says_which_sources_it_read(project_sufficient, test_catalog, mock_ollama):
+    """Added in 1.1: the answer now depends on which files existed (FR-024)."""
+    payload = _run(project_sufficient, test_catalog, mock_ollama)
+    assert payload["sources_read"]
+    assert payload["environment_only"] is False
+
+
+def test_an_environment_only_project_validates_and_says_so(tmp_path, test_catalog, mock_ollama):
+    """A repository with an AGENTS.md and nothing else: the case issue #16 opened."""
+    (tmp_path / "AGENTS.md").write_text(
+        "# AGENTS.md\n\n## Rules\n"
+        "- Money is integer minor units, never a float.\n"
+        "- Netting must replay deterministically from the message log.\n",
+        encoding="utf-8",
+    )
+    payload = _run(tmp_path, test_catalog, mock_ollama)
+    jsonschema.validate(payload, SCHEMA)
+    assert payload["sources_read"] == ["agents"]
+    assert payload["environment_only"] is True
+    assert payload["data_state"] == "scarce"
+
+
 def test_unknown_fields_are_rejected(project_sufficient, test_catalog, mock_ollama):
     """`additionalProperties: false` is what makes an accidental addition visible."""
     payload = _run(project_sufficient, test_catalog, mock_ollama)

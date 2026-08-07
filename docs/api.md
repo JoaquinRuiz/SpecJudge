@@ -21,7 +21,7 @@ repo at [`src/specjudge/_schema/output.schema.json`](../src/specjudge/_schema/ou
 
 ### Versioning
 
-Every payload carries `schema_version`, currently **1.0**. It is deliberately
+Every payload carries `schema_version`, currently **1.1**. It is deliberately
 independent of the package version — otherwise the contract would appear to change
 on every catalog-only release.
 
@@ -33,6 +33,19 @@ on every catalog-only release.
 Releases 0.1.x and 0.2.0 emitted this same payload without the `schema_version`
 field. Adding it is additive, so consumers written against those releases keep
 working.
+
+**1.1** adds two fields, both additive:
+
+- `sources_read` — which written sources the assessment actually came from
+  (`constitution`, `spec`, `tasks`, `plan`, `agents` for an `AGENTS.md`, `claude`
+  for a `CLAUDE.md`). The list is open-ended: new source types arrive in MINOR
+  releases, so treat an unfamiliar value as a source you do not recognise rather
+  than as an error.
+- `environment_only` — true when every source read describes the *repository* and
+  none describes the *work*. The result is then a floor (how demanding this codebase
+  is to work in at all), not a recommendation for a specific piece of work. Worth
+  branching on: it is the one case where the ranking answers a different question
+  than usual.
 
 ### What the schema does not pin
 
@@ -69,7 +82,7 @@ Everything exported from `specjudge.api`, and nothing else:
 | `to_dict` | A `Comparison` as the documented JSON payload |
 | `json_schema` | The schema describing that payload |
 | `SCHEMA_VERSION` | Version of the payload contract |
-| `Comparison` | The result: evaluations, podium, best choice, warnings, demand |
+| `Comparison` | The result: evaluations, podium, best choice, warnings, demand, sources read |
 | `Evaluation` | One model's rating, price and justification |
 | `DemandProfile` | The judge's assessment and its evidence |
 | `Evidence` | One dimension's citation |

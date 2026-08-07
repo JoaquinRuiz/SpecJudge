@@ -125,6 +125,8 @@ def analyze(
         judge_model,
         warnings=warnings,
         demand=demand,
+        sources_read=analysis.sources_read,
+        environment_only=analysis.environment_only,
     )
 
 

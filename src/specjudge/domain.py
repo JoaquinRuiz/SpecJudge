@@ -299,6 +299,12 @@ class Comparison:
     # Top three by fit: gold, silver, bronze. Shorter than 3 when fewer models
     # are capable enough; empty when none is. `best_choice` is podium[0].
     podium: list[str] = field(default_factory=list)
+    # Which sources the assessment actually read (FR-024). Reported because the
+    # answer now depends on it: the same repository judged from an AGENTS.md and
+    # judged from a spec are two different claims, and only one of them says so.
+    sources_read: list[str] = field(default_factory=list)
+    # True when nothing described the work — see ProjectAnalysis.environment_only.
+    environment_only: bool = False
 
     def medal(self, model_id: str) -> str | None:
         """'gold' | 'silver' | 'bronze' for a podium model, else None."""

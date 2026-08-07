@@ -193,14 +193,19 @@ def _run(
         data_state = DataState.SCARCE
 
     comparison = build_comparison(
-        evaluations, data_state, judge_model, warnings=warnings, demand=demand
+        evaluations,
+        data_state,
+        judge_model,
+        warnings=warnings,
+        demand=demand,
+        sources_read=analysis.sources_read,
+        environment_only=analysis.environment_only,
     )
 
     # 5. Output.
     # Gaps are a presentation concern for a thin project, so they are computed here
-    # and passed to the renderers rather than added to Comparison: the JSON contract
-    # is frozen at 1.0 (FR-022) and this issue is about how the caveat lands, not
-    # about what the payload carries.
+    # and passed to the renderers rather than added to Comparison: the payload
+    # carries the assessment, not editorial advice about how to improve it.
     gaps = find_gaps(analysis, rules) if data_state == DataState.SCARCE else []
 
     if as_json:

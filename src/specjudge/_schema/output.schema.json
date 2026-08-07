@@ -2,11 +2,13 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/JoaquinRuiz/SpecJudge/main/src/specjudge/_schema/output.schema.json",
   "title": "SpecJudge comparison output",
-  "description": "Payload emitted by `specjudge --json` and by specjudge.api.to_dict(). Version 1.0. Adding a field is a MINOR bump; removing one, changing its type, or changing what an existing value means is MAJOR. Obtain this file without cloning the repo: `specjudge --print-schema`.",
+  "description": "Payload emitted by `specjudge --json` and by specjudge.api.to_dict(). Version 1.1. Adding a field is a MINOR bump; removing one, changing its type, or changing what an existing value means is MAJOR. Obtain this file without cloning the repo: `specjudge --print-schema`.",
   "type": "object",
   "required": [
     "schema_version",
     "data_state",
+    "sources_read",
+    "environment_only",
     "judge_model",
     "best_choice",
     "podium",
@@ -25,6 +27,15 @@
       "description": "How much the project told us. `scarce` also covers a judge that could not ground every dimension.",
       "type": "string",
       "enum": ["sufficient", "scarce", "insufficient"]
+    },
+    "sources_read": {
+      "description": "Types of the written sources that contributed content, in discovery order: constitution, spec, tasks, plan, agents (AGENTS.md), claude (CLAUDE.md). Open-ended: new source types are added in MINOR releases, so treat an unknown value as a source you do not recognise rather than as an error.",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "environment_only": {
+      "description": "True when every source read describes the repository (AGENTS.md, CLAUDE.md) and none describes the work in progress. The result is then a floor — how demanding this codebase is to work in at all — not a recommendation for a specific piece of work.",
+      "type": "boolean"
     },
     "judge_model": {
       "description": "Local model used as the judge.",
