@@ -29,8 +29,9 @@
       "enum": ["sufficient", "scarce", "insufficient"]
     },
     "sources_read": {
-      "description": "Types of the written sources that contributed content, in discovery order: constitution, spec, tasks, plan, agents (AGENTS.md), claude (CLAUDE.md). Open-ended: new source types are added in MINOR releases, so treat an unknown value as a source you do not recognise rather than as an error.",
+      "description": "Kinds of written source that contributed content, deduplicated, in discovery order: constitution, spec, tasks, plan, agents (AGENTS.md), claude (CLAUDE.md), cursor (.cursorrules), copilot (.github/copilot-instructions.md), adr. One entry per kind however many files of it were read. Open-ended: new source kinds are added in MINOR releases, so treat an unknown value as a source you do not recognise rather than as an error.",
       "type": "array",
+      "uniqueItems": true,
       "items": { "type": "string" }
     },
     "environment_only": {

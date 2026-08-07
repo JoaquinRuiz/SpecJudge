@@ -49,10 +49,18 @@ def test_free_price_renders_as_open_source(capsys):
 def test_the_sources_read_are_named(capsys):
     """Several kinds of file can feed the judge now, so "from what?" needs answering."""
     comp = _comp()
-    comp.sources_read = ["constitution", "spec", "tasks", "agents"]
+    comp.source_kinds = ["constitution", "spec", "tasks", "agents"]
     render_comparison(comp, no_color=True)
     out = capsys.readouterr().out
     assert "Read: constitution, spec, tasks, AGENTS.md" in out
+
+
+def test_repeated_sources_are_counted(capsys):
+    """ "AGENTS.md" when four were read is a smaller claim than the truth."""
+    comp = _comp()
+    comp.source_kinds = ["agents", "agents", "agents", "adr"]
+    render_comparison(comp, no_color=True)
+    assert "Read: 3× AGENTS.md, ADR" in capsys.readouterr().out
 
 
 def test_nothing_is_claimed_when_no_source_was_recorded(capsys):

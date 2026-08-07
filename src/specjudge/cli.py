@@ -198,7 +198,7 @@ def _run(
         judge_model,
         warnings=warnings,
         demand=demand,
-        sources_read=analysis.sources_read,
+        source_kinds=analysis.source_kinds,
         environment_only=analysis.environment_only,
     )
 

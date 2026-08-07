@@ -66,6 +66,10 @@ def answer_levels(levels: list[str]) -> list[str]:
     return [*levels, UNSUPPORTED]
 
 
+# Enough for a root file plus a handful of per-package ones, few enough that the
+# shared character budget still leaves each of them something worth reading.
+DEFAULT_MAX_CONTEXT_FILES = 12
+
 # Prices move every few weeks, so a quarter-old catalog is worth flagging. Short
 # enough to catch real drift, long enough not to cry wolf on every run.
 DEFAULT_MAX_PRICING_AGE_DAYS = 90
@@ -142,6 +146,10 @@ class ProjectAnalysis:
     artifacts: list[SDDArtifact]
     data_state: DataState
     warnings: list[str] = field(default_factory=list)
+    # Where the project was read from. Kept so a source can be named to the judge
+    # by its path within the project ("packages/api/AGENTS.md" says which corner of
+    # a monorepo it governs) rather than by an absolute path from this machine.
+    root: str = ""
 
     def artifact(self, type_: str) -> SDDArtifact | None:
         for a in self.artifacts:
@@ -150,9 +158,25 @@ class ProjectAnalysis:
         return None
 
     @property
-    def sources_read(self) -> list[str]:
-        """Types of the sources that actually contributed content."""
+    def source_kinds(self) -> list[str]:
+        """One entry per source file that contributed content, in read order."""
         return [a.type for a in self.artifacts if a.usable]
+
+    @property
+    def sources_read(self) -> list[str]:
+        """Kinds of source that contributed content, deduplicated, in read order.
+
+        Deduplicated because this is the payload's answer to "what fed this?", and
+        a repository with 88 `AGENTS.md` would otherwise put the word "agents" in
+        the JSON 88 times — no more informative, and awkward for a consumer that
+        renders the list as-is. How many of each there were is a presentation
+        concern; `source_kinds` keeps it.
+        """
+        seen: list[str] = []
+        for kind in self.source_kinds:
+            if kind not in seen:
+                seen.append(kind)
+        return seen
 
     @property
     def environment_only(self) -> bool:
@@ -255,6 +279,10 @@ class RatingRules:
     judge: dict = field(default_factory=dict)
     # Days since pricing_date before the catalog is called out as stale (FR-019).
     max_pricing_age_days: int = DEFAULT_MAX_PRICING_AGE_DAYS
+    # How many context files (AGENTS.md, ADRs, ...) may feed one run (FR-025).
+    # A monorepo can carry dozens; reading all of them would swamp the prompt with
+    # near-duplicates of one another.
+    max_context_files: int = DEFAULT_MAX_CONTEXT_FILES
     # Whether the judge must cite a fragment per dimension (FR-020). Turning this
     # off restores the pre-evidence behaviour for judges too small to manage the
     # citation schema — at the cost of the grounding check.
@@ -299,12 +327,24 @@ class Comparison:
     # Top three by fit: gold, silver, bronze. Shorter than 3 when fewer models
     # are capable enough; empty when none is. `best_choice` is podium[0].
     podium: list[str] = field(default_factory=list)
-    # Which sources the assessment actually read (FR-024). Reported because the
-    # answer now depends on it: the same repository judged from an AGENTS.md and
-    # judged from a spec are two different claims, and only one of them says so.
-    sources_read: list[str] = field(default_factory=list)
+    # One entry per source file that fed the assessment, in read order (FR-024).
+    # Reported because the answer now depends on it: the same repository judged
+    # from an AGENTS.md and judged from a spec are two different claims, and only
+    # one of them says so. Repeats are meaningful here — four AGENTS.md is a
+    # different input from one — while the JSON payload publishes the deduplicated
+    # view, which is the part a consumer can branch on.
+    source_kinds: list[str] = field(default_factory=list)
     # True when nothing described the work — see ProjectAnalysis.environment_only.
     environment_only: bool = False
+
+    @property
+    def sources_read(self) -> list[str]:
+        """Kinds of source that fed the assessment, deduplicated, in read order."""
+        seen: list[str] = []
+        for kind in self.source_kinds:
+            if kind not in seen:
+                seen.append(kind)
+        return seen
 
     def medal(self, model_id: str) -> str | None:
         """'gold' | 'silver' | 'bronze' for a podium model, else None."""

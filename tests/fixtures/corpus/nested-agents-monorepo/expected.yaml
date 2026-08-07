@@ -1,0 +1,12 @@
+category: thin
+data_state: scarce
+rationale: >
+  A monorepo whose context lives in three AGENTS.md — root, ledger and web — and
+  nowhere else. The demanding parts are only in the nested ones: an append-only
+  regulatory record with per-site ordering and signed writes is not visible from
+  the root file, so this case fails if nested discovery stops working. `size`
+  abstains: nothing here describes a piece of work.
+dimensions:
+  reasoning: {min: medium}
+  domain_specialization: {min: medium}
+  size: abstain

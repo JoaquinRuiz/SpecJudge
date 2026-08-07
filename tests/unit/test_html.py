@@ -160,7 +160,7 @@ def test_html_escapes_gap_text():
 
 def test_the_report_names_the_sources_it_was_built_from():
     comp = _comp()
-    comp.sources_read = ["spec", "tasks", "claude"]
+    comp.source_kinds = ["spec", "tasks", "claude"]
     html = render_html(comp)
     assert "Read:" in html
     assert "spec, tasks, CLAUDE.md" in html

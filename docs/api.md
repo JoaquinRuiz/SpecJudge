@@ -38,9 +38,12 @@ working.
 
 - `sources_read` — which written sources the assessment actually came from
   (`constitution`, `spec`, `tasks`, `plan`, `agents` for an `AGENTS.md`, `claude`
-  for a `CLAUDE.md`). The list is open-ended: new source types arrive in MINOR
-  releases, so treat an unfamiliar value as a source you do not recognise rather
-  than as an error.
+  for a `CLAUDE.md`, `cursor` for a `.cursorrules`, `copilot` for
+  `.github/copilot-instructions.md`, `adr` for an architecture decision record).
+  One entry per kind, however many files of that kind were read — a monorepo with
+  eight `AGENTS.md` still lists `agents` once. The list is open-ended: new source
+  kinds arrive in MINOR releases, so treat an unfamiliar value as a source you do
+  not recognise rather than as an error.
 - `environment_only` — true when every source read describes the *repository* and
   none describes the *work*. The result is then a floor (how demanding this codebase
   is to work in at all), not a recommendation for a specific piece of work. Worth

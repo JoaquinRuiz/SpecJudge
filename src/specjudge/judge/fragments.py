@@ -21,6 +21,7 @@ from __future__ import annotations
 import re
 import unicodedata
 
+from ..budget import prompt_sources
 from ..domain import Fragment, ProjectAnalysis
 
 # Natural identifiers the SDD artifacts already carry.
@@ -48,28 +49,50 @@ _ARTIFACT_PREFIX = {
     "plan": "P",
     "agents": "AG",
     "claude": "CL",
+    "cursor": "CU",
+    "copilot": "CP",
+    "adr": "AD",
 }
 
 
-def _assign_prefixes(artifact_types: list[str]) -> dict[str, str]:
-    """A distinct prefix per source, stable across runs.
+def _assign_prefixes(artifact_types: list[str]) -> list[str]:
+    """One distinct prefix per source *file*, in the order given.
 
-    Uniqueness is enforced rather than assumed: an id collision does not fail
-    loudly, it makes one source's fragments disappear into another's, and the
-    judge is then rejected for citing something that "does not exist".
+    Per file, not per type: a repository can carry many sources of the same kind
+    (the Codex repo has 88 `AGENTS.md`), and they are separate documents whose
+    fragments must stay apart.
+
+    Uniqueness is enforced rather than assumed, because a collision does not fail
+    loudly. Two sources sharing a prefix produce the same positional ids, the
+    later one overwrites the earlier in the lookup, and the judge is then either
+    rejected for citing something that "does not exist" or validated against text
+    it was never shown.
+
+    A kind that appears once keeps its bare prefix (`AG`); several of a kind are
+    numbered (`AG1`, `AG2`). Ids therefore stay stable for any given input.
     """
-    assigned: dict[str, str] = {}
+    counts: dict[str, int] = {}
+    for artifact_type in artifact_types:
+        counts[artifact_type] = counts.get(artifact_type, 0) + 1
+
+    seen: dict[str, int] = {}
     taken: set[str] = set()
+    prefixes: list[str] = []
     for artifact_type in artifact_types:
         base = _ARTIFACT_PREFIX.get(artifact_type) or artifact_type[:2].upper() or "X"
-        prefix = base
-        suffix = 2
+        if counts[artifact_type] > 1:
+            seen[artifact_type] = seen.get(artifact_type, 0) + 1
+            base = f"{base}{seen[artifact_type]}"
+
+        # Two different kinds can still land on the same base (an unknown type
+        # abbreviating to "AG", say), so the last word on uniqueness is here.
+        prefix, suffix = base, 2
         while prefix in taken:
-            prefix = f"{base}{suffix}"
+            prefix = f"{base}_{suffix}"
             suffix += 1
         taken.add(prefix)
-        assigned[artifact_type] = prefix
-    return assigned
+        prefixes.append(prefix)
+    return prefixes
 
 
 def _normalize(text: str) -> str:
@@ -181,17 +204,17 @@ def _artifact_fragments(artifact_type: str, text: str, prefix: str) -> list[Frag
 def extract_fragments(analysis: ProjectAnalysis, limit: int) -> list[Fragment]:
     """Every citable fragment, derived from the artifact text truncated to `limit`.
 
-    `limit` must be the same per-artifact cap the prompt uses, or the validator
-    would accept ids the judge never saw — or reject ids it did.
+    `limit` must be the same per-artifact cap the prompt uses: both go through
+    `prompt_sources`, so the fragment set is derived from exactly the text the
+    judge is shown. Any other route would accept ids the judge never saw — or
+    reject ids it did.
     """
-    usable = [a for a in analysis.artifacts if a.readable and a.content]
-    prefixes = _assign_prefixes([a.type for a in usable])
+    sources = prompt_sources(analysis, limit)
+    prefixes = _assign_prefixes([s.type for s in sources])
 
     fragments: list[Fragment] = []
-    for artifact in usable:
-        fragments.extend(
-            _artifact_fragments(artifact.type, artifact.content[:limit], prefixes[artifact.type])
-        )
+    for source, prefix in zip(sources, prefixes, strict=True):
+        fragments.extend(_artifact_fragments(source.type, source.text, prefix))
     return fragments
 
 
