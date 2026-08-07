@@ -142,6 +142,10 @@ class ProjectAnalysis:
     artifacts: list[SDDArtifact]
     data_state: DataState
     warnings: list[str] = field(default_factory=list)
+    # Where the project was read from. Kept so a source can be named to the judge
+    # by its path within the project ("packages/api/AGENTS.md" says which corner of
+    # a monorepo it governs) rather than by an absolute path from this machine.
+    root: str = ""
 
     def artifact(self, type_: str) -> SDDArtifact | None:
         for a in self.artifacts:

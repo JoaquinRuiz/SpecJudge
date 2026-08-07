@@ -21,6 +21,7 @@ from __future__ import annotations
 import re
 
 from .. import errors
+from ..budget import PromptSource, prompt_sources
 from ..domain import (
     UNSUPPORTED,
     DemandProfile,
@@ -150,24 +151,24 @@ def response_schema(rules: RatingRules) -> dict:
     return {"type": "object", "properties": properties, "required": required}
 
 
-def _summarize(analysis: ProjectAnalysis, limit: int) -> str:
-    """Structured digest of the artifacts: shape of the work, not its prose."""
+def _summarize(analysis: ProjectAnalysis, sources: list[PromptSource]) -> str:
+    """Structured digest of the sources: shape of the work, not its prose."""
     parts: list[str] = []
-    for art in analysis.artifacts:
-        if not (art.readable and art.content):
-            # A missing spec or task list is signal — the judge should know the work
-            # was never described. A missing CLAUDE.md is not: most repositories have
-            # none, and listing every absent optional source would pad the prompt
-            # with nothing (FR-024).
-            if art.type in _REPORTED_WHEN_MISSING:
-                parts.append(f"- {art.type}: MISSING")
-            continue
-        text = art.content
+
+    # A missing spec or task list is signal — the judge should know the work was
+    # never described. A missing CLAUDE.md is not: most repositories have none, and
+    # listing every absent optional source would pad the prompt with nothing (FR-024).
+    present = {s.type for s in sources}
+    for kind in sorted(_REPORTED_WHEN_MISSING - present):
+        parts.append(f"- {kind}: MISSING")
+
+    for source in sources:
+        text = source.text
         headings = _HEADING.findall(text)
         tasks = _CHECKLIST.findall(text)
         reqs = sorted(set(_REQUIREMENT.findall(text)))
 
-        lines = [f"- {art.type}: {len(text)} chars"]
+        lines = [f"- {source.label}: {len(text)} chars"]
         if reqs:
             lines.append(f"  requirements ({len(reqs)}): {', '.join(reqs[:40])}")
         if tasks:
@@ -177,8 +178,7 @@ def _summarize(analysis: ProjectAnalysis, limit: int) -> str:
         if headings:
             names = " | ".join(h[:60] for h in headings[:20])
             lines.append(f"  sections ({len(headings)}): {names}")
-        block = "\n".join(lines)
-        parts.append(block[:limit])
+        parts.append("\n".join(lines))
     return "\n".join(parts)
 
 
@@ -196,16 +196,15 @@ def artifact_limit(rules: RatingRules, *, compact: bool) -> int:
 def build_prompt(analysis: ProjectAnalysis, rules: RatingRules, *, compact: bool = False) -> str:
     head = _instructions(rules)
     limit = artifact_limit(rules, compact=compact)
+    # One place decides how much of each source is sent, so the prompt and the
+    # citable set cannot disagree about what the judge was shown (FR-025).
+    sources = prompt_sources(analysis, limit)
+
     if compact:
-        body = _summarize(analysis, limit)
+        body = _summarize(analysis, sources)
         label = "=== PROJECT SUMMARY ==="
     else:
-        chunks = [
-            f"\n--- {a.type} ---\n{a.content[:limit]}"
-            for a in analysis.artifacts
-            if a.readable and a.content
-        ]
-        body = "".join(chunks)
+        body = "".join(f"\n--- {s.label} ---\n{s.text}" for s in sources)
         label = "=== PROJECT ARTIFACTS ==="
 
     # The citable list goes in both prompt shapes. The compact prompt sends a digest

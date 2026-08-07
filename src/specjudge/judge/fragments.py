@@ -21,6 +21,7 @@ from __future__ import annotations
 import re
 import unicodedata
 
+from ..budget import prompt_sources
 from ..domain import Fragment, ProjectAnalysis
 
 # Natural identifiers the SDD artifacts already carry.
@@ -203,15 +204,17 @@ def _artifact_fragments(artifact_type: str, text: str, prefix: str) -> list[Frag
 def extract_fragments(analysis: ProjectAnalysis, limit: int) -> list[Fragment]:
     """Every citable fragment, derived from the artifact text truncated to `limit`.
 
-    `limit` must be the same per-artifact cap the prompt uses, or the validator
-    would accept ids the judge never saw — or reject ids it did.
+    `limit` must be the same per-artifact cap the prompt uses: both go through
+    `prompt_sources`, so the fragment set is derived from exactly the text the
+    judge is shown. Any other route would accept ids the judge never saw — or
+    reject ids it did.
     """
-    usable = [a for a in analysis.artifacts if a.readable and a.content]
-    prefixes = _assign_prefixes([a.type for a in usable])
+    sources = prompt_sources(analysis, limit)
+    prefixes = _assign_prefixes([s.type for s in sources])
 
     fragments: list[Fragment] = []
-    for artifact, prefix in zip(usable, prefixes, strict=True):
-        fragments.extend(_artifact_fragments(artifact.type, artifact.content[:limit], prefix))
+    for source, prefix in zip(sources, prefixes, strict=True):
+        fragments.extend(_artifact_fragments(source.type, source.text, prefix))
     return fragments
 
 
