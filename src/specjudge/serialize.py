@@ -15,6 +15,10 @@ Change rules, enforced by review rather than by code:
 
 0.1.x and 0.2.0 emitted this same payload without the `schema_version` field. Adding
 it is additive, so a consumer written against those releases keeps working.
+
+1.1 adds `sources_read` and `environment_only`: which written sources the assessment
+came from, and whether any of them described the work rather than the repository. Both
+are additive, so a 1.0 consumer is unaffected.
 """
 
 from __future__ import annotations
@@ -25,7 +29,7 @@ from pathlib import Path
 
 from .domain import Comparison, DemandProfile
 
-SCHEMA_VERSION = "1.0"
+SCHEMA_VERSION = "1.1"
 
 
 def schema_path() -> Path:
@@ -73,6 +77,8 @@ def comparison_to_dict(comparison: Comparison) -> dict:
     return {
         "schema_version": SCHEMA_VERSION,
         "data_state": comparison.data_state.value,
+        "sources_read": list(comparison.sources_read),
+        "environment_only": comparison.environment_only,
         "judge_model": comparison.judge_model,
         "best_choice": comparison.best_choice,
         "podium": list(comparison.podium),

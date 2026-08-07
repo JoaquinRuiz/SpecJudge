@@ -44,3 +44,17 @@ def test_free_price_renders_as_open_source(capsys):
     out = capsys.readouterr().out
     assert "open-source/free" in out
     assert "0.00" not in out
+
+
+def test_the_sources_read_are_named(capsys):
+    """Several kinds of file can feed the judge now, so "from what?" needs answering."""
+    comp = _comp()
+    comp.sources_read = ["constitution", "spec", "tasks", "agents"]
+    render_comparison(comp, no_color=True)
+    out = capsys.readouterr().out
+    assert "Read: constitution, spec, tasks, AGENTS.md" in out
+
+
+def test_nothing_is_claimed_when_no_source_was_recorded(capsys):
+    render_comparison(_comp(), no_color=True)
+    assert "Read:" not in capsys.readouterr().out

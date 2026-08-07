@@ -47,6 +47,9 @@ _HEADING = re.compile(r"^#{1,3}\s+(.*\S)\s*$", re.MULTILINE)
 _CHECKLIST = re.compile(r"^\s*-\s*\[[ xX]\]\s+(.*\S)\s*$", re.MULTILINE)
 _REQUIREMENT = re.compile(r"\b((?:FR|SC|RF|RNF|NFR)-\d+)\b")
 
+# Absence of these is worth telling the judge about; absence of anything else is not.
+_REPORTED_WHEN_MISSING = frozenset({"constitution", "spec", "tasks"})
+
 _CALIBRATION = (
     "Calibration:\n"
     "  low    - a script or a handful of simple, well-understood pieces\n"
@@ -152,7 +155,12 @@ def _summarize(analysis: ProjectAnalysis, limit: int) -> str:
     parts: list[str] = []
     for art in analysis.artifacts:
         if not (art.readable and art.content):
-            parts.append(f"- {art.type}: MISSING")
+            # A missing spec or task list is signal — the judge should know the work
+            # was never described. A missing CLAUDE.md is not: most repositories have
+            # none, and listing every absent optional source would pad the prompt
+            # with nothing (FR-024).
+            if art.type in _REPORTED_WHEN_MISSING:
+                parts.append(f"- {art.type}: MISSING")
             continue
         text = art.content
         headings = _HEADING.findall(text)

@@ -47,6 +47,8 @@ capability=medium -> good).
    Gemma 4 26B MoE is a good fit for this project. Right-sized: capability matches demand 
 exactly in every dimension. Deciding dimension: 'reasoning' (demand=medium, 
 capability=medium -> good).
+
+Read: constitution, spec, tasks
 ```
 
 Abridged: the real run scores all 37 models in the catalog and lists every one of them. Prices and ratings above are generated from [`data/models.yaml`](./data/models.yaml), so they cannot go stale silently.
@@ -133,13 +135,24 @@ This isn't a nice-to-have; it's Principle I of the [project constitution](./.spe
   your project                  local judge                  model catalog
 ┌───────────────┐            ┌───────────────┐            ┌────────────────┐
 │ constitution  │            │  Ollama, on   │            │  models.yaml   │
-│ spec          │──────────► │ your machine  │──────────► │  (community-   │
+│ spec, plan    │──────────► │ your machine  │──────────► │  (community-   │
 │ tasks         │  how hard  │  estimates    │  compare   │   maintained)  │
-└───────────────┘  is this?  │  the demand   │  capability└────────────────┘
-                             └───────────────┘  vs demand         │
+│ AGENTS.md     │  is this?  │  the demand   │  capability└────────────────┘
+└───────────────┘            └───────────────┘  vs demand         │
                                                                   ▼
                                                           🥇 🥈 🥉 podium
 ```
+
+SpecJudge reads whatever written context your project already has: the spec-kit artifacts
+(`constitution.md`, `spec.md`, `plan.md`, `tasks.md`) **and** the agent-context files most
+repositories now carry — `AGENTS.md`, `CLAUDE.md`. They are read together, because they say
+different things: the artifacts describe the work you are about to do, and `AGENTS.md` describes
+how demanding the codebase is to work in at all.
+
+So you do not need a full Spec-Driven Development setup to get an answer. A repository with only
+an `AGENTS.md` gets a **floor** — how much model this codebase asks for before anyone writes a
+line — and the output says that is what it is. The output also names which files it actually read,
+so a thin answer is traceable to a thin input rather than looking like a confident one.
 
 The judge estimates how demanding your project is across a few dimensions. Declarative rules in
 `rating-rules.yaml` cross that demand against each model's declared capability. The best **fit**
@@ -207,10 +220,11 @@ specjudge [PROJECT_PATH] [OPTIONS]
 
 - **Sufficient** — constitution, spec and tasks present, and every dimension grounded in cited
   evidence: reliable recommendation.
-- **Scarce** — artifacts missing or thin on detail, **or** the judge could not ground some
-  dimension: recommendation issued, with a warning naming what is weak.
-- **Insufficient** — no tasks to evaluate, or nothing the judge could ground at all: no
-  recommendation.
+- **Scarce** — artifacts missing or thin on detail, the judge could not ground some dimension,
+  **or** only agent-context files were found: recommendation issued, with a warning naming what is
+  weak. In the last case the warning says the answer is a floor for the repository, not a
+  recommendation for a specific piece of work.
+- **Insufficient** — nothing describing the project at all: no recommendation.
 
 If your judge cannot manage cited evidence, set `evidence.require_spans: false` in
 `data/rating-rules.yaml` to rate without it — you lose the grounding check in exchange.

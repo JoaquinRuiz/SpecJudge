@@ -116,12 +116,25 @@ class Price:
 
 @dataclass
 class SDDArtifact:
-    type: str  # "constitution" | "spec" | "tasks"
+    """One written source of project context.
+
+    `type` is open, not a closed set: alongside the spec-kit artifacts
+    ("constitution", "spec", "tasks", "plan") it carries agent-context files
+    ("agents", "claude") and whatever discovery grows to support (FR-024). The
+    class keeps its name because it is reachable through the public API.
+    """
+
+    type: str
     path: str
     present: bool
     readable: bool
     content: str = ""
     task_count: int = 0  # only meaningful for type == "tasks"
+
+    @property
+    def usable(self) -> bool:
+        """Present, readable, and carrying something worth sending to a judge."""
+        return self.present and self.readable and bool(self.content.strip())
 
 
 @dataclass
@@ -135,6 +148,25 @@ class ProjectAnalysis:
             if a.type == type_:
                 return a
         return None
+
+    @property
+    def sources_read(self) -> list[str]:
+        """Types of the sources that actually contributed content."""
+        return [a.type for a in self.artifacts if a.usable]
+
+    @property
+    def environment_only(self) -> bool:
+        """Context describes the repository, but nothing describes the work (FR-024).
+
+        The honest output here is a floor — "given these standards, you need at
+        least this much" — not a ranking with the confidence of one built on a
+        described project. Reported as its own field rather than by redefining
+        `data_state`, so no existing value changes meaning.
+        """
+        from .sources import is_environment
+
+        usable = self.sources_read
+        return bool(usable) and all(is_environment(t) for t in usable)
 
 
 @dataclass
@@ -267,6 +299,12 @@ class Comparison:
     # Top three by fit: gold, silver, bronze. Shorter than 3 when fewer models
     # are capable enough; empty when none is. `best_choice` is podium[0].
     podium: list[str] = field(default_factory=list)
+    # Which sources the assessment actually read (FR-024). Reported because the
+    # answer now depends on it: the same repository judged from an AGENTS.md and
+    # judged from a spec are two different claims, and only one of them says so.
+    sources_read: list[str] = field(default_factory=list)
+    # True when nothing described the work — see ProjectAnalysis.environment_only.
+    environment_only: bool = False
 
     def medal(self, model_id: str) -> str | None:
         """'gold' | 'silver' | 'bronze' for a podium model, else None."""

@@ -110,6 +110,7 @@
   <div class="meta">
     {% if judge_model %}Local judge: <strong>{{ judge_model }}</strong> · {% endif %}
     Data state: <strong>{{ data_state }}</strong>
+    {%- if sources_read %} · Read: <strong>{{ sources_read|join(", ") }}</strong>{% endif %}
   </div>
 
   {% for w in warnings %}

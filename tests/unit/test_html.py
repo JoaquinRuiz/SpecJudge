@@ -156,3 +156,11 @@ def test_html_escapes_gap_text():
     html = render_html(_comp(), gaps)
     assert "<script>alert(1)</script>" not in html
     assert "&lt;script&gt;" in html
+
+
+def test_the_report_names_the_sources_it_was_built_from():
+    comp = _comp()
+    comp.sources_read = ["spec", "tasks", "claude"]
+    html = render_html(comp)
+    assert "Read:" in html
+    assert "spec, tasks, CLAUDE.md" in html

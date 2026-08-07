@@ -52,6 +52,24 @@ def test_artifact_prefix_keeps_same_named_units_apart():
     assert _ids(analysis) == ["S:T001", "T:T001"]
 
 
+def test_every_source_gets_its_own_prefix():
+    """`constitution` and `claude` both start with a C (issue #16).
+
+    A shared prefix does not fail loudly: the two sources' positional ids collide,
+    deduplication silently drops one source's fragments, and the judge is then
+    rejected for citing something that "does not exist".
+    """
+    analysis = _analysis(
+        _artifact("constitution", "## Principle One\n"),
+        _artifact("claude", "## Conventions\n"),
+        _artifact("agents", "## Rules\n"),
+        _artifact("plan", "## Stack\n"),
+    )
+    ids = _ids(analysis)
+    assert len(ids) == 4, ids
+    assert len({i.split(":")[0] for i in ids}) == 4, ids
+
+
 def test_unnamed_units_get_positional_ids():
     analysis = _analysis(_artifact("constitution", "## Simplicity First\n## Tested Behavior\n"))
     assert _ids(analysis) == ["C:1", "C:2"]

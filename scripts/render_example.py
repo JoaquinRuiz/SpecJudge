@@ -27,6 +27,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from specjudge.api import Comparison, DataState, DemandProfile, Evaluation, Rating
+from specjudge.artifacts import read_project
 from specjudge.catalog import load_catalog
 from specjudge.rating import evaluate_all, load_rules
 from specjudge.recommend import build_comparison
@@ -59,7 +60,16 @@ def build_full_comparison() -> Comparison:
     models, _ = load_catalog()
     rules = load_rules()
     evaluations = evaluate_all(models, DEMAND, rules)
-    return build_comparison(evaluations, DataState.SUFFICIENT, JUDGE_MODEL)
+    # The sources are read for real, not pinned: which files exist in the example
+    # project is a fact on disk, and the line the table prints should match it.
+    analysis = read_project(EXAMPLE_PROJECT, rules)
+    return build_comparison(
+        evaluations,
+        DataState.SUFFICIENT,
+        JUDGE_MODEL,
+        sources_read=analysis.sources_read,
+        environment_only=analysis.environment_only,
+    )
 
 
 def reference_overkill(comparison: Comparison) -> Evaluation | None:
