@@ -9,6 +9,60 @@ Entries before 0.1.4 were reconstructed from the git tags and the GitHub release
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-08-07
+
+A correctness fix that had been quietly degrading every cited assessment since 0.2.0, and a
+warning that finally says something you can act on.
+
+Nothing covered by semantic versioning changed: no `specjudge.api` symbol, no JSON schema
+field, no exit code. What changed is terminal and HTML output, the judge prompt, and fragment
+extraction — all of which [`docs/api.md`](docs/api.md) lists as explicitly outside the
+contract.
+
+### Fixed
+
+- **Cited evidence was half a sentence.** Fragment extraction matched bullets with a
+  line-anchored pattern, so any requirement wrapped across lines lost everything after the
+  wrap — 140 of 160 fragments in the evaluation corpus were affected. The judge has been
+  reading truncated requirements, and quoting them back, since #1 shipped in 0.2.0. Bullets
+  now absorb their continuation lines ([#19], [#20]).
+
+### Added
+
+- A thin project now says **what** is missing rather than only that something is, and says it
+  after the table instead of above it. One line of caveat above a ranked podium loses to the
+  podium; the actionable block is now the last thing on screen ([#11], [#18]).
+
+  ```
+  This ranking rests on a thin definition. Before acting on it:
+     • the spec declares no numbered requirements (looked for FR-NNN)
+       → state what the system must do, one numbered requirement per behaviour
+  ```
+
+  Each message names what it searched for, so a project numbering its requirements another way
+  can dismiss the warning instead of being accused of not having written them. The HTML report
+  gets the same treatment.
+
+- `scarce_thresholds.min_spec_chars` in `data/rating-rules.yaml`, so the "too short to judge
+  on" bar is a data edit like every other threshold ([#11], [#18]).
+
+### Changed
+
+- The judge is asked for the fragment **most relevant** to a dimension rather than one that
+  *supports* the rating. Requiring support made any whole-project dimension unanswerable:
+  every over-abstention measured across two judges was `domain_specialization`, which no single
+  sentence supports. Measured on `devstral-small-2`: accuracy 19/19 → 20/20 with one more
+  dimension answered, over-abstention 2 → 1 ([#19], [#20]).
+- Contradiction between requirements is offered as a reason to abstain. This part does not work
+  yet — two prompt formulations produced identical results — and is documented in [#19] rather
+  than claimed as fixed.
+
+### Compatibility
+
+No action needed. Terminal output gains a block on thin projects and cited evidence gets longer
+(because it is no longer truncated), but nothing under `specjudge.api`, the JSON schema or the
+exit codes moved.
+
 ## [0.3.0] - 2026-08-06
 
 You can now build on SpecJudge instead of only running it: the machine-readable output
@@ -239,7 +293,8 @@ community-maintained catalog by how well each model **fits** the job.
 - Explicit degradation with distinct exit codes when project data is insufficient,
   the judge is unavailable, or the catalog is empty.
 
-[Unreleased]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.1.4...v0.2.0
 [0.1.4]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.1.3...v0.1.4
@@ -257,4 +312,8 @@ community-maintained catalog by how well each model **fits** the job.
 [#14]: https://github.com/JoaquinRuiz/SpecJudge/issues/14
 [#15]: https://github.com/JoaquinRuiz/SpecJudge/pull/15
 [#17]: https://github.com/JoaquinRuiz/SpecJudge/pull/17
+[#11]: https://github.com/JoaquinRuiz/SpecJudge/issues/11
+[#18]: https://github.com/JoaquinRuiz/SpecJudge/pull/18
+[#19]: https://github.com/JoaquinRuiz/SpecJudge/issues/19
+[#20]: https://github.com/JoaquinRuiz/SpecJudge/pull/20
 [#2]: https://github.com/JoaquinRuiz/SpecJudge/issues/2
