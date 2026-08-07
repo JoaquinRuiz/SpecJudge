@@ -70,6 +70,26 @@ def test_every_source_gets_its_own_prefix():
     assert len({i.split(":")[0] for i in ids}) == 4, ids
 
 
+def test_several_files_of_one_kind_get_distinct_prefixes():
+    """A monorepo contributes many AGENTS.md, and they are separate documents.
+
+    Sharing a prefix is silently destructive: the positional ids collide, the later
+    file overwrites the earlier in the lookup, and the judge ends up validated
+    against text it was never shown.
+    """
+    analysis = _analysis(
+        _artifact("agents", "## Root rules\n"),
+        _artifact("agents", "## API rules\n"),
+        _artifact("agents", "## Web rules\n"),
+    )
+    assert _ids(analysis) == ["AG1:1", "AG2:1", "AG3:1"]
+
+
+def test_a_lone_file_of_a_kind_keeps_its_bare_prefix():
+    analysis = _analysis(_artifact("agents", "## Rules\n"))
+    assert _ids(analysis) == ["AG:1"]
+
+
 def test_unnamed_units_get_positional_ids():
     analysis = _analysis(_artifact("constitution", "## Simplicity First\n## Tested Behavior\n"))
     assert _ids(analysis) == ["C:1", "C:2"]
