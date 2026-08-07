@@ -1,0 +1,11 @@
+category: thin
+data_state: scarce
+rationale: >
+  A repository whose only written context is two architecture decision records:
+  event-sourced pricing with backdating, and service-owned schemas with eventual
+  consistency. That is real evidence about how demanding the codebase is, in a
+  format no agent-context file is involved in. `size` abstains — a decision record
+  says what was decided, not how much work is queued.
+dimensions:
+  reasoning: {min: medium}
+  size: abstain
