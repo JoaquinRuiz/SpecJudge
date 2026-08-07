@@ -91,10 +91,15 @@ def _instructions(rules: RatingRules) -> str:
         f"Rate each dimension ({dims}) on this scale: {levels}.\n\n"
         f"{_CALIBRATION}\n"
         "EVIDENCE IS REQUIRED. For each dimension, FIRST pick the id of the ONE\n"
-        "fragment from the CITABLE FRAGMENTS list that best supports your rating,\n"
-        "THEN give the level. Use only ids that appear in that list, exactly as\n"
-        f'written. If no fragment supports a level, answer "{UNSUPPORTED}" for that\n'
-        "dimension and give no id for it. Do not invent ids.\n\n"
+        "fragment from the CITABLE FRAGMENTS list most relevant to that dimension,\n"
+        "THEN give the level. The fragment anchors your answer in the project; it\n"
+        "does not have to prove the level on its own. Use only ids that appear in\n"
+        "that list, exactly as written. Do not invent ids.\n\n"
+        f'Answer "{UNSUPPORTED}" for a dimension, and give no id, when either:\n'
+        "  - nothing in the project bears on it at all, or\n"
+        "  - the requirements that bear on it CONTRADICT each other, so the project\n"
+        "    cannot be built as written. A project that cannot be built has no\n"
+        "    difficulty to estimate; say so rather than pick a level.\n\n"
         "Answer with THIS JSON object and nothing else. Do not copy, continue or\n"
         "summarise the project documents; do not output tasks, code or file lists:\n"
         f'{{"evidence": {{{ev_shape}}}, "dimensions": {{{dim_shape}}}, '
