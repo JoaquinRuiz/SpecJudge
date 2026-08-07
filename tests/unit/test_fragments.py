@@ -176,3 +176,71 @@ def test_normalize_does_not_invent_an_id_from_nothing():
 
     assert normalize_citation("   ") == ""
     assert normalize_citation("[]") == ""
+
+
+# ------------------------------------------------- multi-line items (issue #19)
+
+
+def test_a_wrapped_requirement_is_kept_whole():
+    """A line-anchored match cut requirements in half at the wrap.
+
+    In the corpus this dropped the exact clause that contradicted another
+    requirement, so the judge was asked to spot a conflict in text it never saw.
+    """
+    analysis = _analysis(
+        _artifact(
+            "spec",
+            "- **FR-002**: Report generation MUST run entirely on the device, since no\n"
+            "  personal data may leave it.\n",
+        )
+    )
+    (fragment,) = extract_fragments(analysis, LIMIT)
+    assert "personal data may leave it." in fragment.text
+
+
+def test_continuation_lines_are_joined_on_one_line():
+    analysis = _analysis(_artifact("spec", "- **FR-001**: first part\n  second part\n"))
+    (fragment,) = extract_fragments(analysis, LIMIT)
+    assert fragment.text == "**FR-001**: first part second part"
+
+
+def test_a_blank_line_ends_the_item():
+    analysis = _analysis(
+        _artifact("spec", "- **FR-001**: the requirement\n\n  Unrelated prose below.\n")
+    )
+    (fragment,) = extract_fragments(analysis, LIMIT)
+    assert "Unrelated prose" not in fragment.text
+
+
+def test_the_next_bullet_ends_the_item():
+    analysis = _analysis(
+        _artifact("spec", "- **FR-001**: first\n  wrapped\n- **FR-002**: second\n")
+    )
+    first, second = extract_fragments(analysis, LIMIT)
+    assert first.text == "**FR-001**: first wrapped"
+    assert second.text == "**FR-002**: second"
+
+
+def test_a_heading_ends_the_item():
+    analysis = _analysis(_artifact("spec", "- **FR-001**: the requirement\n## Next Section\n"))
+    fragments = {f.id: f.text for f in extract_fragments(analysis, LIMIT)}
+    assert "Next Section" not in fragments["S:FR-001"]
+
+
+def test_a_nested_bullet_becomes_its_own_fragment():
+    """A sub-item is a citable thing, not a continuation of its parent."""
+    analysis = _analysis(_artifact("spec", "- **FR-001**: parent\n  - **FR-002**: child\n"))
+    ids = [f.id for f in extract_fragments(analysis, LIMIT)]
+    assert ids == ["S:FR-001", "S:FR-002"]
+
+
+def test_wrapped_checklist_items_are_kept_whole():
+    analysis = _analysis(_artifact("tasks", "- [ ] T001 Implement the thing\n  in src/thing.py\n"))
+    (fragment,) = extract_fragments(analysis, LIMIT)
+    assert "src/thing.py" in fragment.text
+
+
+def test_the_cap_still_applies_after_joining():
+    analysis = _analysis(_artifact("spec", "- **FR-001**: start\n" + "  more text\n" * 60))
+    (fragment,) = extract_fragments(analysis, LIMIT)
+    assert len(fragment.text) <= MAX_FRAGMENT_CHARS
