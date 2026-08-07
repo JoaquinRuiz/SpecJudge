@@ -41,6 +41,15 @@ evidence:
   # the older, unverified behaviour back, and lose the grounding check with it.
   require_spans: true
 
+# Which written context feeds the judge, and how much of it.
+sources:
+  # How many context files (AGENTS.md, CLAUDE.md, .cursorrules, ADRs) may be read
+  # in one run. A monorepo can carry dozens of AGENTS.md that largely repeat one
+  # another, and they share a single character budget: more files means less of
+  # each. Files nearest the repository root are kept first, and whatever is left
+  # out is reported. Missing or invalid => 12.
+  max_context_files: 12
+
 # How the project is presented to the local judge.
 judge:
   # Judges at or below this parameter count (in billions) get a COMPACT prompt: a

@@ -12,8 +12,9 @@ import json
 import re
 from pathlib import Path
 
+from .discovery import context_files
 from .domain import DataState, ProjectAnalysis, RatingRules, SDDArtifact
-from .sources import environment_paths, plan_path
+from .sources import plan_path, summarize_kinds
 
 # A task "with a description" = checklist line with substantial text after the id.
 _TASK_LINE = re.compile(r"^\s*-\s*\[[ xX]\]\s+(.*\S.*)$")
@@ -76,21 +77,38 @@ def read_project(project_path: Path | str, rules: RatingRules) -> ProjectAnalysi
     if tasks.readable:
         tasks.task_count = _count_detailed_tasks(tasks.content)
 
-    # Agent-context files are read alongside the SDD artifacts, never instead of
-    # them: they describe the environment, the artifacts describe the work, and
-    # the two do not overlap (FR-024).
-    environment = [_read_artifact(kind, path) for kind, path in environment_paths(project_path)]
+    warnings: list[str] = []
+
+    # Context files are read alongside the SDD artifacts, never instead of them:
+    # they describe the environment, the artifacts describe the work, and the two
+    # do not overlap (FR-024).
+    environment = _read_environment(project_path, rules.max_context_files, warnings)
 
     artifacts = [constitution, spec, tasks, plan, *environment]
 
-    warnings: list[str] = []
     data_state = _classify(constitution, spec, tasks, environment, rules, warnings)
 
     return ProjectAnalysis(
         artifacts=artifacts,
         data_state=data_state,
         warnings=warnings,
+        root=str(project_path),
     )
+
+
+def _read_environment(project_path: Path, max_files: int, warnings: list[str]) -> list[SDDArtifact]:
+    """Every context file that survives discovery, the cap and the generated check."""
+    found, dropped = context_files(project_path, max_files)
+
+    if dropped:
+        # A cap the user cannot see reads as "we read everything" (FR-025).
+        warnings.append(
+            f"Read {len(found)} context files; {len(dropped)} more were found and left "
+            f"out ({summarize_kinds([kind for kind, _ in dropped])}). Context near the "
+            f"repository root is kept first."
+        )
+
+    return [_read_artifact(kind, path) for kind, path in found]
 
 
 def _classify(
@@ -112,7 +130,7 @@ def _classify(
         # floor: how demanding this codebase is to work in at all. That is `scarce`,
         # not `sufficient` — a real answer, openly a weak one (FR-024).
         if any(a.usable for a in environment):
-            names = ", ".join(a.type for a in environment if a.usable)
+            names = summarize_kinds([a.type for a in environment if a.usable])
             warnings.append(
                 f"No tasks or specification found; judged from environment context only "
                 f"({names}). This is a floor — how demanding this repository is to work "

@@ -13,6 +13,7 @@ from pathlib import Path
 import yaml
 
 from .domain import (
+    DEFAULT_MAX_CONTEXT_FILES,
     DEFAULT_MAX_PRICING_AGE_DAYS,
     LEVELS,
     UNSUPPORTED,
@@ -68,7 +69,23 @@ def load_rules(path: Path | str | None = None) -> RatingRules:
         judge=raw.get("judge") or {},
         max_pricing_age_days=_max_pricing_age_days(raw.get("catalog_freshness")),
         require_spans=_require_spans(raw.get("evidence")),
+        max_context_files=_max_context_files(raw.get("sources")),
     )
+
+
+def _max_context_files(raw: object) -> int:
+    """Read sources.max_context_files, falling back to the default (FR-025).
+
+    Degrades to the default rather than raising, like every other knob here: a
+    bad ingestion setting must not stop a recommendation.
+    """
+    if not isinstance(raw, dict):
+        return DEFAULT_MAX_CONTEXT_FILES
+    try:
+        value = int(raw["max_context_files"])
+    except (KeyError, TypeError, ValueError):
+        return DEFAULT_MAX_CONTEXT_FILES
+    return value if value >= 1 else DEFAULT_MAX_CONTEXT_FILES
 
 
 def _require_spans(raw: object) -> bool:

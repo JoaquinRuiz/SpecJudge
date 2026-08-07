@@ -125,7 +125,8 @@ def test_the_floor_says_out_loud_that_it_is_a_floor(tmp_path):
     """Degrading quietly would be worse than refusing (Principle IV)."""
     analysis = read_project(_project(tmp_path, {"AGENTS.md": _AGENTS}), _rules())
     assert any("floor" in w for w in analysis.warnings)
-    assert any("agents" in w for w in analysis.warnings)
+    # Named as the file the user would go and look at, not as an internal kind.
+    assert any("AGENTS.md" in w for w in analysis.warnings)
 
 
 def test_an_empty_repository_is_still_insufficient(tmp_path):
@@ -160,7 +161,16 @@ def test_tasks_still_decide_the_state_when_they_exist(tmp_path):
 
 @pytest.mark.parametrize(
     ("kind", "expected"),
-    [("agents", True), ("claude", True), ("spec", False), ("tasks", False), ("plan", False)],
+    [
+        ("agents", True),
+        ("claude", True),
+        ("cursor", True),
+        ("copilot", True),
+        ("adr", True),
+        ("spec", False),
+        ("tasks", False),
+        ("plan", False),
+    ],
 )
 def test_environment_kinds_are_classified(kind, expected):
     assert is_environment(kind) is expected
