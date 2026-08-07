@@ -53,7 +53,7 @@ def build_comparison(
     judge_model: str | None,
     warnings: list[str] | None = None,
     demand: DemandProfile | None = None,
-    sources_read: list[str] | None = None,
+    source_kinds: list[str] | None = None,
     environment_only: bool = False,
 ) -> Comparison:
     warnings = list(warnings or [])
@@ -74,6 +74,6 @@ def build_comparison(
         warnings=warnings,
         podium=podium,
         demand=demand,
-        sources_read=list(sources_read or []),
+        source_kinds=list(source_kinds or []),
         environment_only=environment_only,
     )

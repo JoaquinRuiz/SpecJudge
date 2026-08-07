@@ -327,12 +327,24 @@ class Comparison:
     # Top three by fit: gold, silver, bronze. Shorter than 3 when fewer models
     # are capable enough; empty when none is. `best_choice` is podium[0].
     podium: list[str] = field(default_factory=list)
-    # Which sources the assessment actually read (FR-024). Reported because the
-    # answer now depends on it: the same repository judged from an AGENTS.md and
-    # judged from a spec are two different claims, and only one of them says so.
-    sources_read: list[str] = field(default_factory=list)
+    # One entry per source file that fed the assessment, in read order (FR-024).
+    # Reported because the answer now depends on it: the same repository judged
+    # from an AGENTS.md and judged from a spec are two different claims, and only
+    # one of them says so. Repeats are meaningful here — four AGENTS.md is a
+    # different input from one — while the JSON payload publishes the deduplicated
+    # view, which is the part a consumer can branch on.
+    source_kinds: list[str] = field(default_factory=list)
     # True when nothing described the work — see ProjectAnalysis.environment_only.
     environment_only: bool = False
+
+    @property
+    def sources_read(self) -> list[str]:
+        """Kinds of source that fed the assessment, deduplicated, in read order."""
+        seen: list[str] = []
+        for kind in self.source_kinds:
+            if kind not in seen:
+                seen.append(kind)
+        return seen
 
     def medal(self, model_id: str) -> str | None:
         """'gold' | 'silver' | 'bronze' for a podium model, else None."""

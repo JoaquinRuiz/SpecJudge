@@ -93,6 +93,18 @@ def test_an_environment_only_project_validates_and_says_so(tmp_path, test_catalo
     assert payload["data_state"] == "scarce"
 
 
+def test_sources_read_names_each_kind_once(tmp_path, test_catalog, mock_ollama):
+    """A monorepo would otherwise put "agents" in the payload eight times."""
+    for name in ("AGENTS.md", "packages/api/AGENTS.md", "packages/web/AGENTS.md"):
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("# A\n\n- Money is integer minor units, never a float.\n", "utf-8")
+
+    payload = _run(tmp_path, test_catalog, mock_ollama)
+    jsonschema.validate(payload, SCHEMA)
+    assert payload["sources_read"] == ["agents"]
+
+
 def test_unknown_fields_are_rejected(project_sufficient, test_catalog, mock_ollama):
     """`additionalProperties: false` is what makes an accidental addition visible."""
     payload = _run(project_sufficient, test_catalog, mock_ollama)

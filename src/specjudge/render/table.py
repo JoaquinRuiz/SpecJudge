@@ -13,6 +13,7 @@ from rich.text import Text
 from ..about import TERMINAL_CREDIT
 from ..domain import Comparison, Evaluation, EvidenceStatus, Rating
 from ..gaps import Gap
+from ..sources import summarize_kinds
 
 _MEDAL = {"gold": ("🥇", "bold yellow"), "silver": ("🥈", "bold white"), "bronze": ("🥉", "bold")}
 
@@ -129,29 +130,23 @@ def _print_gaps(console: Console, gaps: list[Gap] | None, *, no_color: bool) -> 
         console.print(Text(f"     → {gap.fix}", style=None if no_color else "dim"))
 
 
-_SOURCE_LABEL = {
-    "constitution": "constitution",
-    "spec": "spec",
-    "tasks": "tasks",
-    "plan": "plan",
-    "agents": "AGENTS.md",
-    "claude": "CLAUDE.md",
-}
-
-
 def _print_sources(console: Console, comparison: Comparison, *, no_color: bool) -> None:
     """What the assessment was built from (FR-024).
 
     Now that several kinds of file can feed the judge, "where did this come from?"
     stops being obvious from having run the tool. One line answers it, and it sits
     next to the evidence because it is the same question at a coarser grain.
+
+    Counted, not just listed: "AGENTS.md" when four of them were read would be a
+    smaller claim than the truth.
     """
-    if not comparison.sources_read:
+    if not comparison.source_kinds:
         return
 
-    names = ", ".join(_SOURCE_LABEL.get(s, s) for s in comparison.sources_read)
     console.print()
-    console.print(Text(f"Read: {names}", style=None if no_color else "dim"))
+    console.print(
+        Text(f"Read: {summarize_kinds(comparison.source_kinds)}", style=None if no_color else "dim")
+    )
 
 
 def _print_evidence(console: Console, comparison: Comparison, *, no_color: bool) -> None:

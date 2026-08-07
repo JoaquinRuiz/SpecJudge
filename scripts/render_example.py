@@ -67,7 +67,7 @@ def build_full_comparison() -> Comparison:
         evaluations,
         DataState.SUFFICIENT,
         JUDGE_MODEL,
-        sources_read=analysis.sources_read,
+        source_kinds=analysis.source_kinds,
         environment_only=analysis.environment_only,
     )
 
