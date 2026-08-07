@@ -14,7 +14,7 @@ from pathlib import Path
 
 from .discovery import context_files
 from .domain import DataState, ProjectAnalysis, RatingRules, SDDArtifact
-from .sources import plan_path, summarize_kinds
+from .sources import is_generated, plan_path, summarize_kinds
 
 # A task "with a description" = checklist line with substantial text after the id.
 _TASK_LINE = re.compile(r"^\s*-\s*\[[ xX]\]\s+(.*\S.*)$")
@@ -108,7 +108,24 @@ def _read_environment(project_path: Path, max_files: int, warnings: list[str]) -
             f"repository root is kept first."
         )
 
-    return [_read_artifact(kind, path) for kind, path in found]
+    environment: list[SDDArtifact] = []
+    generated: list[tuple[str, Path]] = []
+    for kind, path in found:
+        artifact = _read_artifact(kind, path)
+        if artifact.usable and is_generated(artifact.content):
+            generated.append((kind, path))
+            continue
+        environment.append(artifact)
+
+    if generated:
+        names = ", ".join(str(p.relative_to(project_path)) for _, p in generated)
+        warnings.append(
+            f"Ignored {len(generated)} generated context file(s) ({names}): they say a "
+            f"tool wrote them, and generated context mostly restates what the code "
+            f"already shows. Remove the generated marker if you wrote it yourself."
+        )
+
+    return environment
 
 
 def _classify(
