@@ -13,6 +13,7 @@ import re
 from pathlib import Path
 
 from .domain import DataState, ProjectAnalysis, RatingRules, SDDArtifact
+from .sources import environment_paths, plan_path
 
 # A task "with a description" = checklist line with substantial text after the id.
 _TASK_LINE = re.compile(r"^\s*-\s*\[[ xX]\]\s+(.*\S.*)$")
@@ -70,15 +71,23 @@ def read_project(project_path: Path | str, rules: RatingRules) -> ProjectAnalysi
     constitution = _read_artifact("constitution", constitution_path)
     spec = _read_artifact("spec", spec_path)
     tasks = _read_artifact("tasks", tasks_path)
+    plan = _read_artifact("plan", plan_path(feature_dir, project_path))
 
     if tasks.readable:
         tasks.task_count = _count_detailed_tasks(tasks.content)
 
+    # Agent-context files are read alongside the SDD artifacts, never instead of
+    # them: they describe the environment, the artifacts describe the work, and
+    # the two do not overlap (FR-024).
+    environment = [_read_artifact(kind, path) for kind, path in environment_paths(project_path)]
+
+    artifacts = [constitution, spec, tasks, plan, *environment]
+
     warnings: list[str] = []
-    data_state = _classify(constitution, spec, tasks, rules, warnings)
+    data_state = _classify(constitution, spec, tasks, environment, rules, warnings)
 
     return ProjectAnalysis(
-        artifacts=[constitution, spec, tasks],
+        artifacts=artifacts,
         data_state=data_state,
         warnings=warnings,
     )
@@ -88,11 +97,28 @@ def _classify(
     constitution: SDDArtifact,
     spec: SDDArtifact,
     tasks: SDDArtifact,
+    environment: list[SDDArtifact],
     rules: RatingRules,
     warnings: list[str],
 ) -> DataState:
-    # Insufficient: the tasks (the artifact being evaluated) are missing/unreadable/empty.
-    if not tasks.present or not tasks.readable or tasks.task_count == 0:
+    has_tasks = tasks.present and tasks.readable and tasks.task_count > 0
+
+    if not has_tasks:
+        # Without tasks there is nothing describing the work. That used to end the
+        # run — which shut the door on every repository that documents itself with
+        # an AGENTS.md instead of a spec, i.e. most of them.
+        #
+        # If the repository does describe its environment, there is enough for a
+        # floor: how demanding this codebase is to work in at all. That is `scarce`,
+        # not `sufficient` — a real answer, openly a weak one (FR-024).
+        if any(a.usable for a in environment):
+            names = ", ".join(a.type for a in environment if a.usable)
+            warnings.append(
+                f"No tasks or specification found; judged from environment context only "
+                f"({names}). This is a floor — how demanding this repository is to work "
+                f"in — not a recommendation for a specific piece of work."
+            )
+            return DataState.SCARCE
         return DataState.INSUFFICIENT
 
     min_detailed = int(rules.scarce_thresholds.get("min_detailed_tasks", 3))
