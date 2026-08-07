@@ -27,8 +27,11 @@ from ..domain import Fragment, ProjectAnalysis
 _REQUIREMENT = re.compile(r"\b((?:FR|SC|RF|RNF|NFR)-\d+)\b")
 _TASK_ID = re.compile(r"\b(T\d{3,})\b")
 _HEADING = re.compile(r"^#{1,3}\s+(.*\S)\s*$", re.MULTILINE)
-_CHECKLIST = re.compile(r"^\s*-\s*\[[ xX]\]\s+(.*\S)\s*$", re.MULTILINE)
-_BULLET = re.compile(r"^\s*[-*]\s+(?!\[[ xX]\])(.*\S)\s*$", re.MULTILINE)
+# Start-of-line markers. Bullet text is gathered by `_bullet_blocks` rather than by
+# the regex, because a requirement wrapped across lines must not be cut in half.
+_CHECKLIST_START = re.compile(r"^(\s*)-\s*\[[ xX]\]\s+(.*\S)\s*$")
+_BULLET_START = re.compile(r"^(\s*)[-*]\s+(?!\[[ xX]\])(.*\S)\s*$")
+_HEADING_START = re.compile(r"^\s*#{1,6}\s")
 
 # Fragment text is capped so the prompt stays affordable; the cap is applied
 # identically when validating a quote, so the two never disagree.
@@ -52,6 +55,52 @@ def _normalize(text: str) -> str:
     return " ".join(text.split()).lower()
 
 
+def _bullet_blocks(text: str, checklist: bool) -> list[str]:
+    """Bullet items with their wrapped continuation lines joined back on.
+
+    Markdown wraps long items across lines:
+
+        - **FR-002**: Report generation MUST run entirely on the user's device, since no
+          personal data may leave it.
+
+    A line-anchored regex captures only the first line, so the judge was shown
+    requirements cut off mid-clause — and in one corpus case the half that was
+    dropped was the half that contradicted another requirement. Everything the
+    judge could not read, it could not reason about.
+
+    A continuation line is non-blank, indented deeper than its bullet, and is not
+    itself a bullet or a heading. A more-indented bullet starts its own fragment
+    rather than being swallowed: a sub-item is a citable thing in its own right.
+    """
+    start = _CHECKLIST_START if checklist else _BULLET_START
+    other = _BULLET_START if checklist else _CHECKLIST_START
+
+    blocks: list[str] = []
+    lines = text.splitlines()
+    index = 0
+    while index < len(lines):
+        match = start.match(lines[index])
+        if match is None:
+            index += 1
+            continue
+
+        indent = len(match.group(1))
+        parts = [match.group(2).strip()]
+        index += 1
+        while index < len(lines):
+            line = lines[index]
+            if not line.strip():
+                break
+            if start.match(line) or other.match(line) or _HEADING_START.match(line):
+                break
+            if len(line) - len(line.lstrip()) <= indent:
+                break
+            parts.append(line.strip())
+            index += 1
+        blocks.append(" ".join(parts))
+    return blocks
+
+
 def _label(line: str) -> str | None:
     """The natural id carried by a line of text, if it has one."""
     req = _REQUIREMENT.search(line)
@@ -69,11 +118,17 @@ def _artifact_fragments(artifact_type: str, text: str) -> list[Fragment]:
     found: dict[str, Fragment] = {}
     counter = 0
 
-    # Requirement- and task-bearing lines first: they are the units a reader would
-    # cite, and they already have stable names in the document.
-    for pattern in (_CHECKLIST, _BULLET, _HEADING):
-        for raw in pattern.findall(text):
-            body = raw.strip()
+    # Requirement- and task-bearing items first: they are the units a reader would
+    # cite, and they already have stable names in the document. Headings come last
+    # and never wrap, so they stay a plain line match.
+    sources = [
+        _bullet_blocks(text, checklist=True),
+        _bullet_blocks(text, checklist=False),
+        _HEADING.findall(text),
+    ]
+    for raw_items in sources:
+        for raw in raw_items:
+            body = " ".join(raw.split())
             if not body:
                 continue
             natural = _label(body)

@@ -75,3 +75,24 @@ def test_the_prompt_never_asks_the_judge_to_write_code(case, compact):
     """A judge that starts implementing has misread the task entirely."""
     prompt = _prompt(case, compact).lower()
     assert "do not output tasks, code or file lists" in prompt
+
+
+@pytest.mark.parametrize("compact", SHAPES, ids=["compact", "full"])
+@pytest.mark.parametrize("case", JUDGED[:1], ids=lambda c: c.name)
+def test_the_citation_bar_is_relevance_not_proof(case, compact):
+    """Asking for a fragment that *supports* the rating made holistic dimensions
+    unanswerable: every over-abstention measured was `domain_specialization`,
+    which no single sentence supports (issue #19)."""
+    prompt = _prompt(case, compact)
+    assert "most relevant to that dimension" in prompt
+    assert "best supports your rating" not in prompt
+
+
+@pytest.mark.parametrize("compact", SHAPES, ids=["compact", "full"])
+@pytest.mark.parametrize("case", JUDGED[:1], ids=lambda c: c.name)
+def test_contradiction_is_offered_as_a_reason_to_abstain(case, compact):
+    """Abstention used to mean only "no evidence found". A spec whose requirements
+    conflict has plenty of evidence; it just cannot be built."""
+    prompt = _prompt(case, compact)
+    assert "CONTRADICT each other" in prompt
+    assert "cannot be built as written" in prompt
