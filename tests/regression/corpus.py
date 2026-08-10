@@ -60,6 +60,11 @@ class Case:
     # dimension -> Band, or dimension -> ABSTAIN. Absent for insufficient cases,
     # where the judge never runs.
     dimensions: dict[str, Band | str] = field(default_factory=dict)
+    # What the *bulk* of the work needs, where the case has an opinion (issue #3).
+    # Optional on purpose: relabelling every existing case by hand would be sixteen
+    # fresh human judgements with nothing to check them against, which is how a
+    # corpus starts to rot.
+    bulk_dimensions: dict[str, Band | str] = field(default_factory=dict)
 
     @property
     def judged(self) -> bool:
@@ -94,6 +99,11 @@ def load_case(directory: Path) -> Case:
         for name, value in (raw.get("dimensions") or {}).items()
     }
 
+    bulk_dimensions = {
+        name: _parse_dimension(value, f"{where}:bulk:{name}")
+        for name, value in (raw.get("bulk_dimensions") or {}).items()
+    }
+
     return Case(
         name=directory.name,
         path=directory,
@@ -101,6 +111,7 @@ def load_case(directory: Path) -> Case:
         data_state=str(raw["data_state"]),
         rationale=str(raw["rationale"]).strip(),
         dimensions=dimensions,
+        bulk_dimensions=bulk_dimensions,
     )
 
 

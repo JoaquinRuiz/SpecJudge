@@ -384,3 +384,128 @@ def test_decoration_does_not_rescue_a_fabricated_id():
     client = _FakeClient([_answer(dict.fromkeys(_ALL_DIMS, "medium"), evidence)])
     with pytest.raises(JudgeUnavailableError):
         estimate_demand(_analysis(), _rules(), client, "judge")
+
+
+# ------------------------------------------- bulk and outliers (issue #3)
+
+
+def _judge_answer(**extra):
+    """A well-formed answer with citations, plus whatever the test is about."""
+    answer = {
+        "dimensions": {"reasoning": "top", "size": "medium", "domain_specialization": "low"},
+        "evidence": {
+            "reasoning": "S:FR-001",
+            "size": "S:FR-001",
+            "domain_specialization": "S:FR-001",
+        },
+        "justification": "because",
+    }
+    answer.update(extra)
+    return answer
+
+
+def _parsed(answer, request_bulk=True, **rule_kwargs):
+    from specjudge.domain import Fragment
+    from specjudge.judge.evaluator import _parse_demand
+
+    rules = _rules()
+    for key, value in rule_kwargs.items():
+        setattr(rules, key, value)
+    fragments = [Fragment("S:FR-001", "spec", "**FR-001**: it MUST hold")]
+    return _parse_demand(answer, rules, fragments, request_bulk)
+
+
+def test_a_bulk_below_the_peak_is_kept():
+    profile = _parsed(
+        _judge_answer(
+            bulk={"reasoning": "medium", "size": "medium", "domain_specialization": "low"}
+        )
+    )
+    assert profile.bulk["reasoning"] == "medium"
+    assert profile.distinguishes_bulk is True
+
+
+def test_a_missing_bulk_is_not_invented():
+    """Degrading to the peak is conservative; interpolating one is not (FR-027)."""
+    profile = _parsed(_judge_answer())
+    assert profile.bulk == {}
+    assert profile.bulk_dimensions == profile.scored_dimensions
+
+
+def test_a_bulk_above_the_peak_is_dropped():
+    """The peak is the hardest part by definition, so this is self-contradiction.
+
+    Keeping it would let a confused judge raise the floor of the recommendation.
+    """
+    profile = _parsed(
+        _judge_answer(bulk={"reasoning": "top", "size": "top", "domain_specialization": "top"})
+    )
+    assert "size" not in profile.bulk
+    assert "domain_specialization" not in profile.bulk
+
+
+def test_a_malformed_bulk_does_not_fail_the_run():
+    """An optional field must never be able to reject an otherwise good profile."""
+    profile = _parsed(_judge_answer(bulk=["not", "a", "map"]))
+    assert profile.dimensions["reasoning"] == "top"
+    assert profile.bulk == {}
+
+
+def test_outliers_are_normalised_and_deduplicated():
+    profile = _parsed(_judge_answer(outliers=["[S:FR-001]", "S:FR-001", " T:T009 "]))
+    assert profile.outliers == ["S:FR-001", "T:T009"]
+
+
+def test_an_outlier_that_does_not_exist_is_not_fatal():
+    """A fabricated *citation* rejects the profile; a stray id in a list is noise.
+
+    Conflating them would let an optional field fail a run that is otherwise sound.
+    """
+    profile = _parsed(_judge_answer(outliers=["S:NOPE"]))
+    assert profile.outliers == ["S:NOPE"]
+    assert profile.dimensions["reasoning"] == "top"
+
+
+def test_a_bulk_offered_by_a_judge_that_was_not_asked_is_ignored():
+    """A small judge answers the fields it was not given; none of that is kept."""
+    profile = _parsed(
+        _judge_answer(bulk={"reasoning": "low", "size": "low", "domain_specialization": "low"}),
+        request_bulk=False,
+    )
+    assert profile.bulk == {}
+
+
+def test_the_prompt_asks_for_the_bulk_only_when_requested():
+    analysis = ProjectAnalysis(
+        artifacts=[SDDArtifact("spec", "s.md", True, True, "- **FR-001**: it MUST hold\n")],
+        data_state=DataState.SUFFICIENT,
+    )
+    assert '"bulk"' in build_prompt(analysis, _rules(), request_bulk=True)
+    assert '"bulk"' not in build_prompt(analysis, _rules())
+
+
+# ------------------------------------------- who gets asked (measured, issue #3)
+
+
+@pytest.mark.parametrize(
+    ("params_b", "asked"),
+    [(24.0, True), (70.0, True), (8.0, False), (20.0, False), (None, False)],
+)
+def test_only_judges_big_enough_are_asked_for_the_split(params_b, asked):
+    """Measured on the corpus: the extra fields make an 8B judge worse.
+
+    It loses about five points of accuracy on the levels it was already getting
+    right, and refuses two to three times as often. Capacity a judge does not have
+    is not free, so it is not spent — the same reasoning as the compact prompt.
+    """
+    from specjudge.judge.evaluator import use_bulk_prompt
+
+    assert use_bulk_prompt(params_b, _rules()) is asked
+
+
+def test_the_master_switch_overrides_the_threshold():
+    from specjudge.judge.evaluator import use_bulk_prompt
+
+    rules = _rules()
+    rules.request_bulk = False
+    assert use_bulk_prompt(70.0, rules) is False

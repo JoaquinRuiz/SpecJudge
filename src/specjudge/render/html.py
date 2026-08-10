@@ -52,6 +52,7 @@ def render_html(comparison: Comparison, gaps: list[Gap] | None = None) -> str:
         judge_model=comparison.judge_model,
         data_state=comparison.data_state.value,
         sources_read=summarize_kinds(comparison.source_kinds),
+        envelope=comparison.envelope,
         warnings=comparison.warnings,
         gaps=gaps or [],
     )

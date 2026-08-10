@@ -2,7 +2,16 @@
 
 from __future__ import annotations
 
-from specjudge.domain import Comparison, DataState, Evaluation, Price, Rating
+from specjudge.domain import (
+    Comparison,
+    Constraint,
+    DataState,
+    Envelope,
+    Evaluation,
+    ExecutionModel,
+    Price,
+    Rating,
+)
 from specjudge.render.table import render_comparison
 
 
@@ -66,3 +75,55 @@ def test_repeated_sources_are_counted(capsys):
 def test_nothing_is_claimed_when_no_source_was_recorded(capsys):
     render_comparison(_comp(), no_color=True)
     assert "Read:" not in capsys.readouterr().out
+
+
+# ------------------------------------------------- budget envelope (issue #3)
+
+
+def _envelope(model: ExecutionModel, **kwargs) -> Envelope:
+    hard = Constraint("reasoning", "top", "S:FR-001", "**FR-001**: it MUST hold", True)
+    soft = Constraint("size", "low", "T:T002", "T002 Rename a label", False)
+    return Envelope(
+        execution_model=model,
+        default_demand=kwargs.get("default", {"reasoning": "top", "size": "low"}),
+        peak_demand={"reasoning": "top", "size": "low"},
+        constraints=[hard, soft],
+        escalations=kwargs.get("escalations", []),
+    )
+
+
+def test_the_envelope_names_the_fragment_behind_each_level(capsys):
+    """The reader can go and look at the thing that is costing them money."""
+    comp = _comp()
+    comp.envelope = _envelope(ExecutionModel.SINGLE)
+    render_comparison(comp, no_color=True)
+    out = capsys.readouterr().out
+    assert "Budget envelope" in out
+    assert "reasoning: top — S:FR-001 (requirement)" in out
+    assert "size: low — T:T002 (customary)" in out
+
+
+def test_an_escalating_run_says_the_ranking_is_on_the_bulk(capsys):
+    comp = _comp()
+    comp.envelope = _envelope(
+        ExecutionModel.ESCALATING,
+        default={"reasoning": "medium", "size": "low"},
+        escalations=[Constraint("reasoning", "top", "S:FR-001", "MUST hold", True)],
+    )
+    render_comparison(comp, no_color=True)
+    out = capsys.readouterr().out
+    assert "ranked on the bulk of the work" in out
+    assert "escalate for:" in out
+    assert "S:FR-001" in out
+
+
+def test_uniform_work_shows_no_escalation_block(capsys):
+    comp = _comp()
+    comp.envelope = _envelope(ExecutionModel.ESCALATING)
+    render_comparison(comp, no_color=True)
+    assert "escalate for:" not in capsys.readouterr().out
+
+
+def test_a_comparison_without_an_envelope_prints_none(capsys):
+    render_comparison(_comp(), no_color=True)
+    assert "Budget envelope" not in capsys.readouterr().out

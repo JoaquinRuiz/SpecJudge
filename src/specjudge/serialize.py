@@ -16,6 +16,10 @@ Change rules, enforced by review rather than by code:
 0.1.x and 0.2.0 emitted this same payload without the `schema_version` field. Adding
 it is additive, so a consumer written against those releases keeps working.
 
+1.2 adds `envelope`: the demand as a range with named causes — a default level, the peak,
+the constraint table behind both, and the escalation triggers when the caller said it can
+switch model per task. Additive, so a 1.1 consumer is unaffected.
+
 1.1 adds `sources_read` and `environment_only`: which written sources the assessment
 came from, and whether any of them described the work rather than the repository. Both
 are additive, so a 1.0 consumer is unaffected.
@@ -27,9 +31,9 @@ import json
 from importlib.resources import files
 from pathlib import Path
 
-from .domain import Comparison, DemandProfile
+from .domain import Comparison, Constraint, DemandProfile, Envelope
 
-SCHEMA_VERSION = "1.1"
+SCHEMA_VERSION = "1.2"
 
 
 def schema_path() -> Path:
@@ -72,6 +76,36 @@ def demand_to_dict(demand: DemandProfile | None) -> dict | None:
     }
 
 
+def constraint_to_dict(constraint: Constraint) -> dict:
+    """One row of the constraint table (FR-027)."""
+    return {
+        "dimension": constraint.dimension,
+        "level": constraint.level,
+        "fragment_id": constraint.fragment_id,
+        "text": constraint.text,
+        "hard": constraint.hard,
+    }
+
+
+def envelope_to_dict(envelope: Envelope | None) -> dict | None:
+    """The demand as a range with named causes.
+
+    Null when there is no profile to build one from. `default_demand` is what the
+    ranking used; `peak_demand` is what the hardest part needs. Under `single` they
+    are the same object of attention, and that is not a bug: it is what "one model
+    does everything" means.
+    """
+    if envelope is None:
+        return None
+    return {
+        "execution_model": envelope.execution_model.value,
+        "default_demand": dict(envelope.default_demand),
+        "peak_demand": dict(envelope.peak_demand),
+        "constraints": [constraint_to_dict(c) for c in envelope.constraints],
+        "escalations": [constraint_to_dict(c) for c in envelope.escalations],
+    }
+
+
 def comparison_to_dict(comparison: Comparison) -> dict:
     """The full `--json` payload for a comparison."""
     return {
@@ -83,6 +117,7 @@ def comparison_to_dict(comparison: Comparison) -> dict:
         "best_choice": comparison.best_choice,
         "podium": list(comparison.podium),
         "demand": demand_to_dict(comparison.demand),
+        "envelope": envelope_to_dict(comparison.envelope),
         "warnings": list(comparison.warnings),
         "evaluations": [
             {

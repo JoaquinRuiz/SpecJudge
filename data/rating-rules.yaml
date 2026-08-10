@@ -50,6 +50,24 @@ sources:
   # out is reported. Missing or invalid => 12.
   max_context_files: 12
 
+# How the project is going to be implemented, and how much the judge is asked about it.
+execution:
+  # `single`: one model does all the work, so the ranking must clear the hardest part.
+  # `escalating`: the model can change per task, so the bulk of the work sets the
+  # default and the outliers become explicit escalation triggers.
+  # Conservative by default — assuming one model can only over-serve the work, while
+  # assuming escalation would quietly recommend something weaker than you need.
+  # Override per run with --execution-model.
+  model: single
+  # Whether the judge may be asked to separate the bulk of the work from its hardest
+  # part. Turning it off gets the single-level answer back everywhere.
+  request_bulk: true
+  # ...but only judges above this parameter count (in billions) are actually asked.
+  # Measured on the evaluation corpus: the extra fields cost an 8B judge about five
+  # points of accuracy and double its refusals, while a 24B judge is unaffected and
+  # gets the bulk right. An unknown size counts as small, like the compact prompt.
+  request_bulk_above_params_b: 20
+
 # How the project is presented to the local judge.
 judge:
   # Judges at or below this parameter count (in billions) get a COMPACT prompt: a

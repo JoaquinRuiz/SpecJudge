@@ -34,7 +34,7 @@ grounding check, which is a real loss and an honest trade.
 
 ## Measured
 
-Every figure below comes from `scripts/eval_judge.py` over the regression corpus of **16
+Every figure below comes from `scripts/eval_judge.py` over the regression corpus of **17
 projects** with expected profiles, on one machine. Reproduce any row with:
 
 ```bash
@@ -43,12 +43,12 @@ uv run python scripts/eval_judge.py --judge <model> --markdown-row
 
 | Judge | Params | Dimensions in band | Ordinal distance | Answers refused |
 |---|---|---|---|---|
-| `devstral-small-2` | 24B | 28/28 (100%) | 0 | 0 |
-| `qwen3:8b` | 8B | 23/26 (88%) | 3 steps | 1 |
-| `llama3.1:8b-instruct-q4_K_M` | 8B | 21/25 (84%) | 4 steps | 1 |
+| `devstral-small-2` | 24B | 30/30 (100%) | 0 | 0 |
+| `qwen3:8b` | 8B | 25/28 (89%) | 3 steps | 1 |
+| `llama3.1:8b-instruct-q4_K_M` | 8B | 22/27 (81%) | 5 steps | 1 |
 
-<sub>SpecJudge 0.4.0 · Ollama 0.32.6 · Apple silicon · corpus of 16 cases · measured
-2026-08-10</sub>
+<sub>SpecJudge 0.4.0 + issue #3 (unreleased) · Ollama 0.32.6 · Apple silicon · corpus of 17
+cases · measured 2026-08-10</sub>
 
 **In band** — the demand level landed inside the range the corpus expects. Ranges rather
 than exact levels, because the labels are human judgement on a four-point scale.
@@ -65,6 +65,18 @@ the [project constitution](../.specify/memory/constitution.md), and it is what m
 Two honest caveats. The 8B runs are not perfectly reproducible: repeating `llama3.1` gave
 the same totals but failed on a different case. And `devstral-small-2` is a code model, so
 part of its margin may be that rather than its size.
+
+### What a bigger judge additionally gets you
+
+Judges above `execution.request_bulk_above_params_b` (20B by default) are also asked to
+separate the bulk of the work from its hardest part, which is what fills in the escalation
+triggers of the [budget envelope](../README.md#one-project-two-complexities). Smaller
+judges are not asked, and this is measured rather than assumed: on the same corpus the
+extra fields cost `qwen3:8b` five points of accuracy (89% → 84%) and doubled its refused
+answers, while `devstral-small-2` answered them correctly and lost nothing.
+
+So an 8B judge still ranks and still cites; it reports one level for the project instead of
+a range, and says so rather than leaving you to infer it.
 
 ## Reported by the community
 

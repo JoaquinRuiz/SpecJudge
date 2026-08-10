@@ -27,14 +27,19 @@ from .artifacts import read_project
 from .catalog import check_freshness, load_catalog
 from .domain import (
     Comparison,
+    Constraint,
     DataState,
     DemandProfile,
+    Envelope,
     Evaluation,
     Evidence,
     EvidenceStatus,
+    ExecutionModel,
     Price,
     Rating,
 )
+from .envelope import build as build_envelope
+from .envelope import envelope_warnings
 from .errors import (
     CatalogError,
     InsufficientInfoError,
@@ -44,7 +49,8 @@ from .errors import (
     insufficient_project,
     no_supported_dimensions,
 )
-from .judge.evaluator import estimate_demand, evidence_warnings
+from .judge.evaluator import artifact_limit, estimate_demand, evidence_warnings
+from .judge.fragments import extract_fragments
 from .judge.ollama import OllamaClient
 from .rating import assert_dimensions_match, evaluate_all, load_rules
 from .recommend import build_comparison
@@ -59,8 +65,11 @@ __all__ = [
     "json_schema",
     # Result types (read-only data)
     "Comparison",
+    "Constraint",
     "DataState",
     "DemandProfile",
+    "Envelope",
+    "ExecutionModel",
     "Evaluation",
     "Evidence",
     "EvidenceStatus",
@@ -83,6 +92,7 @@ def analyze(
     catalog_path: str | Path | None = None,
     rules_path: str | Path | None = None,
     host: str = DEFAULT_HOST,
+    execution_model: ExecutionModel | None = None,
 ) -> Comparison:
     """Analyse an SDD project and return the model comparison.
 
@@ -114,19 +124,29 @@ def analyze(
     if not demand.scored_dimensions:
         raise no_supported_dimensions(judge_model)
 
-    warnings = list(analysis.warnings) + catalog_warnings + evidence_warnings(demand)
+    execution = execution_model or rules.execution_model
+    fragments = extract_fragments(analysis, artifact_limit(rules, compact=True))
+    envelope = build_envelope(demand, fragments, execution)
+
+    warnings = (
+        list(analysis.warnings)
+        + catalog_warnings
+        + evidence_warnings(demand)
+        + envelope_warnings(demand, execution)
+    )
     data_state = analysis.data_state
     if demand.unsupported_dimensions and data_state == DataState.SUFFICIENT:
         data_state = DataState.SCARCE
 
     return build_comparison(
-        evaluate_all(models, demand, rules),
+        evaluate_all(models, demand, rules, envelope.default_demand),
         data_state,
         judge_model,
         warnings=warnings,
         demand=demand,
         source_kinds=analysis.source_kinds,
         environment_only=analysis.environment_only,
+        envelope=envelope,
     )
 
 

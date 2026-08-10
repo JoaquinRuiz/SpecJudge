@@ -44,8 +44,10 @@ def test_the_corpus_size_it_claims_is_the_corpus_size(guide):
     happen, as long as it happens loudly here rather than quietly in the README of
     someone deciding which model to download.
     """
-    claimed = {int(n) for n in re.findall(r"corpus of \*{0,2}(\d+)\*{0,2} projects", guide)}
-    claimed |= {int(n) for n in re.findall(r"corpus of (\d+) cases", guide)}
+    # Whitespace-tolerant: prose gets re-wrapped, and a line break between the number
+    # and its noun is not the guide forgetting to state its sample size.
+    claimed = {int(n) for n in re.findall(r"corpus of\s+\*{0,2}(\d+)\*{0,2}\s+projects", guide)}
+    claimed |= {int(n) for n in re.findall(r"corpus of\s+(\d+)\s+cases", guide)}
     assert claimed, "the guide no longer states the corpus size"
     assert claimed == {len(load_corpus())}, (
         f"guide claims {claimed}, corpus has {len(load_corpus())} cases"

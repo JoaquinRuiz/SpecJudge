@@ -54,6 +54,11 @@ class Outcome:
     # Abstention, per dimension the corpus has an opinion about.
     correct_answer: int = 0
     correct_abstention: int = 0
+    # Bulk accuracy, reported apart from the peak: a judge can be right about how
+    # hard the hardest part is and wrong about how much of the work is like it.
+    bulk_hits: int = 0
+    bulk_misses: list[str] = field(default_factory=list)
+    bulk_undistinguished: bool = False
     over_abstention: list[str] = field(default_factory=list)
     over_confidence: list[str] = field(default_factory=list)
     refused: bool = False
@@ -99,7 +104,36 @@ def _evaluate(case: Case, client: OllamaClient, judge: str) -> Outcome:
             outcome.misses.append(f"{dim}={answered} (expected {expectation.describe()})")
             outcome.distance += _distance(answered, expectation, levels)
 
+    _score_bulk(case, demand, outcome, levels)
     return outcome
+
+
+def _score_bulk(case: Case, demand, outcome: Outcome, levels: list[str]) -> None:
+    """Grade the bulk profile where the case has an opinion about it (issue #3).
+
+    Kept apart from accuracy rather than folded in. A judge that never separates
+    the bulk from the peak is not *wrong* about the levels it gave — it is giving a
+    coarser answer than asked for, and those two failures deserve different
+    reactions.
+    """
+    if not case.bulk_dimensions:
+        return
+    if not demand.distinguishes_bulk:
+        outcome.bulk_undistinguished = True
+        return
+
+    bulk = demand.bulk_dimensions
+    for dim, expectation in case.bulk_dimensions.items():
+        if expectation == ABSTAIN:
+            continue
+        assert isinstance(expectation, Band)
+        answered = bulk.get(dim)
+        if answered is None:
+            continue
+        if expectation.contains(answered, levels):
+            outcome.bulk_hits += 1
+        else:
+            outcome.bulk_misses.append(f"{dim}={answered} (expected {expectation.describe()})")
 
 
 def _distance(level: str, band: Band, levels: list[str]) -> int:
@@ -136,6 +170,18 @@ def _report(outcomes: list[Outcome], judge: str) -> str:
     lines.append(f"  answered, should abstain   {sum(len(o.over_confidence) for o in scored)}")
     lines.append("")
 
+    labelled = [o for o in scored if o.bulk_hits or o.bulk_misses or o.bulk_undistinguished]
+    if labelled:
+        lines.append("BULK VS PEAK (cases that label the bulk of the work)")
+        graded_bulk = sum(o.bulk_hits + len(o.bulk_misses) for o in labelled)
+        lines.append(
+            f"  bulk in band               {sum(o.bulk_hits for o in labelled)}/{graded_bulk}"
+        )
+        lines.append(
+            f"  did not distinguish        {sum(1 for o in labelled if o.bulk_undistinguished)}"
+        )
+        lines.append("")
+
     lines.append("REFUSALS")
     lines.append(f"  refused before judging     {len(refused)} (expected: task-less cases)")
     lines.append(f"  judge unusable             {len(errors)}")
@@ -155,6 +201,10 @@ def _report(outcomes: list[Outcome], judge: str) -> str:
                 bits.append("over-abstained on " + ", ".join(o.over_abstention))
             if o.over_confidence:
                 bits.append("over-confident on " + ", ".join(o.over_confidence))
+            if o.bulk_misses:
+                bits.append("bulk missed " + "; ".join(o.bulk_misses))
+            if o.bulk_undistinguished:
+                bits.append("no bulk/peak split")
             detail = " | ".join(bits)
         lines.append(f"  [{o.category:14}] {o.case:30} {detail}")
 

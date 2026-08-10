@@ -18,9 +18,12 @@ from . import __version__, errors
 from .artifacts import read_project
 from .catalog import check_freshness, load_catalog
 from .config import DEFAULT_HOST, load_config, save_config
-from .domain import DataState, JudgePreference, UserConfig
+from .domain import DataState, ExecutionModel, JudgePreference, UserConfig
+from .envelope import build as build_envelope
+from .envelope import envelope_warnings
 from .gaps import find_gaps
-from .judge.evaluator import estimate_demand, evidence_warnings
+from .judge.evaluator import artifact_limit, estimate_demand, evidence_warnings
+from .judge.fragments import extract_fragments
 from .judge.ollama import OllamaClient
 from .rating import assert_dimensions_match, evaluate_all, load_rules
 from .recommend import build_comparison
@@ -118,6 +121,15 @@ def main(
     catalog: Path | None = typer.Option(
         None, "--catalog", help="Alternative model catalog (YAML)."
     ),
+    execution_model: str = typer.Option(
+        None,
+        "--execution-model",
+        help=(
+            "How you will implement this: 'single' (one model for everything, ranks by "
+            "the hardest part) or 'escalating' (you can switch model per task, ranks by "
+            "the bulk and lists what to escalate for)."
+        ),
+    ),
     as_json: bool = typer.Option(False, "--json", help="Emit the result as JSON on stdout."),
     no_color: bool = typer.Option(False, "--no-color", help="Disable color/highlighting."),
     print_schema: bool = typer.Option(
@@ -137,10 +149,42 @@ def main(
 ) -> None:
     """Analyze the project and show the model comparison."""
     try:
-        _run(project_path, open_browser, judge, set_judge, catalog, as_json, no_color)
+        _run(
+            project_path,
+            open_browser,
+            judge,
+            set_judge,
+            catalog,
+            as_json,
+            no_color,
+            execution_model,
+        )
     except errors.SpecJudgeError as exc:
         typer.echo(exc.render(), err=True)
         raise typer.Exit(code=exc.exit_code) from exc
+
+
+def _resolve_execution_model(raw: str | None, rules) -> ExecutionModel:
+    """The execution model for this run: the flag, else the configured default.
+
+    An unrecognised value is refused rather than quietly falling back. The two
+    readings produce different recommendations, so guessing which one the user meant
+    is exactly the silent choice Principle IV rules out.
+    """
+    if raw is None:
+        return rules.execution_model
+    try:
+        return ExecutionModel(raw.strip().lower())
+    except ValueError as exc:
+        valid = ", ".join(m.value for m in ExecutionModel)
+        raise errors.SpecJudgeError(
+            f"Unknown execution model '{raw}'.",
+            hint=(
+                f"Use one of: {valid}. `single` assumes one model implements everything "
+                "and ranks on the hardest part; `escalating` assumes you can switch "
+                "model per task and ranks on the bulk."
+            ),
+        ) from exc
 
 
 def _run(
@@ -151,8 +195,10 @@ def _run(
     catalog: Path | None,
     as_json: bool,
     no_color: bool,
+    execution_model: str | None = None,
 ) -> None:
     rules = load_rules()
+    execution = _resolve_execution_model(execution_model, rules)
 
     # 1. Read and classify the artifacts.
     analysis = read_project(project_path, rules)
@@ -183,9 +229,16 @@ def _run(
     if not demand.scored_dimensions:
         raise errors.no_supported_dimensions(judge_model)
 
-    evaluations = evaluate_all(models, demand, rules)
+    fragments = extract_fragments(analysis, artifact_limit(rules, compact=True))
+    envelope = build_envelope(demand, fragments, execution)
+    evaluations = evaluate_all(models, demand, rules, envelope.default_demand)
 
-    warnings = list(analysis.warnings) + list(catalog_warnings) + evidence_warnings(demand)
+    warnings = (
+        list(analysis.warnings)
+        + list(catalog_warnings)
+        + evidence_warnings(demand)
+        + envelope_warnings(demand, execution)
+    )
     # Ungrounded dimensions make the assessment thinner than it looks, which is
     # exactly what `scarce` communicates (FR-020).
     data_state = analysis.data_state
@@ -200,6 +253,7 @@ def _run(
         demand=demand,
         source_kinds=analysis.source_kinds,
         environment_only=analysis.environment_only,
+        envelope=envelope,
     )
 
     # 5. Output.

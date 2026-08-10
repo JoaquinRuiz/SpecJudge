@@ -38,6 +38,23 @@ class DataState(str, Enum):
     SUFFICIENT = "sufficient"
 
 
+class ExecutionModel(str, Enum):
+    """How the project is going to be implemented (FR-028).
+
+    Not a property of the project: a property of whoever executes it. Whether one
+    unusually demanding task is decisive depends entirely on whether the person
+    implementing can switch models halfway through.
+
+    * `single` — one model does all the work, so it must clear the hardest part.
+      Ordering by the peak is correct here, and it is the conservative default.
+    * `escalating` — the model can change per task, so the bulk of the work sets
+      the default and the outliers become explicit escalation triggers.
+    """
+
+    SINGLE = "single"
+    ESCALATING = "escalating"
+
+
 class JudgeAvailability(str, Enum):
     """Availability of the judge dependency (FR-011)."""
 
@@ -69,6 +86,10 @@ def answer_levels(levels: list[str]) -> list[str]:
 # Enough for a root file plus a handful of per-package ones, few enough that the
 # shared character budget still leaves each of them something worth reading.
 DEFAULT_MAX_CONTEXT_FILES = 12
+
+# Below this, asking for a bulk/peak split makes a judge worse at the levels it was
+# already getting right. Measured, not assumed: see docs/judges.md.
+DEFAULT_BULK_ABOVE_PARAMS_B = 20.0
 
 # Prices move every few weeks, so a quarter-old catalog is worth flagging. Short
 # enough to catch real drift, long enough not to cry wolf on every run.
@@ -224,6 +245,51 @@ class Evidence:
 
 
 @dataclass
+class Constraint:
+    """One row of the constraint table (FR-027).
+
+    What is being demanded, how much, and the piece of the project that demands
+    it — so a reader who disagrees can argue with a fragment rather than with a
+    verdict.
+    """
+
+    dimension: str
+    level: str
+    fragment_id: str | None = None
+    text: str = ""
+    # Whether the citation is a stated requirement (RFC 2119 wording, or a
+    # numbered requirement id) rather than something merely customary. Derived
+    # from the text, never asked of the judge: a user can inspect a fragment and
+    # disagree with it; they cannot inspect an opinion.
+    hard: bool = False
+
+
+@dataclass
+class Envelope:
+    """The demand as a range with named causes, not a single verdict (FR-027).
+
+    A task set with twenty mechanical edits and one architecture decision does not
+    have *a* complexity. Reporting only the peak makes the architecture decision
+    get paid for twenty-one times; reporting only the bulk under-serves the one
+    part that decides whether the project works.
+    """
+
+    execution_model: ExecutionModel
+    # The levels the ranking is built on: the bulk when escalation is possible,
+    # the peak when one model has to do everything.
+    default_demand: dict[str, str] = field(default_factory=dict)
+    peak_demand: dict[str, str] = field(default_factory=dict)
+    constraints: list[Constraint] = field(default_factory=list)
+    # Constraints whose peak exceeds the default: the parts you would escalate for.
+    escalations: list[Constraint] = field(default_factory=list)
+
+    @property
+    def is_uniform(self) -> bool:
+        """The project asks the same of every part of the work."""
+        return not self.escalations
+
+
+@dataclass
 class DemandProfile:
     # dimension -> level (a member of LEVELS) or UNSUPPORTED.
     dimensions: dict[str, str]
@@ -233,6 +299,22 @@ class DemandProfile:
     # a flat shape is markedly easier for a small local judge to emit correctly,
     # and it keeps `dimensions` the same type the rating engine already consumes.
     evidence: dict[str, Evidence] = field(default_factory=dict)
+    # The level the *bulk* of the work needs, where the judge distinguished it
+    # from the peak (FR-027). Empty means it did not, and the envelope degrades
+    # to a single level rather than inventing a second one.
+    bulk: dict[str, str] = field(default_factory=dict)
+    # Fragment ids the judge named as the outliers driving the peak.
+    outliers: list[str] = field(default_factory=list)
+
+    @property
+    def bulk_dimensions(self) -> dict[str, str]:
+        """Bulk levels where the judge gave them, peak levels where it did not."""
+        scored = self.scored_dimensions
+        return {dim: self.bulk.get(dim, level) for dim, level in scored.items()}
+
+    @property
+    def distinguishes_bulk(self) -> bool:
+        return bool(self.bulk)
 
     @property
     def scored_dimensions(self) -> dict[str, str]:
@@ -279,6 +361,16 @@ class RatingRules:
     judge: dict = field(default_factory=dict)
     # Days since pricing_date before the catalog is called out as stale (FR-019).
     max_pricing_age_days: int = DEFAULT_MAX_PRICING_AGE_DAYS
+    # Whether the judge is also asked to separate the bulk of the work from its
+    # hardest part (FR-027). Turning it off restores the single-level answer for
+    # judges too small to manage the extra slots, at the cost of the envelope.
+    request_bulk: bool = True
+    # Only judges above this size are asked for it: measured, the extra fields cost a
+    # small judge more accuracy than the envelope is worth to it (FR-027).
+    request_bulk_above_params_b: float = DEFAULT_BULK_ABOVE_PARAMS_B
+    # How the project is assumed to be implemented when the caller does not say
+    # (FR-028). Conservative by default: one model must clear the hardest part.
+    execution_model: ExecutionModel = ExecutionModel.SINGLE
     # How many context files (AGENTS.md, ADRs, ...) may feed one run (FR-025).
     # A monorepo can carry dozens; reading all of them would swamp the prompt with
     # near-duplicates of one another.
@@ -336,6 +428,9 @@ class Comparison:
     source_kinds: list[str] = field(default_factory=list)
     # True when nothing described the work — see ProjectAnalysis.environment_only.
     environment_only: bool = False
+    # The demand as a range with named causes (FR-027). None when there is no
+    # profile to build one from.
+    envelope: Envelope | None = None
 
     @property
     def sources_read(self) -> list[str]:

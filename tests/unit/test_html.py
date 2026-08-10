@@ -10,7 +10,16 @@ from __future__ import annotations
 
 import re
 
-from specjudge.domain import Comparison, DataState, Evaluation, Price, Rating
+from specjudge.domain import (
+    Comparison,
+    Constraint,
+    DataState,
+    Envelope,
+    Evaluation,
+    ExecutionModel,
+    Price,
+    Rating,
+)
 from specjudge.render.html import render_html
 
 # Attributes/at-rules the browser resolves automatically when the page opens.
@@ -164,3 +173,23 @@ def test_the_report_names_the_sources_it_was_built_from():
     html = render_html(comp)
     assert "Read:" in html
     assert "spec, tasks, CLAUDE.md" in html
+
+
+def test_the_report_shows_the_budget_envelope():
+    comp = _comp()
+    comp.envelope = Envelope(
+        execution_model=ExecutionModel.ESCALATING,
+        default_demand={"reasoning": "medium"},
+        peak_demand={"reasoning": "top"},
+        constraints=[Constraint("reasoning", "top", "S:FR-001", "MUST hold", True)],
+        escalations=[Constraint("reasoning", "top", "S:FR-001", "MUST hold", True)],
+    )
+    html = render_html(comp)
+    assert "Budget envelope" in html
+    assert "S:FR-001" in html
+    assert "requirement" in html
+    assert "switch model per task" in html
+
+
+def test_the_envelope_section_is_absent_without_one():
+    assert "Budget envelope" not in render_html(_comp())

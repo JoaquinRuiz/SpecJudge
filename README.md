@@ -196,6 +196,38 @@ This checks **grounding, not relevance**: a judge can cite something that exists
 support the level, and no automatic check catches that. It is still a great deal more than a
 paragraph that sounds convincing.
 
+## One project, two complexities
+
+A task set is rarely uniform. Twenty mechanical edits alongside one architecture decision
+do not have *a* complexity — and a single verdict either overpays on most of the work or
+under-serves the part that decides whether it works.
+
+So the output is an envelope rather than one number:
+
+```
+Budget envelope (escalating: ranked on the bulk of the work)
+   default: reasoning medium, size low
+   reasoning: top — S:FR-001 (requirement)
+   size: low — T:T002 (customary)
+   escalate for:
+     • S:FR-001 — needs reasoning top
+```
+
+Each row names the fragment of *your* project that demands that level, and whether that
+fragment states a requirement (`MUST`, a numbered `FR-NNN`) or merely describes a habit —
+derived from the text, so you can open it and disagree.
+
+Which reading ranks the podium is your call, not the spec's:
+
+```bash
+specjudge .                              # one model implements everything (default)
+specjudge . --execution-model escalating # you can switch model per task
+```
+
+With `single` the podium is ranked on the hardest part, because one model has to clear it.
+With `escalating` it is ranked on the bulk, and the outliers become explicit triggers —
+which is how you stop paying frontier prices for twenty mechanical edits.
+
 ## Reading the output
 
 Every model gets a rating on a fixed scale:
@@ -231,6 +263,7 @@ specjudge [PROJECT_PATH] [OPTIONS]
 | `--judge <model>` | Force the judge model for this run (not persisted) |
 | `--set-judge` | Re-run judge selection and save it |
 | `--catalog <path>` | Use an alternative model catalog |
+| `--execution-model <single\|escalating>` | How you will implement it: one model for everything, or switching model per task |
 | `--json` | Emit the result as JSON (for scripting) |
 | `--no-color` | Disable color/highlighting |
 | `--print-schema` | Print the JSON Schema of the `--json` output and exit |

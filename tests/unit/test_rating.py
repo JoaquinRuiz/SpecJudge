@@ -156,3 +156,41 @@ def test_rating_a_profile_with_no_supported_dimension_fails_loudly():
 
     with pytest.raises(CatalogError, match="no supported dimension"):
         evaluate_model(model, demand, rules)
+
+
+# ------------------------------------------- which demand the ranking uses (#3)
+
+
+def test_the_ranking_uses_the_peak_by_default():
+    """Unchanged behaviour: with no execution model given, one model does it all.
+
+    This is the regression guard for every existing user. If it moves, someone's
+    recommendation moved without them asking for it.
+    """
+    from specjudge.rating import evaluate_model
+
+    demand = _demand({"reasoning": "top", "size": "low", "domain_specialization": "low"})
+    model = _model({"reasoning": "medium", "size": "low", "domain_specialization": "low"})
+    assert evaluate_model(model, demand, _rules()).rating is Rating.POOR
+
+
+def test_the_ranking_can_be_built_on_the_bulk_instead():
+    """The same project, judged on what most of the work needs."""
+    from specjudge.rating import evaluate_model
+
+    demand = _demand({"reasoning": "top", "size": "low", "domain_specialization": "low"})
+    model = _model({"reasoning": "medium", "size": "low", "domain_specialization": "low"})
+    bulk = {"reasoning": "medium", "size": "low", "domain_specialization": "low"}
+    assert evaluate_model(model, demand, _rules(), bulk).rating is Rating.GOOD
+
+
+def test_the_justification_quotes_the_demand_that_was_used():
+    """Reporting the peak next to a bulk-based rating would be incoherent."""
+    from specjudge.rating import evaluate_model
+
+    demand = _demand({"reasoning": "top", "size": "low", "domain_specialization": "low"})
+    model = _model({"reasoning": "medium", "size": "medium", "domain_specialization": "medium"})
+    bulk = {"reasoning": "medium", "size": "low", "domain_specialization": "low"}
+    justification = evaluate_model(model, demand, _rules(), bulk).justification
+    assert "demand=medium" in justification
+    assert "demand=top" not in justification
