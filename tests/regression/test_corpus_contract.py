@@ -71,3 +71,27 @@ def test_insufficient_cases_carry_no_expected_profile(case):
     """The judge never runs on them, so an expected profile would be fiction."""
     if case.data_state == "insufficient":
         assert not case.dimensions
+
+
+@pytest.mark.parametrize("case", CASES, ids=lambda c: c.name)
+def test_bulk_labels_are_known_dimensions_and_never_above_the_peak(case):
+    """A bulk above the peak is incoherent: the peak is the hardest part.
+
+    Labelling one would ask the judge for something no correct answer satisfies.
+    """
+    rules = load_rules()
+    for dim, expectation in case.bulk_dimensions.items():
+        assert dim in rules.dimensions, f"{case.name}: unknown bulk dimension '{dim}'"
+        peak = case.dimensions.get(dim)
+        if not isinstance(expectation, Band) or not isinstance(peak, Band):
+            continue
+        if expectation.min is not None and peak.min is not None:
+            assert LEVELS.index(expectation.min) <= LEVELS.index(peak.min), (
+                f"{case.name}:{dim} labels a bulk above the peak"
+            )
+
+
+@pytest.mark.parametrize("case", CASES, ids=lambda c: c.name)
+def test_only_judged_cases_carry_bulk_labels(case):
+    if case.data_state == "insufficient":
+        assert not case.bulk_dimensions

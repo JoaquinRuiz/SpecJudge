@@ -1,0 +1,13 @@
+category: well_specified
+data_state: sufficient
+rationale: >
+  The shape issue #3 exists for: two tasks rewrite an intraday netting engine with
+  deterministic replay and no global event ordering, and six add a list to a screen.
+  The peak is genuinely high — nothing about replay determinism is routine — while
+  the bulk of the work is ordinary UI. A judge that reports one level for this
+  project is right about half of it whichever level it picks.
+dimensions:
+  reasoning: {min: high}
+  domain_specialization: {min: medium}
+bulk_dimensions:
+  reasoning: {max: medium}
