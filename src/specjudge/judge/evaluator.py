@@ -90,6 +90,16 @@ def _instructions(rules: RatingRules) -> str:
         )
 
     ev_shape = ", ".join(f'"{d}": "<fragment id>"' for d in rules.dimensions)
+    bulk_shape = ", ".join(f'"{d}": "<level>"' for d in rules.dimensions)
+    bulk_ask = (
+        "\nA project is rarely uniform. After rating the hardest part above, also give\n"
+        f'"bulk": {{{bulk_shape}}} — the level the MAJORITY of the work needs — and\n'
+        '"outliers": ["<fragment id>", ...] — the few fragments that make the hardest\n'
+        "part harder than the rest. If the work is uniform, repeat the same levels and\n"
+        "return an empty list. Do not guess: omit both if you cannot tell them apart.\n"
+        if rules.request_bulk
+        else ""
+    )
     return (
         "You are assessing HOW DEMANDING a software project is to implement.\n"
         f"Rate each dimension ({dims}) on this scale: {levels}.\n\n"
@@ -106,6 +116,7 @@ def _instructions(rules: RatingRules) -> str:
         "    difficulty to estimate; say so rather than pick a level.\n\n"
         "Answer with THIS JSON object and nothing else. Do not copy, continue or\n"
         "summarise the project documents; do not output tasks, code or file lists:\n"
+        f"{bulk_ask}"
         f'{{"evidence": {{{ev_shape}}}, "dimensions": {{{dim_shape}}}, '
         '"justification": "<one or two sentences>"}'
     )
@@ -147,6 +158,18 @@ def response_schema(rules: RatingRules) -> dict:
             "properties": {d: {"type": "string"} for d in dims},
         }
         required.append("evidence")
+
+    if rules.request_bulk:
+        # Deliberately NOT required. A judge that cannot separate the bulk from the
+        # peak degrades to the conservative single-level answer, which is the
+        # behaviour that existed before this asked. Forcing the slot would make a
+        # small judge fill it with something, and an invented bulk is worse than
+        # none: it silently lowers the recommendation (FR-027).
+        properties["bulk"] = {
+            "type": "object",
+            "properties": {d: {"type": "string", "enum": levels} for d in dims},
+        }
+        properties["outliers"] = {"type": "array", "items": {"type": "string"}}
 
     return {"type": "object", "properties": properties, "required": required}
 
@@ -268,6 +291,8 @@ def _parse_demand(
         dimensions=dimensions,
         justification=justification or "Demand profile estimated from the project artifacts.",
         judge_model="",  # filled in by the caller, which knows the model
+        bulk=_parse_bulk(raw, dimensions, rules),
+        outliers=_parse_outliers(raw),
     )
 
     if not rules.require_spans:
@@ -307,6 +332,57 @@ def _parse_demand(
         profile.evidence[dim] = Evidence(status=status, fragment_id=cited, quote=quote)
 
     return profile
+
+
+def _parse_bulk(raw: dict, dimensions: dict[str, str], rules: RatingRules) -> dict[str, str]:
+    """The level the bulk of the work needs, where the judge gave a usable one.
+
+    Silently permissive on purpose: a missing or malformed bulk degrades to "same as
+    the peak" (see `DemandProfile.bulk_dimensions`), which is the conservative
+    answer and the behaviour that existed before this was asked. Rejecting the whole
+    profile over an optional field would trade a better output shape for a run that
+    fails, which is a bad trade.
+
+    A bulk *above* the peak is dropped rather than kept: the peak is by definition
+    the hardest part, so a higher bulk is a judge contradicting itself, and the
+    conservative reading is that it did not distinguish them at all.
+    """
+    if not rules.request_bulk:
+        return {}
+    raw_bulk = _as_mapping(raw.get("bulk"))
+    if not raw_bulk:
+        return {}
+
+    bulk: dict[str, str] = {}
+    for dim, peak in dimensions.items():
+        if peak == UNSUPPORTED:
+            continue
+        value = str(raw_bulk.get(dim, "")).strip().lower()
+        if value not in rules.levels or peak not in rules.levels:
+            continue
+        if rules.levels.index(value) > rules.levels.index(peak):
+            continue
+        bulk[dim] = value
+    return bulk
+
+
+def _parse_outliers(raw: dict) -> list[str]:
+    """Fragment ids the judge blamed for the peak, normalised and deduplicated.
+
+    Not validated against the citable set. An id that does not exist is noise in a
+    presentational list, whereas a fabricated *citation* is a reason to reject the
+    profile — the two deserve different reactions, and conflating them would make
+    an optional field able to fail a run.
+    """
+    values = raw.get("outliers")
+    if not isinstance(values, list):
+        return []
+    seen: list[str] = []
+    for value in values:
+        cited = normalize_citation(str(value))
+        if cited and cited not in seen:
+            seen.append(cited)
+    return seen
 
 
 def evidence_warnings(profile: DemandProfile) -> list[str]:
