@@ -160,14 +160,28 @@ def _rating_for_diff(diff: int, per_dimension: dict[str, str]) -> Rating:
     return Rating(per_dimension.get(key, "fair"))
 
 
-def evaluate_model(model: CatalogModel, demand: DemandProfile, rules: RatingRules) -> Evaluation:
-    """Cross demand x capability per dimension and aggregate to the worst rating."""
+def evaluate_model(
+    model: CatalogModel,
+    demand: DemandProfile,
+    rules: RatingRules,
+    demand_levels: dict[str, str] | None = None,
+) -> Evaluation:
+    """Cross demand x capability per dimension and aggregate to the worst rating.
+
+    `demand_levels` is the profile the ranking is built on. It defaults to what the
+    judge rated — the peak — which is the conservative reading and the one that
+    applies when a single model has to do all the work. A caller that can escalate
+    per task passes the bulk instead (FR-008 as amended by FR-028), and the podium
+    then answers "what should implement most of this" rather than "what should
+    implement the hardest line in it".
+    """
     levels = rules.levels
+    reported = demand_levels if demand_levels is not None else demand.dimensions
     partials: dict[str, Rating] = {}
     deficit = 0
     excess = 0
     for dim in rules.dimensions:
-        demand_level = demand.dimensions.get(dim, levels[0])
+        demand_level = reported.get(dim, levels[0])
         # An unsupported dimension has UNKNOWN demand, not low demand. It carries no
         # position on the ordinal scale, so it takes no part in the fit arithmetic —
         # letting it fall through to index 0 would quietly make every project look
@@ -197,7 +211,7 @@ def evaluate_model(model: CatalogModel, demand: DemandProfile, rules: RatingRule
     else:  # conservative fallback
         global_rating = min(partials.values(), key=lambda r: r.order)
 
-    justification = _justify(model, demand, partials, global_rating, deficit, excess)
+    justification = _justify(model, reported, partials, global_rating, deficit, excess)
     return Evaluation(
         model_id=model.id,
         model_name=model.name,
@@ -213,7 +227,7 @@ def evaluate_model(model: CatalogModel, demand: DemandProfile, rules: RatingRule
 
 def _justify(
     model: CatalogModel,
-    demand: DemandProfile,
+    demand_levels: dict[str, str],
     partials: dict[str, Rating],
     global_rating: Rating,
     deficit: int,
@@ -221,7 +235,7 @@ def _justify(
 ) -> str:
     """Human-readable justification per model (FR-014)."""
     dim, part = min(partials.items(), key=lambda kv: kv[1].order)
-    demand_level = demand.dimensions.get(dim, "?")
+    demand_level = demand_levels.get(dim, "?")
     cap_level = model.capabilities.get(dim, "?")
     verdict = {
         Rating.POOR: "falls well below what this project demands",
@@ -242,6 +256,9 @@ def _justify(
 
 
 def evaluate_all(
-    models: list[CatalogModel], demand: DemandProfile, rules: RatingRules
+    models: list[CatalogModel],
+    demand: DemandProfile,
+    rules: RatingRules,
+    demand_levels: dict[str, str] | None = None,
 ) -> list[Evaluation]:
-    return [evaluate_model(m, demand, rules) for m in models]
+    return [evaluate_model(m, demand, rules, demand_levels) for m in models]
