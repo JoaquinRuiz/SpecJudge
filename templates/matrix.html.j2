@@ -97,6 +97,15 @@
   .gaps li { margin-bottom: .5rem; }
   .gaps .fix { opacity: .75; }
 
+  .envelope { margin: 2rem 0 0; padding: 1rem 1.2rem; border-left: 4px solid #4f8cc9;
+              background: rgba(79,140,201,.08); border-radius: 4px; }
+  .envelope h2 { margin: 0 0 .3rem; font-size: 1rem; }
+  .envelope p { margin: 0 0 .6rem; opacity: .85; }
+  .envelope table { width: auto; margin: 0 0 .6rem; }
+  .envelope td, .envelope th { padding: .25rem .8rem .25rem 0; border: none; }
+  .envelope .kind { opacity: .7; font-size: .85em; }
+  .envelope ul { margin: 0; padding-left: 1.1rem; }
+
   footer a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
   footer a:hover { color: var(--fg); }
   .about .by { margin-bottom: .25rem; }
@@ -179,6 +188,32 @@
   <p>Ranked by how well each model fits this project's complexity — neither under-capable nor more powerful than needed. Price is shown for reference but does not decide the ranking.</p>
   {% else %}
   <p class="warn">No model in the catalog is capable enough for this project in every dimension.</p>
+  {% endif %}
+
+  {% if envelope and envelope.constraints %}
+  <section class="envelope">
+    <h2>Budget envelope</h2>
+    <p>
+      Ranked on
+      {% if envelope.execution_model.value == "escalating" %}the bulk of the work, because you said you can switch model per task{% else %}the hardest part, because one model has to implement everything{% endif %}.
+    </p>
+    <table>
+      <tr><th>Dimension</th><th>Level</th><th>Because of</th></tr>
+      {% for c in envelope.constraints %}
+      <tr>
+        <td>{{ c.dimension }}</td>
+        <td>{{ c.level }}</td>
+        <td>{{ c.fragment_id or "no citation" }} <span class="kind">({{ "requirement" if c.hard else "customary" }})</span></td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% if envelope.escalations %}
+    <p>Escalate for:</p>
+    <ul>
+      {% for c in envelope.escalations %}<li><strong>{{ c.fragment_id or "unnamed" }}</strong> — needs {{ c.dimension }} {{ envelope.peak_demand.get(c.dimension, c.level) }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+  </section>
   {% endif %}
 
   {% if gaps %}

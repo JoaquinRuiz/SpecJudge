@@ -11,7 +11,7 @@ from rich.table import Table
 from rich.text import Text
 
 from ..about import TERMINAL_CREDIT
-from ..domain import Comparison, Evaluation, EvidenceStatus, Rating
+from ..domain import Comparison, Evaluation, EvidenceStatus, ExecutionModel, Rating
 from ..gaps import Gap
 from ..sources import summarize_kinds
 
@@ -100,6 +100,7 @@ def render_comparison(
             if "No model" in w:
                 console.print(Text(f"⚠  {w}", style=None if no_color else "yellow"))
 
+    _print_envelope(console, comparison, no_color=no_color)
     _print_sources(console, comparison, no_color=no_color)
     _print_evidence(console, comparison, no_color=no_color)
     _print_gaps(console, gaps, no_color=no_color)
@@ -147,6 +148,48 @@ def _print_sources(console: Console, comparison: Comparison, *, no_color: bool) 
     console.print(
         Text(f"Read: {summarize_kinds(comparison.source_kinds)}", style=None if no_color else "dim")
     )
+
+
+def _print_envelope(console: Console, comparison: Comparison, *, no_color: bool) -> None:
+    """The demand as a range with named causes (FR-027).
+
+    A single project-wide level hides the shape of the work. This block says what the
+    bulk needs, what the hardest part needs, and — crucially — *which fragment* makes
+    it hard, so the reader can go and look at the thing that is costing them money.
+    """
+    envelope = comparison.envelope
+    if envelope is None or not envelope.constraints:
+        return
+
+    console.print()
+    levels = ", ".join(f"{dim} {level}" for dim, level in envelope.default_demand.items())
+    heading = "Budget envelope"
+    if envelope.execution_model is ExecutionModel.ESCALATING:
+        heading += " (escalating: ranked on the bulk of the work)"
+    console.print(Text(heading, style=None if no_color else "bold"))
+    console.print(Text(f"   default: {levels}", style=None if no_color else "dim"))
+
+    for constraint in envelope.constraints:
+        kind = "requirement" if constraint.hard else "customary"
+        cite = constraint.fragment_id or "no citation"
+        console.print(
+            Text(
+                f"   {constraint.dimension}: {constraint.level} — {cite} ({kind})",
+                style=None if no_color else "dim",
+            )
+        )
+
+    if envelope.escalations:
+        console.print(Text("   escalate for:", style=None if no_color else "yellow"))
+        for constraint in envelope.escalations:
+            peak = envelope.peak_demand.get(constraint.dimension, constraint.level)
+            console.print(
+                Text(
+                    f"     • {constraint.fragment_id or 'unnamed'} — needs "
+                    f"{constraint.dimension} {peak}",
+                    style=None if no_color else "yellow",
+                )
+            )
 
 
 def _print_evidence(console: Console, comparison: Comparison, *, no_color: bool) -> None:
