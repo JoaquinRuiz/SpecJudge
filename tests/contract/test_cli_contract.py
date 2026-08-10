@@ -35,7 +35,15 @@ def test_cli_declares_the_documented_options():
     contract.
     """
     declared = {opt for param in get_command(app).params for opt in param.opts}
-    for flag in ["--open", "--judge", "--set-judge", "--catalog", "--json", "--no-color"]:
+    for flag in [
+        "--open",
+        "--judge",
+        "--set-judge",
+        "--catalog",
+        "--json",
+        "--no-color",
+        "--execution-model",
+    ]:
         assert flag in declared, f"{flag} is documented in contracts/cli.md but not declared"
 
 
