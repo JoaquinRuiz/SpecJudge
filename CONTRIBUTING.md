@@ -74,6 +74,17 @@ Run it before and after your change and compare. Sampling is pinned, but Ollama
 version and quantisation are not, so compare against **your own** baseline rather
 than someone else's numbers.
 
+**Contributing judge numbers.** [`docs/judges.md`](docs/judges.md) recommends models
+from measured results, and the maintainer has one machine. If you run a judge that is
+not in that table, add `--markdown-row` and open a PR with the line it prints:
+
+```bash
+uv run python scripts/eval_judge.py --judge <your-model> --markdown-row
+```
+
+It goes in the community table with your name on it. Say which hardware and
+quantisation you ran, since those move the numbers more than anything else.
+
 If you intentionally change how the rules rank models, regenerate the snapshot and
 read the diff:
 

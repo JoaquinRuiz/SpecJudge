@@ -90,6 +90,13 @@ specjudge /path/to/your/project
 That's it. On first run SpecJudge lists your local models, asks which one to use as the judge,
 and remembers your choice.
 
+**Why an 8B judge?** Because it is enough. On the regression corpus an 8B model lands 84–88% of
+demand levels inside the expected band, and a 24B-class judge like `devstral-small-2` lands
+100% — measured, not guessed. When a small judge cannot ground an assessment in your own text,
+SpecJudge refuses rather than inventing one, so its failure mode is *no answer* instead of a
+confident wrong one. [`docs/judges.md`](./docs/judges.md) has the numbers, what they mean, and
+how to reproduce them on your machine.
+
 <details>
 <summary><b>Run without installing, with pipx, or from source</b></summary>
 
