@@ -166,11 +166,36 @@ def _report(outcomes: list[Outcome], judge: str) -> str:
     return "\n".join(lines)
 
 
+def markdown_row(outcomes: list[Outcome], judge: str, params_b: float | None) -> str:
+    """The judge's result as one row of the table in `docs/judges.md` (issue #23).
+
+    Numbers from other people's hardware are the part of that table a single
+    maintainer cannot produce. Asking a contributor to transcribe four figures out
+    of a report is asking for a table whose rows are not comparable — so the
+    script emits the row itself, already formatted.
+    """
+    scored = [o for o in outcomes if not o.error and not o.refused]
+    graded = sum(o.hits + len(o.misses) for o in scored)
+    hits = sum(o.hits for o in scored)
+    distance = sum(o.distance for o in scored)
+    unusable = sum(1 for o in outcomes if o.error)
+
+    accuracy = f"{hits}/{graded} ({100 * hits / graded:.0f}%)" if graded else "not graded"
+    size = f"{params_b:.0f}B" if params_b else "?"
+    steps = "0" if distance == 0 else f"{distance} steps"
+    return f"| `{judge}` | {size} | {accuracy} | {steps} | {unusable} |"
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--judge", required=True, help="Local model to evaluate, e.g. llama3.1:8b")
     parser.add_argument("--host", default="http://localhost:11434")
     parser.add_argument("--json", dest="json_out", help="Also write the raw outcomes here.")
+    parser.add_argument(
+        "--markdown-row",
+        action="store_true",
+        help="Also print the result as a row for the table in docs/judges.md.",
+    )
     args = parser.parse_args(argv)
 
     client = OllamaClient(host=args.host)
@@ -182,6 +207,10 @@ def main(argv: list[str] | None = None) -> int:
 
     outcomes = [_evaluate(case, client, args.judge) for case in load_corpus()]
     print(_report(outcomes, args.judge))
+
+    if args.markdown_row:
+        print("\nRow for docs/judges.md:")
+        print(markdown_row(outcomes, args.judge, client.model_params_b(args.judge)))
 
     if args.json_out:
         payload = [o.__dict__ for o in outcomes]
