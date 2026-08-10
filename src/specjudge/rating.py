@@ -20,6 +20,7 @@ from .domain import (
     CatalogModel,
     DemandProfile,
     Evaluation,
+    ExecutionModel,
     Rating,
     RatingRules,
 )
@@ -70,7 +71,31 @@ def load_rules(path: Path | str | None = None) -> RatingRules:
         max_pricing_age_days=_max_pricing_age_days(raw.get("catalog_freshness")),
         require_spans=_require_spans(raw.get("evidence")),
         max_context_files=_max_context_files(raw.get("sources")),
+        request_bulk=_request_bulk(raw.get("execution")),
+        execution_model=_execution_model(raw.get("execution")),
     )
+
+
+def _request_bulk(raw: object) -> bool:
+    """Read execution.request_bulk, defaulting to on (FR-027)."""
+    if not isinstance(raw, dict) or "request_bulk" not in raw:
+        return True
+    return bool(raw["request_bulk"])
+
+
+def _execution_model(raw: object) -> ExecutionModel:
+    """Read execution.model, falling back to the conservative reading (FR-028).
+
+    An unrecognised value degrades to `single` rather than raising: assuming one
+    model must clear the hardest part can only over-serve the work, while guessing
+    `escalating` from a typo would quietly recommend something weaker.
+    """
+    if not isinstance(raw, dict):
+        return ExecutionModel.SINGLE
+    try:
+        return ExecutionModel(str(raw.get("model", "")).strip().lower())
+    except ValueError:
+        return ExecutionModel.SINGLE
 
 
 def _max_context_files(raw: object) -> int:

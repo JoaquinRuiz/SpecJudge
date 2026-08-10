@@ -50,6 +50,20 @@ sources:
   # out is reported. Missing or invalid => 12.
   max_context_files: 12
 
+# How the project is going to be implemented, and how much the judge is asked about it.
+execution:
+  # `single`: one model does all the work, so the ranking must clear the hardest part.
+  # `escalating`: the model can change per task, so the bulk of the work sets the
+  # default and the outliers become explicit escalation triggers.
+  # Conservative by default — assuming one model can only over-serve the work, while
+  # assuming escalation would quietly recommend something weaker than you need.
+  # Override per run with --execution-model.
+  model: single
+  # Whether the judge is also asked to separate the bulk of the work from its hardest
+  # part. Turn it off for a judge too small to manage the extra fields: you get the
+  # single-level answer back, and no constraint table worth reading.
+  request_bulk: true
+
 # How the project is presented to the local judge.
 judge:
   # Judges at or below this parameter count (in billions) get a COMPACT prompt: a
