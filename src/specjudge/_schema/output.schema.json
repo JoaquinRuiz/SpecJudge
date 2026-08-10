@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/JoaquinRuiz/SpecJudge/main/src/specjudge/_schema/output.schema.json",
   "title": "SpecJudge comparison output",
-  "description": "Payload emitted by `specjudge --json` and by specjudge.api.to_dict(). Version 1.1. Adding a field is a MINOR bump; removing one, changing its type, or changing what an existing value means is MAJOR. Obtain this file without cloning the repo: `specjudge --print-schema`.",
+  "description": "Payload emitted by `specjudge --json` and by specjudge.api.to_dict(). Version 1.2. Adding a field is a MINOR bump; removing one, changing its type, or changing what an existing value means is MAJOR. Obtain this file without cloning the repo: `specjudge --print-schema`.",
   "type": "object",
   "required": [
     "schema_version",
@@ -13,6 +13,7 @@
     "best_choice",
     "podium",
     "demand",
+    "envelope",
     "warnings",
     "evaluations"
   ],
@@ -55,6 +56,10 @@
       "description": "The judge's assessment of how demanding the project is, and the evidence behind it.",
       "oneOf": [{ "$ref": "#/$defs/demand" }, { "type": "null" }]
     },
+    "envelope": {
+      "description": "The demand as a range with named causes (added in 1.2): the level the ranking used, the level the hardest part needs, the constraint table behind both, and the escalation triggers. Null when there is no demand profile.",
+      "oneOf": [{ "$ref": "#/$defs/envelope" }, { "type": "null" }]
+    },
     "warnings": {
       "description": "Human-readable warnings. Wording is not covered by the schema version.",
       "type": "array",
@@ -67,6 +72,65 @@
     }
   },
   "$defs": {
+    "envelope": {
+      "type": "object",
+      "required": [
+        "execution_model",
+        "default_demand",
+        "peak_demand",
+        "constraints",
+        "escalations"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "execution_model": {
+          "description": "single: one model implements everything, so the ranking is built on the peak. escalating: the model can change per task, so it is built on the bulk and the outliers become triggers.",
+          "type": "string",
+          "enum": ["single", "escalating"]
+        },
+        "default_demand": {
+          "description": "Dimension to level, for the demand the ranking was actually built on.",
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "peak_demand": {
+          "description": "Dimension to level for the hardest part of the work. Equal to default_demand under `single`, or when the judge did not distinguish the two.",
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "constraints": {
+          "description": "One row per rated dimension: what is demanded and the fragment that demands it.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/constraint" }
+        },
+        "escalations": {
+          "description": "The subset of constraints whose peak sits above the default. Always empty under `single`, where there is nothing to escalate to.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/constraint" }
+        }
+      }
+    },
+    "constraint": {
+      "type": "object",
+      "required": ["dimension", "level", "fragment_id", "text", "hard"],
+      "additionalProperties": false,
+      "properties": {
+        "dimension": { "type": "string" },
+        "level": { "type": "string" },
+        "fragment_id": {
+          "description": "Id of the project fragment behind this constraint, or null when the dimension carries no citation.",
+          "type": ["string", "null"]
+        },
+        "text": {
+          "description": "The cited fragment as the judge was shown it. Free text.",
+          "type": "string"
+        },
+        "hard": {
+          "description": "True when the cited text states an obligation (RFC 2119 wording, or a numbered requirement id) rather than describing what the project usually does. Derived from the text, not asked of the judge.",
+          "type": "boolean"
+        }
+      }
+    },
     "demand": {
       "type": "object",
       "required": ["dimensions", "justification", "coverage", "evidence"],

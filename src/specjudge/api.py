@@ -65,8 +65,11 @@ __all__ = [
     "json_schema",
     # Result types (read-only data)
     "Comparison",
+    "Constraint",
     "DataState",
     "DemandProfile",
+    "Envelope",
+    "ExecutionModel",
     "Evaluation",
     "Evidence",
     "EvidenceStatus",

@@ -21,7 +21,7 @@ repo at [`src/specjudge/_schema/output.schema.json`](../src/specjudge/_schema/ou
 
 ### Versioning
 
-Every payload carries `schema_version`, currently **1.1**. It is deliberately
+Every payload carries `schema_version`, currently **1.2**. It is deliberately
 independent of the package version — otherwise the contract would appear to change
 on every catalog-only release.
 
@@ -49,6 +49,23 @@ working.
   is to work in at all), not a recommendation for a specific piece of work. Worth
   branching on: it is the one case where the ranking answers a different question
   than usual.
+
+**1.2** adds `envelope`, additive: the demand as a range rather than a single verdict.
+
+- `envelope.default_demand` — the levels the ranking was actually built on
+- `envelope.peak_demand` — the levels the hardest part of the work needs
+- `envelope.constraints` — one row per rated dimension: the level, the fragment behind it,
+  and `hard` (the cited text states an obligation rather than a habit, derived from the
+  text rather than asked of the judge)
+- `envelope.escalations` — the constraints whose peak sits above the default; always empty
+  under the `single` execution model, where there is nothing to escalate to
+- `envelope.execution_model` — `single` or `escalating`, i.e. which of the two readings
+  produced `best_choice`
+
+Worth branching on if you automate spend: under `escalating`, `best_choice` answers "what
+should implement most of this" and `escalations` tells you what to reach for on the rest.
+Under `single` it answers "what can implement all of it", which is the older meaning and
+the default.
 
 ### What the schema does not pin
 
@@ -85,7 +102,10 @@ Everything exported from `specjudge.api`, and nothing else:
 | `to_dict` | A `Comparison` as the documented JSON payload |
 | `json_schema` | The schema describing that payload |
 | `SCHEMA_VERSION` | Version of the payload contract |
-| `Comparison` | The result: evaluations, podium, best choice, warnings, demand, sources read |
+| `Comparison` | The result: evaluations, podium, best choice, warnings, demand, sources read, envelope |
+| `Envelope` | The demand as a range: default level, peak, constraint table, escalation triggers |
+| `Constraint` | One row of that table: dimension, level, the fragment behind it, whether it is a stated requirement |
+| `ExecutionModel` | `single` / `escalating` — which reading the ranking is built on |
 | `Evaluation` | One model's rating, price and justification |
 | `DemandProfile` | The judge's assessment and its evidence |
 | `Evidence` | One dimension's citation |

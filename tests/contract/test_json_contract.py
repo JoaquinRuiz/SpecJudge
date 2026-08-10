@@ -105,6 +105,60 @@ def test_sources_read_names_each_kind_once(tmp_path, test_catalog, mock_ollama):
     assert payload["sources_read"] == ["agents"]
 
 
+def test_the_payload_carries_the_envelope(project_sufficient, test_catalog, mock_ollama):
+    """Added in 1.2: the demand as a range with named causes (FR-027)."""
+    payload = _run(project_sufficient, test_catalog, mock_ollama)
+    envelope = payload["envelope"]
+    assert envelope["execution_model"] == "single"
+    assert envelope["default_demand"] == envelope["peak_demand"]
+    assert envelope["constraints"]
+    assert envelope["escalations"] == []
+
+
+def test_an_escalating_run_validates_and_says_which_reading_it_used(
+    project_sufficient, test_catalog, mock_ollama
+):
+    with mock_ollama(models=["llama3.1:8b"]):
+        result = runner.invoke(
+            app,
+            [
+                str(project_sufficient),
+                "--judge",
+                "llama3.1:8b",
+                "--json",
+                "--catalog",
+                str(test_catalog),
+                "--execution-model",
+                "escalating",
+            ],
+        )
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    jsonschema.validate(payload, SCHEMA)
+    assert payload["envelope"]["execution_model"] == "escalating"
+
+
+def test_an_unknown_execution_model_is_refused_rather_than_guessed(
+    project_sufficient, test_catalog, mock_ollama
+):
+    """The two readings recommend different models, so guessing is not an option."""
+    with mock_ollama(models=["llama3.1:8b"]):
+        result = runner.invoke(
+            app,
+            [
+                str(project_sufficient),
+                "--judge",
+                "llama3.1:8b",
+                "--catalog",
+                str(test_catalog),
+                "--execution-model",
+                "whatever",
+            ],
+        )
+    assert result.exit_code != 0
+    assert "execution model" in result.output.lower()
+
+
 def test_unknown_fields_are_rejected(project_sufficient, test_catalog, mock_ollama):
     """`additionalProperties: false` is what makes an accidental addition visible."""
     payload = _run(project_sufficient, test_catalog, mock_ollama)
