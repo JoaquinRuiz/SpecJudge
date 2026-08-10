@@ -404,7 +404,7 @@ def _judge_answer(**extra):
     return answer
 
 
-def _parsed(answer, **rule_kwargs):
+def _parsed(answer, request_bulk=True, **rule_kwargs):
     from specjudge.domain import Fragment
     from specjudge.judge.evaluator import _parse_demand
 
@@ -412,7 +412,7 @@ def _parsed(answer, **rule_kwargs):
     for key, value in rule_kwargs.items():
         setattr(rules, key, value)
     fragments = [Fragment("S:FR-001", "spec", "**FR-001**: it MUST hold")]
-    return _parse_demand(answer, rules, fragments)
+    return _parse_demand(answer, rules, fragments, request_bulk)
 
 
 def test_a_bulk_below_the_peak_is_kept():
@@ -466,8 +466,8 @@ def test_an_outlier_that_does_not_exist_is_not_fatal():
     assert profile.dimensions["reasoning"] == "top"
 
 
-def test_nothing_is_asked_or_kept_when_the_knob_is_off():
-    """The escape hatch for judges too small for the extra fields."""
+def test_a_bulk_offered_by_a_judge_that_was_not_asked_is_ignored():
+    """A small judge answers the fields it was not given; none of that is kept."""
     profile = _parsed(
         _judge_answer(bulk={"reasoning": "low", "size": "low", "domain_specialization": "low"}),
         request_bulk=False,
@@ -480,7 +480,32 @@ def test_the_prompt_asks_for_the_bulk_only_when_requested():
         artifacts=[SDDArtifact("spec", "s.md", True, True, "- **FR-001**: it MUST hold\n")],
         data_state=DataState.SUFFICIENT,
     )
-    assert "bulk" in build_prompt(analysis, _rules())
+    assert '"bulk"' in build_prompt(analysis, _rules(), request_bulk=True)
+    assert '"bulk"' not in build_prompt(analysis, _rules())
+
+
+# ------------------------------------------- who gets asked (measured, issue #3)
+
+
+@pytest.mark.parametrize(
+    ("params_b", "asked"),
+    [(24.0, True), (70.0, True), (8.0, False), (20.0, False), (None, False)],
+)
+def test_only_judges_big_enough_are_asked_for_the_split(params_b, asked):
+    """Measured on the corpus: the extra fields make an 8B judge worse.
+
+    It loses about five points of accuracy on the levels it was already getting
+    right, and refuses two to three times as often. Capacity a judge does not have
+    is not free, so it is not spent — the same reasoning as the compact prompt.
+    """
+    from specjudge.judge.evaluator import use_bulk_prompt
+
+    assert use_bulk_prompt(params_b, _rules()) is asked
+
+
+def test_the_master_switch_overrides_the_threshold():
+    from specjudge.judge.evaluator import use_bulk_prompt
+
     rules = _rules()
     rules.request_bulk = False
-    assert '"bulk"' not in build_prompt(analysis, rules)
+    assert use_bulk_prompt(70.0, rules) is False

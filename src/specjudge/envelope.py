@@ -131,7 +131,8 @@ def envelope_warnings(profile: DemandProfile, execution_model: ExecutionModel) -
     if profile.distinguishes_bulk:
         return []
     return [
-        "The judge did not separate the bulk of the work from its hardest part, so the "
+        "No separate estimate of the bulk of the work was available — the judge did not "
+        "distinguish it from the hardest part, or is too small to be asked — so the "
         "default level is the peak and no escalation trigger is offered. The ranking is "
-        "the conservative one; a judge that distinguishes them may rank lower."
+        "the conservative one; a larger judge may rank lower."
     ]

@@ -74,7 +74,26 @@ def use_compact_prompt(params_b: float | None, rules: RatingRules) -> bool:
     return params_b <= threshold
 
 
-def _instructions(rules: RatingRules) -> str:
+def use_bulk_prompt(params_b: float | None, rules: RatingRules) -> bool:
+    """Whether this judge is asked to separate the bulk of the work from the peak.
+
+    Same shape as `use_compact_prompt`, and for the same measured reason: capacity
+    the judge does not have is not free. On the evaluation corpus the extra fields
+    cost an 8B judge about five points of accuracy and doubled its refused answers,
+    while a 24B judge answered them correctly and lost nothing.
+
+    An unknown size counts as small. A judge that cannot be sized is more likely to
+    be small than large, and the failure of guessing wrong in that direction is a
+    coarser answer rather than a worse one.
+    """
+    if not rules.request_bulk:
+        return False
+    if params_b is None:
+        return False
+    return params_b > rules.request_bulk_above_params_b
+
+
+def _instructions(rules: RatingRules, request_bulk: bool) -> str:
     dims = ", ".join(rules.dimensions)
     levels = " | ".join(rules.levels)
     dim_shape = ", ".join(f'"{d}": "<level>"' for d in rules.dimensions)
@@ -97,7 +116,7 @@ def _instructions(rules: RatingRules) -> str:
         '"outliers": ["<fragment id>", ...] — the few fragments that make the hardest\n'
         "part harder than the rest. If the work is uniform, repeat the same levels and\n"
         "return an empty list. Do not guess: omit both if you cannot tell them apart.\n"
-        if rules.request_bulk
+        if request_bulk
         else ""
     )
     return (
@@ -122,7 +141,7 @@ def _instructions(rules: RatingRules) -> str:
     )
 
 
-def response_schema(rules: RatingRules) -> dict:
+def response_schema(rules: RatingRules, request_bulk: bool = False) -> dict:
     """JSON schema constraining the judge's answer (issue #14).
 
     Ollama's `format: "json"` guarantees valid JSON, not the JSON we asked for.
@@ -159,7 +178,7 @@ def response_schema(rules: RatingRules) -> dict:
         }
         required.append("evidence")
 
-    if rules.request_bulk:
+    if request_bulk:
         # Deliberately NOT required. A judge that cannot separate the bulk from the
         # peak degrades to the conservative single-level answer, which is the
         # behaviour that existed before this asked. Forcing the slot would make a
@@ -216,8 +235,14 @@ def artifact_limit(rules: RatingRules, *, compact: bool) -> int:
     return int(rules.judge.get("max_chars_per_artifact", _DEFAULT_MAX_CHARS))
 
 
-def build_prompt(analysis: ProjectAnalysis, rules: RatingRules, *, compact: bool = False) -> str:
-    head = _instructions(rules)
+def build_prompt(
+    analysis: ProjectAnalysis,
+    rules: RatingRules,
+    *,
+    compact: bool = False,
+    request_bulk: bool = False,
+) -> str:
+    head = _instructions(rules, request_bulk)
     limit = artifact_limit(rules, compact=compact)
     # One place decides how much of each source is sent, so the prompt and the
     # citable set cannot disagree about what the judge was shown (FR-025).
@@ -256,6 +281,7 @@ def _parse_demand(
     raw: object,
     rules: RatingRules,
     fragments: list[Fragment],
+    request_bulk: bool = False,
 ) -> DemandProfile | str:
     """Validated profile, or a string describing why the answer is unusable.
 
@@ -291,7 +317,7 @@ def _parse_demand(
         dimensions=dimensions,
         justification=justification or "Demand profile estimated from the project artifacts.",
         judge_model="",  # filled in by the caller, which knows the model
-        bulk=_parse_bulk(raw, dimensions, rules),
+        bulk=_parse_bulk(raw, dimensions, rules, request_bulk),
         outliers=_parse_outliers(raw),
     )
 
@@ -334,7 +360,9 @@ def _parse_demand(
     return profile
 
 
-def _parse_bulk(raw: dict, dimensions: dict[str, str], rules: RatingRules) -> dict[str, str]:
+def _parse_bulk(
+    raw: dict, dimensions: dict[str, str], rules: RatingRules, request_bulk: bool
+) -> dict[str, str]:
     """The level the bulk of the work needs, where the judge gave a usable one.
 
     Silently permissive on purpose: a missing or malformed bulk degrades to "same as
@@ -347,7 +375,7 @@ def _parse_bulk(raw: dict, dimensions: dict[str, str], rules: RatingRules) -> di
     the hardest part, so a higher bulk is a judge contradicting itself, and the
     conservative reading is that it did not distinguish them at all.
     """
-    if not rules.request_bulk:
+    if not request_bulk:
         return {}
     raw_bulk = _as_mapping(raw.get("bulk"))
     if not raw_bulk:
@@ -420,7 +448,9 @@ def estimate_demand(
     client: OllamaClient,
     judge_model: str,
 ) -> DemandProfile:
-    compact = use_compact_prompt(client.model_params_b(judge_model), rules)
+    params_b = client.model_params_b(judge_model)
+    compact = use_compact_prompt(params_b, rules)
+    request_bulk = use_bulk_prompt(params_b, rules)
 
     # Try the chosen shape; if it comes back unusable, retry once with the compact
     # shape before giving up (a long prompt is the usual cause of a bad answer).
@@ -432,10 +462,10 @@ def estimate_demand(
         fragments = extract_fragments(analysis, artifact_limit(rules, compact=is_compact))
         raw = client.chat_json(
             judge_model,
-            build_prompt(analysis, rules, compact=is_compact),
-            schema=response_schema(rules),
+            build_prompt(analysis, rules, compact=is_compact, request_bulk=request_bulk),
+            schema=response_schema(rules, request_bulk),
         )
-        parsed = _parse_demand(raw, rules, fragments)
+        parsed = _parse_demand(raw, rules, fragments, request_bulk)
         if isinstance(parsed, DemandProfile):
             parsed.judge_model = judge_model
             return parsed

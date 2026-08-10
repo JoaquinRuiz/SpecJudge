@@ -170,7 +170,7 @@ def test_a_degraded_envelope_says_why_it_has_no_triggers():
     """ "No triggers" must not be read as "the work is uniform" (Principle IV)."""
     profile = _profile({"reasoning": "top"})
     (warning,) = envelope_warnings(profile, ExecutionModel.ESCALATING)
-    assert "did not separate" in warning
+    assert "too small to be asked" in warning
     assert "conservative" in warning
 
 

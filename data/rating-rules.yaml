@@ -59,10 +59,14 @@ execution:
   # assuming escalation would quietly recommend something weaker than you need.
   # Override per run with --execution-model.
   model: single
-  # Whether the judge is also asked to separate the bulk of the work from its hardest
-  # part. Turn it off for a judge too small to manage the extra fields: you get the
-  # single-level answer back, and no constraint table worth reading.
+  # Whether the judge may be asked to separate the bulk of the work from its hardest
+  # part. Turning it off gets the single-level answer back everywhere.
   request_bulk: true
+  # ...but only judges above this parameter count (in billions) are actually asked.
+  # Measured on the evaluation corpus: the extra fields cost an 8B judge about five
+  # points of accuracy and double its refusals, while a 24B judge is unaffected and
+  # gets the bulk right. An unknown size counts as small, like the compact prompt.
+  request_bulk_above_params_b: 20
 
 # How the project is presented to the local judge.
 judge:

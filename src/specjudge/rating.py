@@ -13,6 +13,7 @@ from pathlib import Path
 import yaml
 
 from .domain import (
+    DEFAULT_BULK_ABOVE_PARAMS_B,
     DEFAULT_MAX_CONTEXT_FILES,
     DEFAULT_MAX_PRICING_AGE_DAYS,
     LEVELS,
@@ -72,6 +73,7 @@ def load_rules(path: Path | str | None = None) -> RatingRules:
         require_spans=_require_spans(raw.get("evidence")),
         max_context_files=_max_context_files(raw.get("sources")),
         request_bulk=_request_bulk(raw.get("execution")),
+        request_bulk_above_params_b=_bulk_threshold(raw.get("execution")),
         execution_model=_execution_model(raw.get("execution")),
     )
 
@@ -81,6 +83,16 @@ def _request_bulk(raw: object) -> bool:
     if not isinstance(raw, dict) or "request_bulk" not in raw:
         return True
     return bool(raw["request_bulk"])
+
+
+def _bulk_threshold(raw: object) -> float:
+    """Read execution.request_bulk_above_params_b, falling back to the default."""
+    if not isinstance(raw, dict):
+        return DEFAULT_BULK_ABOVE_PARAMS_B
+    try:
+        return float(raw["request_bulk_above_params_b"])
+    except (KeyError, TypeError, ValueError):
+        return DEFAULT_BULK_ABOVE_PARAMS_B
 
 
 def _execution_model(raw: object) -> ExecutionModel:

@@ -87,6 +87,10 @@ def answer_levels(levels: list[str]) -> list[str]:
 # shared character budget still leaves each of them something worth reading.
 DEFAULT_MAX_CONTEXT_FILES = 12
 
+# Below this, asking for a bulk/peak split makes a judge worse at the levels it was
+# already getting right. Measured, not assumed: see docs/judges.md.
+DEFAULT_BULK_ABOVE_PARAMS_B = 20.0
+
 # Prices move every few weeks, so a quarter-old catalog is worth flagging. Short
 # enough to catch real drift, long enough not to cry wolf on every run.
 DEFAULT_MAX_PRICING_AGE_DAYS = 90
@@ -361,6 +365,9 @@ class RatingRules:
     # hardest part (FR-027). Turning it off restores the single-level answer for
     # judges too small to manage the extra slots, at the cost of the envelope.
     request_bulk: bool = True
+    # Only judges above this size are asked for it: measured, the extra fields cost a
+    # small judge more accuracy than the envelope is worth to it (FR-027).
+    request_bulk_above_params_b: float = DEFAULT_BULK_ABOVE_PARAMS_B
     # How the project is assumed to be implemented when the caller does not say
     # (FR-028). Conservative by default: one model must clear the hardest part.
     execution_model: ExecutionModel = ExecutionModel.SINGLE
