@@ -9,6 +9,94 @@ Entries before 0.1.4 were reconstructed from the git tags and the GitHub release
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-08-10
+
+One project rarely has one complexity. This release stops pretending it does: the demand
+comes back as an envelope — what the bulk of the work needs, what the hardest part needs,
+and which fragment of your project is responsible for each — and you say whether you will
+implement it with one model or switch model per task.
+
+### Added
+
+- **The budget envelope** ([#3], [#25]). Every rated dimension now comes with the fragment
+  that demands it and whether that fragment states a requirement or describes a habit:
+
+  ```
+  Budget envelope (escalating: ranked on the bulk of the work)
+     default: reasoning medium, size low
+     reasoning: top — S:FR-001 (requirement)
+     size: low — T:T002 (customary)
+     escalate for:
+       • S:FR-001 — needs reasoning top
+  ```
+
+  Hard versus customary is derived from the cited text (RFC 2119 wording, or a numbered
+  requirement id) rather than asked of the judge: a user can open a fragment and disagree
+  with it, and cannot do that with an opinion.
+
+- **`--execution-model single|escalating`** ([#3], [#25]). Whether one demanding task is
+  decisive is not a property of the spec, it is a property of whoever implements it. With
+  `single` — the default, and the previous behaviour — the podium is ranked on the hardest
+  part, because one model has to clear it. With `escalating` it is ranked on the bulk and
+  the outliers become explicit triggers, which is how you stop paying frontier prices for
+  twenty mechanical edits.
+
+- **`envelope` in the JSON payload, schema 1.2** ([#3], [#25]). Additive. Carries the
+  demand the ranking used, the demand the hardest part needs, the constraint table behind
+  both, and `execution_model` — which matters, because it changes what `best_choice` means.
+
+- `Envelope`, `Constraint` and `ExecutionModel` on the public API, and an
+  `execution_model` argument to `api.analyze` ([#3], [#25]).
+
+- **[`docs/judges.md`](docs/judges.md)** — what makes a good judge for this task, measured
+  results for three local models, and the command that reproduces any row ([#23], [#24]).
+  Reported by [@rmarable]. An 8B judge lands 81–89% of demand levels inside the band the
+  corpus expects; a 24B-class judge lands 100%.
+
+- `--markdown-row` on `scripts/eval_judge.py`, so numbers contributed from other hardware
+  are computed the same way rather than transcribed by hand ([#23], [#24]).
+
+- `execution.*` in `data/rating-rules.yaml`: the default execution model, whether the
+  judge is asked for the bulk at all, and the judge size above which it is asked.
+
+### Changed
+
+- The README quick start explains why it recommends an 8B judge instead of leaving the
+  choice looking arbitrary ([#23], [#24]).
+
+- **Catalog prices refreshed** against the providers' own pricing pages: GPT-5.6 Terra
+  2.50/15.00 → 2.00/12.00, GPT-5.6 Luna 1.00/6.00 → 0.20/1.20, GLM-5.1 0.97/3.04 →
+  1.40/4.40, and Claude Sonnet 5 3.00/15.00 → 2.00/10.00 — the last of which corrects an
+  entry that contradicted its own note about introductory pricing. `pricing_date` moved
+  only on the entries actually re-checked; the ones whose cost depends on which host serves
+  them keep their earlier date, because that field means "verified on" and moving it
+  without looking would be the exact rot it exists to prevent.
+
+- **Only judges above 20B parameters are asked to separate the bulk from the peak**
+  ([#3], [#25]). Measured, not assumed: the extra fields cost `qwen3:8b` five points of
+  accuracy and doubled its refused answers, while `devstral-small-2` answered them
+  correctly and lost nothing. A smaller judge still ranks and still cites; it reports one
+  level for the project instead of a range, and an escalating run says so rather than
+  leaving you to infer it from an empty trigger list. Same shape as the existing compact
+  prompt threshold, and configurable next to it.
+
+### Measured
+
+`scripts/eval_judge.py` over the regression corpus, grown to 17 cases: `devstral-small-2`
+30/30 dimensions in band with the bulk correct, `qwen3:8b` 25/28, `llama3.1:8b` (q4) 22/27.
+No existing case regressed.
+
+### Compatibility
+
+**Nothing moves unless you ask.** Without `--execution-model`, the podium is ranked exactly
+as in 0.4.0 — there is a test that fails if that changes. `envelope` is an additive payload
+field, so a 1.1 consumer is unaffected, and the three new public types are additions to
+`specjudge.api`, not changes to it.
+
+If you automate spend, `envelope.execution_model` is the field to branch on: under
+`escalating`, `best_choice` answers "what should implement most of this" rather than "what
+can implement all of it".
+
 ## [0.4.0] - 2026-08-07
 
 A spec is no longer the price of entry. SpecJudge reads whatever written context a
@@ -395,7 +483,8 @@ community-maintained catalog by how well each model **fits** the job.
 - Explicit degradation with distinct exit codes when project data is insufficient,
   the judge is unavailable, or the catalog is empty.
 
-[Unreleased]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.2.0...v0.3.0
@@ -423,3 +512,8 @@ community-maintained catalog by how well each model **fits** the job.
 [#16]: https://github.com/JoaquinRuiz/SpecJudge/issues/16
 [#21]: https://github.com/JoaquinRuiz/SpecJudge/pull/21
 [#22]: https://github.com/JoaquinRuiz/SpecJudge/pull/22
+[#3]: https://github.com/JoaquinRuiz/SpecJudge/issues/3
+[#23]: https://github.com/JoaquinRuiz/SpecJudge/issues/23
+[#24]: https://github.com/JoaquinRuiz/SpecJudge/pull/24
+[#25]: https://github.com/JoaquinRuiz/SpecJudge/pull/25
+[@rmarable]: https://github.com/rmarable
