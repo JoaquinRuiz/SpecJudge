@@ -30,9 +30,9 @@ $ specjudge examples/task-manager
 ┃    ┃ Model                         ┃ Rating   ┃ Price                       ┃ Priced on  ┃
 ┡━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━┩
 │ 🥇 │ Mistral Small 3.2 24B (local) │ good     │ open-source/free            │ 2026-07-20 │
-│ 🥈 │ DeepSeek V4 Flash             │ good     │ 0.28 out / 0.14 in USD/1M   │ 2026-07-28 │
+│ 🥈 │ DeepSeek V4 Flash             │ good     │ 0.28 out / 0.14 in USD/1M   │ 2026-08-10 │
 │ 🥉 │ Gemma 4 26B MoE               │ good     │ 0.33 out / 0.06 in USD/1M   │ 2026-07-20 │
-│    │ Claude Fable 5                │ overkill │ 50.00 out / 10.00 in USD/1M │ 2026-07-28 │
+│    │ Claude Fable 5                │ overkill │ 50.00 out / 10.00 in USD/1M │ 2026-08-10 │
 └────┴───────────────────────────────┴──────────┴─────────────────────────────┴────────────┘
 
 🥇 Gold: Mistral Small 3.2 24B (local)

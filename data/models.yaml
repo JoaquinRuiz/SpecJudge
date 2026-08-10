@@ -33,7 +33,7 @@ models:
       input_per_million: 10.00
       output_per_million: 50.00
       currency: USD
-      pricing_date: 2026-07-28
+      pricing_date: 2026-08-10
     notes: >
       Anthropic's most capable widely released model, aimed at long-running
       agents and the most demanding reasoning. 1M context, 128K max output.
@@ -52,7 +52,7 @@ models:
       input_per_million: 5.00
       output_per_million: 25.00
       currency: USD
-      pricing_date: 2026-07-28
+      pricing_date: 2026-08-10
     notes: >
       Frontier tier for complex agentic coding and enterprise work, at half the
       cost of Fable 5. Supersedes Opus 4.8 at the same price. 1M context.
@@ -67,10 +67,10 @@ models:
       size: top
       domain_specialization: high
     price:
-      input_per_million: 3.00
-      output_per_million: 15.00
+      input_per_million: 2.00
+      output_per_million: 10.00
       currency: USD
-      pricing_date: 2026-07-28
+      pricing_date: 2026-08-10
     notes: >
       Near-Opus quality on coding and agentic work at Sonnet cost. 1M context.
       Introductory pricing of $2.00/$10.00 applies through 2026-08-31.
@@ -88,7 +88,7 @@ models:
       input_per_million: 1.00
       output_per_million: 5.00
       currency: USD
-      pricing_date: 2026-07-28
+      pricing_date: 2026-08-10
     notes: Fastest and most cost-effective Anthropic tier. 200K context.
 
   # ------------------------------------------------------------------- OpenAI
@@ -105,7 +105,7 @@ models:
       input_per_million: 5.00
       output_per_million: 30.00
       currency: USD
-      pricing_date: 2026-07-28
+      pricing_date: 2026-08-10
     notes: >
       OpenAI's flagship tier (GPT-5.6 family, GA 2026-07-09). 1M context.
       Long-context pricing rises to $10.00/$45.00 above ~272K input tokens.
@@ -120,10 +120,10 @@ models:
       size: high
       domain_specialization: high
     price:
-      input_per_million: 2.50
-      output_per_million: 15.00
+      input_per_million: 2.00
+      output_per_million: 12.00
       currency: USD
-      pricing_date: 2026-07-28
+      pricing_date: 2026-08-10
     notes: Mid tier of the GPT-5.6 family. 1M context.
 
   - id: gpt-5-6-luna
@@ -136,10 +136,10 @@ models:
       size: medium
       domain_specialization: medium
     price:
-      input_per_million: 1.00
-      output_per_million: 6.00
+      input_per_million: 0.20
+      output_per_million: 1.20
       currency: USD
-      pricing_date: 2026-07-28
+      pricing_date: 2026-08-10
     notes: Entry tier of the GPT-5.6 family. 1M context.
 
   - id: gpt-5-4-mini
@@ -155,7 +155,7 @@ models:
       input_per_million: 0.75
       output_per_million: 4.50
       currency: USD
-      pricing_date: 2026-07-28
+      pricing_date: 2026-08-10
     notes: Low-cost tier of OpenAI's ladder; previous generation but far cheaper.
 
   - id: gpt-5-4-nano
@@ -171,7 +171,7 @@ models:
       input_per_million: 0.20
       output_per_million: 1.25
       currency: USD
-      pricing_date: 2026-07-28
+      pricing_date: 2026-08-10
     notes: Budget floor of OpenAI's ladder; suitable only for simple, scoped work.
 
   # ------------------------------------------------------------------- Google
@@ -188,7 +188,7 @@ models:
       input_per_million: 2.00
       output_per_million: 12.00
       currency: USD
-      pricing_date: 2026-07-28
+      pricing_date: 2026-08-10
     notes: >
       Google's flagship tier. Long-context pricing rises to $4.00/$18.00 above
       200K tokens — the rate here is the standard band.
@@ -206,7 +206,7 @@ models:
       input_per_million: 1.50
       output_per_million: 7.50
       currency: USD
-      pricing_date: 2026-07-28
+      pricing_date: 2026-08-10
     notes: >
       Released 2026-07-21; beats Gemini 3.1 Pro on coding at a lower rate.
       Flat pricing at any context length. Supersedes Gemini 3.5 Flash
@@ -225,7 +225,7 @@ models:
       input_per_million: 0.50
       output_per_million: 3.00
       currency: USD
-      pricing_date: 2026-07-28
+      pricing_date: 2026-08-10
     notes: Previous-generation Flash; still available and notably cheaper.
 
   - id: gemini-3-5-flash-lite
@@ -241,7 +241,7 @@ models:
       input_per_million: 0.30
       output_per_million: 2.50
       currency: USD
-      pricing_date: 2026-07-28
+      pricing_date: 2026-08-10
     notes: Current Flash-Lite generation; high-volume tier.
 
   - id: gemini-3-1-flash-lite
@@ -257,7 +257,7 @@ models:
       input_per_million: 0.25
       output_per_million: 1.50
       currency: USD
-      pricing_date: 2026-07-28
+      pricing_date: 2026-08-10
     notes: >
       Google's budget floor. Previous Flash-Lite generation, still available and
       cheaper than 3.5 Flash-Lite.
@@ -468,7 +468,7 @@ models:
       input_per_million: 1.40
       output_per_million: 4.40
       currency: USD
-      pricing_date: 2026-07-20
+      pricing_date: 2026-08-10
     notes: >
       Z.ai's flagship; strong coding capability at well below Western
       frontier-tier pricing. Cached input drops to $0.26/M.
@@ -483,11 +483,13 @@ models:
       size: high
       domain_specialization: medium
     price:
-      input_per_million: 0.97
-      output_per_million: 3.04
+      input_per_million: 1.40
+      output_per_million: 4.40
       currency: USD
-      pricing_date: 2026-07-20
-    notes: Previous flagship; still widely used and cheaper than GLM-5.2.
+      pricing_date: 2026-08-10
+    notes: >
+      Previous flagship, priced level with GLM-5.2 on Z.ai's own page — so it is
+      only worth choosing where 5.2 is unavailable, not to save money.
 
   - id: glm-4-7
     name: GLM-4.7
@@ -502,7 +504,7 @@ models:
       input_per_million: 0.60
       output_per_million: 2.20
       currency: USD
-      pricing_date: 2026-07-20
+      pricing_date: 2026-08-10
     notes: Solid mid tier. Cached input as low as $0.11/M.
 
   - id: glm-4-5-air
@@ -518,7 +520,7 @@ models:
       input_per_million: 0.20
       output_per_million: 1.10
       currency: USD
-      pricing_date: 2026-07-20
+      pricing_date: 2026-08-10
     notes: Budget tier of the GLM line.
 
   - id: glm-4-7-flash
@@ -534,7 +536,7 @@ models:
       input_per_million: 0.00
       output_per_million: 0.00
       currency: USD
-      pricing_date: 2026-07-20
+      pricing_date: 2026-08-10
     notes: >
       Listed at $0 for input and output on Z.ai's free tier (rate limits apply).
       Being free, it wins the value comparison outright on any project whose
@@ -558,7 +560,7 @@ models:
       input_per_million: 0.14
       output_per_million: 0.28
       currency: USD
-      pricing_date: 2026-07-28
+      pricing_date: 2026-08-10
     notes: >
       Among the cheapest hosted APIs available; open weights, 1M context.
       Cached input drops to $0.0028/M.
@@ -576,7 +578,7 @@ models:
       input_per_million: 0.435
       output_per_million: 0.87
       currency: USD
-      pricing_date: 2026-07-28
+      pricing_date: 2026-08-10
     notes: >
       MIT-licensed open weights, 1M context, strong on code and math. Supersedes
       DeepSeek V3. Cached input drops to $0.0036/M.
@@ -594,7 +596,7 @@ models:
       input_per_million: 3.00
       output_per_million: 15.00
       currency: USD
-      pricing_date: 2026-07-28
+      pricing_date: 2026-08-10
     notes: >
       Released 2026-07-16. 2.8T-param open-weight MoE with native vision and a
       1M context window; flat pricing at any context length (no long-context
@@ -651,8 +653,11 @@ models:
       input_per_million: 1.25
       output_per_million: 3.75
       currency: USD
-      pricing_date: 2026-07-20
-    notes: Top of the Qwen line; strong capability at open-weight pricing.
+      pricing_date: 2026-08-10
+    notes: >
+      Top of the Qwen line; strong capability at open-weight pricing. The figure
+      above is a 50% promotion on the International (Singapore) endpoint; list
+      price is $2.50/$7.50, and the Mainland endpoint is cheaper still.
 
   # The two entries below carry a date (the constitution requires one on every
   # entry) but their figures are LESS RELIABLE than the rest: cost depends on the
@@ -690,7 +695,7 @@ models:
       input_per_million: 2.00
       output_per_million: 6.00
       currency: USD
-      pricing_date: 2026-07-20
+      pricing_date: 2026-08-10
     notes: >
       Apache 2.0 open weights. PLACEHOLDER RATE — the real price depends on your
       hosting provider. Substitute your provider's rate and update pricing_date.
