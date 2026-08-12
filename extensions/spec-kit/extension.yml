@@ -1,0 +1,46 @@
+schema_version: "1.0"
+
+extension:
+  id: specjudge
+  name: "SpecJudge — right-size the model before you implement"
+  version: "0.1.0"
+  description: "Recommends the model that fits your tasks, citing the spec fragment behind every level."
+  category: "process"
+  effect: "read-only"
+  author: "Joaquín Ruiz"
+  repository: "https://github.com/JoaquinRuiz/SpecJudge"
+  license: "MIT"
+  homepage: "https://github.com/JoaquinRuiz/SpecJudge"
+
+requires:
+  # Closed range over versions actually tested. 0.13.0 is what this was developed
+  # against; widening it is a change that requires trying it, not assuming it.
+  speckit_version: ">=0.13.0,<0.14.0"
+  tools:
+    # 0.5.0 is the first release with the budget envelope and schema 1.2, which is
+    # what the command reads.
+    - name: "specjudge"
+      version: ">=0.5.0"
+      required: true
+
+provides:
+  commands:
+    - name: speckit.specjudge.recommend
+      file: commands/speckit.specjudge.recommend.md
+      description: "Recommend the model that fits this feature's tasks, with the evidence behind it"
+
+hooks:
+  # The one moment this is worth asking: the tasks exist and nothing has been
+  # implemented yet. Optional because it starts a local model, and spending
+  # somebody's minutes without asking is how an extension gets uninstalled.
+  after_tasks:
+    command: speckit.specjudge.recommend
+    optional: true
+    prompt: "Recommend a model for these tasks?"
+    description: "Right-size the model before implementation starts"
+
+tags:
+  - "cost"
+  - "model-selection"
+  - "local-first"
+  - "ollama"
