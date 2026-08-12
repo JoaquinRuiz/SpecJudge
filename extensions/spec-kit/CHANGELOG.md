@@ -3,6 +3,15 @@
 Versioned independently of SpecJudge itself: the extension is a manifest and a prompt,
 and changes far less often than the tool it wraps.
 
+## [0.1.2] - 2026-08-12
+
+### Fixed
+
+- **The install command in this README was wrong.** `--from` supplies the source, it does
+  not replace the name, so the line published with 0.1.1 fails on the first try. The
+  archive is republished under a new version rather than replaced in place: two different
+  zips answering to 0.1.1 is worse than a version number spent on a one-line fix.
+
 ## [0.1.1] - 2026-08-12
 
 ### Fixed

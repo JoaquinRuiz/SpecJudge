@@ -9,6 +9,60 @@ Entries before 0.1.4 were reconstructed from the git tags and the GitHub release
 
 ## [Unreleased]
 
+## [0.5.3] - 2026-08-12
+
+**This release changes what the tool recommends.** It is a bug fix and the version number
+says so, but the effect is not cosmetic: on projects whose requirements do not sit in the
+first 1,500 characters of the file, the judge was rating something it had never read. If
+you pin a patch range and expect identical output, read this entry before upgrading.
+
+### Fixed
+
+- **The compact digest was built from truncated text** ([#29], [#31]). It faithfully
+  summarised the first 1,500 characters of each artifact and said nothing false about
+  them, which is why nothing caught it. On a real feature that meant the judge received
+  four section titles and nothing else — `FR-001` sat at line 82 of the spec, `T001` at
+  line 41 of the tasks, both past the cut. Of 28 citable fragments, 22 were headings and
+  none was a requirement or a task, so a 20-requirement access-control rewrite came back
+  `reasoning: medium, size: low`.
+
+  A digest is bounded by its own structure, not by the length of the document it
+  describes. It is now built over the whole source, with the budget applied to the
+  rendered digest; every named unit carries its own text so it stays citable and
+  verifiable; samples span the file rather than its head, because a task list opens with
+  setup and closes with the hard part; and counts come from the whole file even when the
+  sample does not.
+
+  Measured on the 18-case corpus: `devstral-small-2` 30/30 → **32/32 in band**, two more
+  dimensions graded and still no misses; `qwen3:8b` 25/28 → 26/30; `llama3.1:8b` 22/27 →
+  24/32, which answers five more and gets more of them wrong.
+
+- **Unfilled template placeholders are no longer citable evidence** ([#29], [#31]). An
+  untouched spec-kit constitution was contributing eight `[PRINCIPLE_1_NAME]` fragments.
+  Matched anchored on the whole fragment, never as a substring: `[US1]` and `[P]` appear
+  inside real task lines.
+
+- **The constraint table resolved citations against the wrong fragment set** for judges
+  above the compact-prompt threshold ([#29], [#31]). Every lookup missed, so the table
+  came out with no text and every row marked `customary` — silently, and only for people
+  running a large judge.
+
+- **The spec-kit extension's install command** (extension 0.1.2). `--from` supplies the
+  source, it does not replace the name; the line shipped with 0.1.1 fails immediately.
+
+### Changed
+
+- The quick start recommends `qwen3:8b` rather than `llama3.1:8b`, and
+  [`docs/judges.md`](docs/judges.md) states the trade rather than a headline: fewer errors
+  and better signalled, at the cost of refusing about one project in eighteen. All three
+  rows re-measured on the new corpus, so nothing stale sits under one stamp.
+
+### Compatibility
+
+No API, schema or exit code changed. What changed is the input the judge receives, and
+therefore its answers — for the better, but not identically. If you keep recommendations
+under review, expect movement on projects with long artifacts.
+
 ## [0.5.2] - 2026-08-12
 
 A one-line fix to the spec-kit extension, and a release to carry it: the archive ships as
@@ -539,7 +593,8 @@ community-maintained catalog by how well each model **fits** the job.
 - Explicit degradation with distinct exit codes when project data is insufficient,
   the judge is unavailable, or the catalog is empty.
 
-[Unreleased]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.2...HEAD
+[Unreleased]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.3...HEAD
+[0.5.3]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.4.0...v0.5.0
@@ -577,3 +632,5 @@ community-maintained catalog by how well each model **fits** the job.
 [@rmarable]: https://github.com/rmarable
 [#27]: https://github.com/JoaquinRuiz/SpecJudge/issues/27
 [#28]: https://github.com/JoaquinRuiz/SpecJudge/pull/28
+[#29]: https://github.com/JoaquinRuiz/SpecJudge/issues/29
+[#31]: https://github.com/JoaquinRuiz/SpecJudge/pull/31

@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: specjudge
   name: "SpecJudge — right-size the model before you implement"
-  version: "0.1.1"
+  version: "0.1.2"
   description: "Recommends the model that fits your tasks, citing the spec fragment behind every level."
   category: "process"
   effect: "read-only"
