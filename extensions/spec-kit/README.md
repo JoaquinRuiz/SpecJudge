@@ -28,9 +28,15 @@ specjudge --set-judge              # pick a local judge, once
 specify extension add --from https://github.com/JoaquinRuiz/SpecJudge/releases/latest/download/spec-kit-specjudge.zip
 ```
 
-Requires spec-kit 0.13.x, SpecJudge 0.5.0+, and [Ollama](https://ollama.com) 0.5.0+ with a
-local model. An 8B judge is enough; see
+Requires spec-kit 0.13.0 or newer, SpecJudge 0.5.0+, and [Ollama](https://ollama.com)
+0.5.0+ with a local model. An 8B judge is enough; see
 [choosing a judge](https://github.com/JoaquinRuiz/SpecJudge/blob/main/docs/judges.md).
+
+**Tested against spec-kit 0.13.0 and 0.15.2.** The manifest declares a floor and no
+ceiling: it uses only `provides.commands` and `hooks`, the most stable part of the
+extension format, and an upper bound would stop the extension installing every time
+spec-kit ships a minor release. If a future version does break it, that is a bug to fix,
+not a prediction to encode.
 
 ## Use
 

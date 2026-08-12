@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: specjudge
   name: "SpecJudge — right-size the model before you implement"
-  version: "0.1.0"
+  version: "0.1.1"
   description: "Recommends the model that fits your tasks, citing the spec fragment behind every level."
   category: "process"
   effect: "read-only"
@@ -13,9 +13,13 @@ extension:
   homepage: "https://github.com/JoaquinRuiz/SpecJudge"
 
 requires:
-  # Closed range over versions actually tested. 0.13.0 is what this was developed
-  # against; widening it is a change that requires trying it, not assuming it.
-  speckit_version: ">=0.13.0,<0.14.0"
+  # Floor only, deliberately open at the top. A closed upper bound fails hard and on
+  # a schedule: the day spec-kit ships a minor, the extension stops installing for
+  # everybody, over a guess about the future. This manifest uses only
+  # `provides.commands` and `hooks`, the oldest and most stable part of the format.
+  # Tested against 0.13.0 and 0.15.2; the README says so, which is the honest place
+  # for a fact about the past.
+  speckit_version: ">=0.13.0"
   tools:
     # 0.5.0 is the first release with the budget envelope and schema 1.2, which is
     # what the command reads.

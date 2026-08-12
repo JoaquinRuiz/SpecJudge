@@ -79,9 +79,25 @@ def test_it_does_not_require_a_specjudge_that_does_not_exist(manifest):
     assert required <= current, f"requires specjudge {tool['version']}, repo is at {__version__}"
 
 
-def test_the_spec_kit_range_is_closed(manifest):
-    """An open upper bound claims compatibility with versions nobody has tried."""
-    assert re.fullmatch(r">=\d+\.\d+\.\d+,<\d+\.\d+\.\d+", manifest["requires"]["speckit_version"])
+def test_the_spec_kit_floor_is_a_version_that_was_tested(manifest):
+    """A floor, and no ceiling.
+
+    This started closed at `<0.14.0`, on the reasoning that declaring untested
+    compatibility is a claim you cannot back. That was the wrong trade, and the
+    first person to hit it was the author: spec-kit 0.15.2 refused to install an
+    extension whose manifest is compatible with it in every respect. A closed upper
+    bound fails hard, for everybody, on a schedule set by somebody else's release
+    calendar — over a guess about the future.
+
+    So the manifest states a floor, and the README states which versions were
+    actually tried, which is where a fact about the past belongs.
+    """
+    speckit = manifest["requires"]["speckit_version"]
+    assert re.fullmatch(r">=\d+\.\d+\.\d+", speckit), f"expected a bare floor, got {speckit!r}"
+
+    readme = (EXTENSION / "README.md").read_text(encoding="utf-8")
+    floor = speckit.removeprefix(">=")
+    assert floor in readme, f"the README does not say {floor} was tested"
 
 
 # ------------------------------------------------------------------ the hook
