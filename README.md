@@ -291,6 +291,22 @@ If your judge cannot manage cited evidence, set `evidence.require_spans: false` 
 | `4` | Model catalog missing or empty |
 </details>
 
+## Inside spec-kit
+
+If you drive your work with [spec-kit](https://github.com/github/spec-kit), the question
+this tool answers has an obvious moment: right after `/speckit.tasks`, when the spec, the plan
+and the task list exist and no tokens have been spent yet. The extension in
+[`extensions/spec-kit/`](./extensions/spec-kit) puts it there.
+
+```bash
+specify extension add --from https://github.com/JoaquinRuiz/SpecJudge/releases/latest/download/spec-kit-specjudge.zip
+```
+
+It asks before running — the judge is a local model and starting one costs you minutes — and
+it writes nothing. If SpecJudge is not installed or the project is too thin to judge, it says
+so in one line and gets out of the way: a recommendation nobody asked for should never be the
+reason an implementation did not start.
+
 ## Using it from your own code
 
 `--json` emits a payload with its own versioned schema, which you can fetch without
