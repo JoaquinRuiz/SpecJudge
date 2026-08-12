@@ -68,3 +68,31 @@ jobs:
 
       - name: Publish
         uses: pypa/gh-action-pypi-publish@release/v1
+
+  extension:
+    name: Attach the spec-kit extension
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # to upload the archive onto the release
+    steps:
+      - uses: actions/checkout@v5
+
+      # spec-kit unpacks the archive and expects `extension.yml` at its root, so the
+      # zip GitHub generates from a tag is the wrong shape: it would nest everything
+      # under `SpecJudge-<tag>/extensions/spec-kit/`. Build it from the directory.
+      - name: Build the extension archive
+        run: |
+          cd extensions/spec-kit
+          zip -r "$GITHUB_WORKSPACE/spec-kit-specjudge.zip" . -x '.*'
+          unzip -l "$GITHUB_WORKSPACE/spec-kit-specjudge.zip"
+
+      - name: Fail if the manifest is not at the archive root
+        run: |
+          unzip -l spec-kit-specjudge.zip | grep -qE ' extension\.yml$' \
+            || { echo "extension.yml is not at the root of the archive"; exit 1; }
+
+      - name: Attach it to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" spec-kit-specjudge.zip --clobber
