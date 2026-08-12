@@ -1,0 +1,11 @@
+category: well_specified
+data_state: sufficient
+rationale: >
+  The shape that broke the compact digest (issue #29): context, scenarios and filler
+  occupy the first 1,500 characters of the spec, so FR-001 sits well past the cut, and
+  the tasks file opens with a format legend and eight cosmetic renames before the three
+  that rewrite the netting engine. A digest built from the head of these files describes
+  a labelling exercise. The demand is real and it is all in the tail.
+dimensions:
+  reasoning: {min: high}
+  domain_specialization: {min: medium}

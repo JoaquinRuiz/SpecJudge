@@ -28,6 +28,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .domain import ProjectAnalysis, SDDArtifact
+from .judge import digest as digest_module
 from .sources import is_environment
 
 
@@ -109,6 +110,44 @@ def _truncate(content: str, allowed: int) -> str:
     head = content[:allowed]
     boundary = head.rfind("\n")
     return head[:boundary] if boundary > 0 else head
+
+
+def digest_sources(
+    analysis: ProjectAnalysis,
+    limit: int,
+    environment_budget: int | None = None,
+) -> list[PromptSource]:
+    """Every usable source as a digest block, within the same budget as the prose.
+
+    The compact prompt sends these instead of the artifacts, so *this* is the text the
+    judge is shown — and therefore the text the citable fragments come from (FR-020).
+    Built over the whole source rather than a truncated head, which is the whole point
+    of issue #29.
+
+    Environment sources share their allowance as they do for prose, and the share is
+    computed on how long each block *would* be unbudgeted, so a source with little to
+    say releases room to one with a lot rather than to whichever came first.
+    """
+    usable = [a for a in analysis.artifacts if a.readable and a.content]
+    budget = limit if environment_budget is None else environment_budget
+
+    counts: dict[str, int] = {}
+    for artifact in usable:
+        counts[artifact.type] = counts.get(artifact.type, 0) + 1
+    labels = [_label(a, analysis.root, counts[a.type] > 1) for a in usable]
+
+    environment = [i for i, a in enumerate(usable) if is_environment(a.type)]
+    natural = [digest_module.natural_size(usable[i], labels[i]) for i in environment]
+    allowances = _water_fill(natural, budget)
+    per_index = dict(zip(environment, allowances, strict=True))
+
+    sources: list[PromptSource] = []
+    for index, artifact in enumerate(usable):
+        allowed = per_index.get(index, limit)
+        text = digest_module.render_source(artifact, labels[index], allowed)
+        if text.strip():
+            sources.append(PromptSource(artifact=artifact, text=text, label=labels[index]))
+    return sources
 
 
 def prompt_sources(

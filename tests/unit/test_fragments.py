@@ -90,6 +90,28 @@ def test_a_lone_file_of_a_kind_keeps_its_bare_prefix():
     assert _ids(analysis) == ["AG:1"]
 
 
+def test_unfilled_template_placeholders_are_not_citable():
+    """A blank in a form cannot ground anything (issue #29).
+
+    An unfilled spec-kit constitution contributed eight of them to one real project,
+    competing for catalogue space with the little substance that project had.
+    """
+    analysis = _analysis(
+        _artifact("constitution", "## [PRINCIPLE_1_NAME]\n- [PRINCIPLE_1_DESCRIPTION]\n")
+    )
+    assert _ids(analysis) == []
+
+
+def test_a_task_that_merely_contains_a_bracketed_label_survives():
+    """`[US1]` and `[P]` are in 15 of 29 real task lines.
+
+    Matching the placeholder as a substring would delete half a task list to remove a
+    blank in a template, which is the opposite of the point.
+    """
+    analysis = _analysis(_artifact("tasks", "- [ ] T012 [P] [US1] Implement set_wiki_project\n"))
+    assert _ids(analysis) == ["T:T012"]
+
+
 def test_unnamed_units_get_positional_ids():
     analysis = _analysis(_artifact("constitution", "## Simplicity First\n## Tested Behavior\n"))
     assert _ids(analysis) == ["C:1", "C:2"]

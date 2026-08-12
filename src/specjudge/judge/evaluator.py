@@ -21,7 +21,7 @@ from __future__ import annotations
 import re
 
 from .. import errors
-from ..budget import PromptSource, prompt_sources
+from ..budget import PromptSource, digest_sources, prompt_sources
 from ..domain import (
     UNSUPPORTED,
     DemandProfile,
@@ -33,6 +33,7 @@ from ..domain import (
     answer_levels,
 )
 from ..judge.ollama import OllamaClient
+from . import digest
 from .fragments import (
     extract_fragments,
     normalize_citation,
@@ -193,34 +194,16 @@ def response_schema(rules: RatingRules, request_bulk: bool = False) -> dict:
     return {"type": "object", "properties": properties, "required": required}
 
 
-def _summarize(analysis: ProjectAnalysis, sources: list[PromptSource]) -> str:
-    """Structured digest of the sources: shape of the work, not its prose."""
-    parts: list[str] = []
+def _digest(analysis: ProjectAnalysis, sources: list[PromptSource]) -> str:
+    """The compact body: what each source contains, built over the whole source.
 
-    # A missing spec or task list is signal — the judge should know the work was
-    # never described. A missing CLAUDE.md is not: most repositories have none, and
-    # listing every absent optional source would pad the prompt with nothing (FR-024).
+    A missing spec or task list is signal — the judge should know the work was never
+    described. A missing CLAUDE.md is not: most repositories have none, and listing
+    every absent optional source would pad the prompt with nothing (FR-024).
+    """
     present = {s.type for s in sources}
-    for kind in sorted(_REPORTED_WHEN_MISSING - present):
-        parts.append(f"- {kind}: MISSING")
-
-    for source in sources:
-        text = source.text
-        headings = _HEADING.findall(text)
-        tasks = _CHECKLIST.findall(text)
-        reqs = sorted(set(_REQUIREMENT.findall(text)))
-
-        lines = [f"- {source.label}: {len(text)} chars"]
-        if reqs:
-            lines.append(f"  requirements ({len(reqs)}): {', '.join(reqs[:40])}")
-        if tasks:
-            lines.append(f"  checklist items: {len(tasks)}")
-            sample = [t[:90] for t in tasks[:15]]
-            lines.extend(f"    * {t}" for t in sample)
-        if headings:
-            names = " | ".join(h[:60] for h in headings[:20])
-            lines.append(f"  sections ({len(headings)}): {names}")
-        parts.append("\n".join(lines))
+    parts = digest.missing_lines(analysis, _REPORTED_WHEN_MISSING, present)
+    parts.extend(digest.shape_only(source.text) for source in sources)
     return "\n".join(parts)
 
 
@@ -246,12 +229,12 @@ def build_prompt(
     limit = artifact_limit(rules, compact=compact)
     # One place decides how much of each source is sent, so the prompt and the
     # citable set cannot disagree about what the judge was shown (FR-025).
-    sources = prompt_sources(analysis, limit)
-
     if compact:
-        body = _summarize(analysis, sources)
+        sources = digest_sources(analysis, limit)
+        body = _digest(analysis, sources)
         label = "=== PROJECT SUMMARY ==="
     else:
+        sources = prompt_sources(analysis, limit)
         body = "".join(f"\n--- {s.label} ---\n{s.text}" for s in sources)
         label = "=== PROJECT ARTIFACTS ==="
 
@@ -260,7 +243,7 @@ def build_prompt(
     # nothing it could legitimately cite.
     citable = ""
     if rules.require_spans:
-        fragments = extract_fragments(analysis, limit)
+        fragments = extract_fragments(analysis, limit, compact=compact)
         citable = f"\n\n=== CITABLE FRAGMENTS ===\n{render_catalogue(fragments)}"
 
     # Instructions are repeated after the body: small models attend to the end of
@@ -442,6 +425,24 @@ def evidence_warnings(profile: DemandProfile) -> list[str]:
     return warnings
 
 
+def envelope_fragments(
+    analysis: ProjectAnalysis,
+    rules: RatingRules,
+    client: OllamaClient,
+    judge_model: str,
+) -> list[Fragment]:
+    """The fragment set the judge was shown, for looking its citations up afterwards.
+
+    Lives here because it has to follow the same shape decision the prompt did. The
+    callers used to build it with the compact limit unconditionally, so for a judge
+    large enough to receive the full prose every citation missed the lookup and the
+    constraint table came out with no text and every row marked customary — silently,
+    which is the part that matters (issue #29).
+    """
+    compact = use_compact_prompt(client.model_params_b(judge_model), rules)
+    return extract_fragments(analysis, artifact_limit(rules, compact=compact), compact=compact)
+
+
 def estimate_demand(
     analysis: ProjectAnalysis,
     rules: RatingRules,
@@ -459,7 +460,9 @@ def estimate_demand(
     for is_compact in attempts:
         # The fragment set must come from the same text this attempt sends, so it is
         # rebuilt per attempt: the two shapes truncate at different limits.
-        fragments = extract_fragments(analysis, artifact_limit(rules, compact=is_compact))
+        fragments = extract_fragments(
+            analysis, artifact_limit(rules, compact=is_compact), compact=is_compact
+        )
         raw = client.chat_json(
             judge_model,
             build_prompt(analysis, rules, compact=is_compact, request_bulk=request_bulk),
