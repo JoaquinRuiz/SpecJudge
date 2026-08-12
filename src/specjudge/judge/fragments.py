@@ -21,7 +21,6 @@ from __future__ import annotations
 import re
 import unicodedata
 
-from ..budget import prompt_sources
 from ..domain import Fragment, ProjectAnalysis
 
 # Natural identifiers the SDD artifacts already carry.
@@ -201,15 +200,22 @@ def _artifact_fragments(artifact_type: str, text: str, prefix: str) -> list[Frag
     return list(found.values())
 
 
-def extract_fragments(analysis: ProjectAnalysis, limit: int) -> list[Fragment]:
-    """Every citable fragment, derived from the artifact text truncated to `limit`.
+def extract_fragments(
+    analysis: ProjectAnalysis, limit: int, *, compact: bool = False
+) -> list[Fragment]:
+    """Every citable fragment, derived from exactly the text the judge is shown.
 
-    `limit` must be the same per-artifact cap the prompt uses: both go through
-    `prompt_sources`, so the fragment set is derived from exactly the text the
-    judge is shown. Any other route would accept ids the judge never saw — or
-    reject ids it did.
+    `limit` must be the same per-artifact cap the prompt uses, and `compact` must
+    match the prompt shape, because the two shapes send different things: the full
+    prompt sends the prose, the compact one sends a digest built over the whole
+    source (FR-020, as amended by issue #29). Deriving the catalogue from anything
+    else would accept ids the judge never saw — or reject ids it did.
     """
-    sources = prompt_sources(analysis, limit)
+    # Imported here rather than at module scope: the budget builds digests, digests
+    # reuse this module's block extraction, and a top-level import would close the loop.
+    from ..budget import digest_sources, prompt_sources
+
+    sources = digest_sources(analysis, limit) if compact else prompt_sources(analysis, limit)
     prefixes = _assign_prefixes([s.type for s in sources])
 
     fragments: list[Fragment] = []
