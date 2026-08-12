@@ -3,7 +3,7 @@
 Versioned independently of SpecJudge itself: the extension is a manifest and a prompt,
 and changes far less often than the tool it wraps.
 
-## [0.1.0] - unreleased
+## [0.1.0] - 2026-08-12
 
 ### Added
 

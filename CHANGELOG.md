@@ -9,6 +9,42 @@ Entries before 0.1.4 were reconstructed from the git tags and the GitHub release
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-08-12
+
+**Integration with [spec-kit](https://github.com/github/spec-kit).** SpecJudge now runs
+itself at the moment the decision is actually made: right after `/speckit.tasks`, when the
+spec, the plan and the task list exist and no tokens have been spent.
+
+### Added
+
+- **[`extensions/spec-kit/`](extensions/spec-kit)** — one command and one hook, so the
+  recommendation arrives at the moment it is worth having: right after `/speckit.tasks`,
+  when the spec, the plan and the task list exist and no tokens have been spent
+  ([#27], [#28]).
+
+  ```bash
+  specify extension add --from https://github.com/JoaquinRuiz/SpecJudge/releases/latest/download/spec-kit-specjudge.zip
+  ```
+
+  It asks before running, because the judge is a local model. It writes nothing
+  (`effect: read-only`). And it never blocks: no judge, no Ollama, or a project too thin
+  to judge, and it says so in one line and gets out of the way — a recommendation nobody
+  asked for should not be the reason an implementation did not start.
+
+  No product code was needed. The integration surface is the versioned `--json` payload
+  and the distinguishable exit codes, both contract since 0.3.0.
+
+- The release workflow builds and attaches `spec-kit-specjudge.zip`, refusing to upload an
+  archive whose `extension.yml` is not at the root — the packaging mistake that would fail
+  in a user's project rather than in ours ([#27], [#28]).
+
+### Compatibility
+
+Nothing to do. `extensions/` is not part of the wheel, so the installed package is
+identical to 0.5.0 apart from its metadata. The extension carries its own version (0.1.0),
+independent of SpecJudge's: it is a manifest and a prompt, and changes far less often than
+the tool it wraps.
+
 ## [0.5.0] - 2026-08-10
 
 One project rarely has one complexity. This release stops pretending it does: the demand
@@ -483,7 +519,8 @@ community-maintained catalog by how well each model **fits** the job.
 - Explicit degradation with distinct exit codes when project data is insufficient,
   the judge is unavailable, or the catalog is empty.
 
-[Unreleased]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.3.0...v0.3.1
@@ -517,3 +554,5 @@ community-maintained catalog by how well each model **fits** the job.
 [#24]: https://github.com/JoaquinRuiz/SpecJudge/pull/24
 [#25]: https://github.com/JoaquinRuiz/SpecJudge/pull/25
 [@rmarable]: https://github.com/rmarable
+[#27]: https://github.com/JoaquinRuiz/SpecJudge/issues/27
+[#28]: https://github.com/JoaquinRuiz/SpecJudge/pull/28
