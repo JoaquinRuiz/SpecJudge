@@ -82,7 +82,7 @@ asking the judge for cited evidence needs structured outputs, added in 0.5.0. On
 Ollama the run stops with an error saying so — and how to proceed without citations.
 
 ```bash
-ollama pull llama3.1:8b            # a judge to evaluate your project
+ollama pull qwen3:8b               # a judge to evaluate your project
 uv tool install specjudge
 specjudge /path/to/your/project
 ```
@@ -90,12 +90,15 @@ specjudge /path/to/your/project
 That's it. On first run SpecJudge lists your local models, asks which one to use as the judge,
 and remembers your choice.
 
-**Why an 8B judge?** Because it is enough. On the regression corpus an 8B model lands 84–88% of
+**Why an 8B judge?** Because it is enough. On the regression corpus `qwen3:8b` lands 87% of
 demand levels inside the expected band, and a 24B-class judge like `devstral-small-2` lands
 100% — measured, not guessed. When a small judge cannot ground an assessment in your own text,
 SpecJudge refuses rather than inventing one, so its failure mode is *no answer* instead of a
-confident wrong one. [`docs/judges.md`](./docs/judges.md) has the numbers, what they mean, and
-how to reproduce them on your machine.
+confident wrong one — about one project in eighteen, on that corpus.
+
+Which 8B matters more than the fact that it is an 8B: two models of identical size and price
+sit twelve points apart there. [`docs/judges.md`](./docs/judges.md) has the numbers, the trade
+each one asks you to make, and how to reproduce them on your machine.
 
 <details>
 <summary><b>Run without installing, with pipx, or from source</b></summary>
