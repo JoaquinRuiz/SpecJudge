@@ -25,7 +25,7 @@ The judge runs on your machine through Ollama. Your specs never leave it.
 uv tool install specjudge          # the CLI this wraps
 specjudge --set-judge              # pick a local judge, once
 
-specify extension add --from https://github.com/JoaquinRuiz/SpecJudge/releases/latest/download/spec-kit-specjudge.zip
+specify extension add specjudge --from https://github.com/JoaquinRuiz/SpecJudge/releases/latest/download/spec-kit-specjudge.zip
 ```
 
 Requires spec-kit 0.13.0 or newer, SpecJudge 0.5.0+, and [Ollama](https://ollama.com)

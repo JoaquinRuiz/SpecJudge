@@ -299,7 +299,7 @@ and the task list exist and no tokens have been spent yet. The extension in
 [`extensions/spec-kit/`](./extensions/spec-kit) puts it there.
 
 ```bash
-specify extension add --from https://github.com/JoaquinRuiz/SpecJudge/releases/latest/download/spec-kit-specjudge.zip
+specify extension add specjudge --from https://github.com/JoaquinRuiz/SpecJudge/releases/latest/download/spec-kit-specjudge.zip
 ```
 
 It asks before running — the judge is a local model and starting one costs you minutes — and
