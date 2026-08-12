@@ -9,6 +9,26 @@ Entries before 0.1.4 were reconstructed from the git tags and the GitHub release
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-08-12
+
+A one-line fix to the spec-kit extension, and a release to carry it: the archive ships as
+a release asset, so a data fix needs a version number. No change to the code the package
+installs.
+
+### Fixed
+
+- **The spec-kit extension would not install on spec-kit 0.14 or newer** ([#27]). The
+  manifest pinned `>=0.13.0,<0.14.0`, so a manifest that is compatible with 0.15 in every
+  respect was refused over its upper bound. It now declares a floor and no ceiling.
+
+  The bound was reasoned from the wrong end: it was there so the extension would not claim
+  compatibility nobody had tested. But the range is evaluated at install time, so an
+  untested *upper* bound does not protect a user — it breaks every user, on a date set by
+  somebody else's release calendar. The versions actually tested (0.13.0 and 0.15.2) are
+  named in the extension's README, which is where a fact about the past belongs.
+
+  Extension version 0.1.1. Verified installing on spec-kit 0.15.2.
+
 ## [0.5.1] - 2026-08-12
 
 **Integration with [spec-kit](https://github.com/github/spec-kit).** SpecJudge now runs
@@ -519,7 +539,8 @@ community-maintained catalog by how well each model **fits** the job.
 - Explicit degradation with distinct exit codes when project data is insufficient,
   the judge is unavailable, or the catalog is empty.
 
-[Unreleased]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.3.1...v0.4.0
