@@ -34,7 +34,7 @@ grounding check, which is a real loss and an honest trade.
 
 ## Measured
 
-Every figure below comes from `scripts/eval_judge.py` over the regression corpus of **17
+Every figure below comes from `scripts/eval_judge.py` over the regression corpus of **18
 projects** with expected profiles, on one machine. Reproduce any row with:
 
 ```bash
@@ -43,12 +43,12 @@ uv run python scripts/eval_judge.py --judge <model> --markdown-row
 
 | Judge | Params | Dimensions in band | Ordinal distance | Answers refused |
 |---|---|---|---|---|
-| `devstral-small-2` | 24B | 30/30 (100%) | 0 | 0 |
-| `qwen3:8b` | 8B | 25/28 (89%) | 3 steps | 1 |
-| `llama3.1:8b-instruct-q4_K_M` | 8B | 22/27 (81%) | 5 steps | 1 |
+| `devstral-small-2` | 24B | 32/32 (100%) | 0 | 0 |
+| `qwen3:8b` | 8B | 26/30 (87%) | 4 steps | 1 |
+| `llama3.1:8b-instruct-q4_K_M` | 8B | 24/32 (75%) | 8 steps | 0 |
 
-<sub>SpecJudge 0.5.0 · Ollama 0.32.6 · Apple silicon · corpus of 17
-cases · measured 2026-08-10</sub>
+<sub>SpecJudge 0.5.2 + issue #29 (unreleased) · Ollama 0.32.6 · Apple silicon · corpus of
+18 cases · measured 2026-08-12</sub>
 
 **In band** — the demand level landed inside the range the corpus expects. Ranges rather
 than exact levels, because the labels are human judgement on a four-point scale.
@@ -61,6 +61,22 @@ mode here is *no answer*, not *a confident wrong answer*: an assessment that can
 grounded in your own text is rejected rather than shown to you. That is Principle IV of
 the [project constitution](../.specify/memory/constitution.md), and it is what makes an
 8B judge a reasonable thing to trust.
+
+**Which 8B matters more than the fact that it is an 8B.** The two in that table are the
+same size and the same price and do not perform the same. Whatever the numbers say next
+year, that is the part worth carrying away.
+
+Today, between those two, **`qwen3:8b` is the one to pick — and the trade is worth stating
+rather than hiding**. It is wrong half as often and half as far off, and where it cannot
+cope it refuses instead of answering: a failure you can see. What it costs is that
+refusal, roughly one project in eighteen that gets no recommendation at all. If you would
+rather always get an answer and judge it yourself, `llama3.1` is the other side of that
+trade, and you would not be wrong.
+
+What it is **not** is twelve points better. Read the denominators: they differ across rows
+because a judge that refuses has fewer dimensions graded. `qwen3` was scored on 30, and
+`llama3.1` on 32 — more of the corpus answered, more of it wrong. Comparing the
+percentages alone would flatter one of them for giving up.
 
 Two honest caveats. The 8B runs are not perfectly reproducible: repeating `llama3.1` gave
 the same totals but failed on a different case. And `devstral-small-2` is a code model, so
