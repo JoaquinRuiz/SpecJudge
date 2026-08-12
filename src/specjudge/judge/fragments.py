@@ -37,6 +37,12 @@ _HEADING_START = re.compile(r"^\s*#{1,6}\s")
 # identically when validating a quote, so the two never disagree.
 MAX_FRAGMENT_CHARS = 240
 
+# An unfilled template placeholder, and nothing that merely contains one. Anchored on
+# purpose: `[US1]` and `[P]` appear inside 15 of 29 real task lines in the project that
+# prompted this, so a substring test would delete half a task list to remove a blank in
+# a form (issue #29).
+_PLACEHOLDER = re.compile(r"^\[[A-Z][A-Z0-9_]*\]$")
+
 # Explicit per-source prefixes. Deriving them from the first letter used to be enough
 # for three sources; with agent-context files it is not — `claude` and `constitution`
 # both start with C, and two sources sharing a prefix would silently drop each other's
@@ -183,6 +189,10 @@ def _artifact_fragments(artifact_type: str, text: str, prefix: str) -> list[Frag
         for raw in raw_items:
             body = " ".join(raw.split())
             if not body:
+                continue
+            if _PLACEHOLDER.match(body):
+                # A blank in an unfilled template cannot ground anything; offering it
+                # spends catalogue space and invites a citation that means nothing.
                 continue
             natural = _label(body)
             if natural:
