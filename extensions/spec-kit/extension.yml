@@ -1,9 +1,15 @@
 schema_version: "1.0"
 
 extension:
+  # Versioned in lockstep with SpecJudge from 0.5.4 onward, not independently. The
+  # community catalog pins one download URL and validates that the version matches the
+  # release tag it points at, so an extension version of its own would have to be
+  # carried by a release tag of its own. One number for the repository is the cheaper
+  # answer; the cost is that this number moves when the tool moves, even if nothing
+  # here changed.
   id: specjudge
   name: "SpecJudge — right-size the model before you implement"
-  version: "0.1.2"
+  version: "0.5.4"
   description: "Recommends the model that fits your tasks, citing the spec fragment behind every level."
   category: "process"
   effect: "read-only"

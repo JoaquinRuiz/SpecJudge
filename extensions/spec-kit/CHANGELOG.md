@@ -1,7 +1,19 @@
 # Changelog — SpecJudge for spec-kit
 
-Versioned independently of SpecJudge itself: the extension is a manifest and a prompt,
-and changes far less often than the tool it wraps.
+Versioned **in lockstep with SpecJudge** from 0.5.4 onward. It used to have its own
+numbers (0.1.x), which said something useful — the extension is a manifest and a prompt
+and changes far less often than the tool it wraps — but the community catalog pins a
+single download URL and validates that the declared version matches the release tag it
+points at. Keeping an independent number would mean a release tag of its own for every
+change. One number for the whole repository is the cheaper answer, and the cost is that
+this one moves when SpecJudge moves even if nothing here changed.
+
+## [0.5.4] - 2026-08-12
+
+### Changed
+
+- Versioned with SpecJudge from here on (see above). No change to the manifest, the
+  command or the hook: 0.5.4 is 0.1.2 with a number the catalog can validate.
 
 ## [0.1.2] - 2026-08-12
 

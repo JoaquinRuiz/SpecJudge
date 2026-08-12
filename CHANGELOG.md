@@ -9,6 +9,24 @@ Entries before 0.1.4 were reconstructed from the git tags and the GitHub release
 
 ## [Unreleased]
 
+## [0.5.4] - 2026-08-12
+
+Carries a corrected spec-kit extension archive. No change to the code the package
+installs, and none to the extension's behaviour.
+
+### Changed
+
+- **The spec-kit extension is versioned in lockstep with SpecJudge** from here on, so it
+  ships as 0.5.4 rather than 0.1.3 ([#27]). The community catalog pins one download URL
+  and validates that the declared version matches the release tag it points at; an
+  independent version would need a release tag of its own for every change. The cost,
+  stated so nobody has to guess later: this number now moves when the tool moves, even
+  when the extension is untouched.
+
+  The archive attached to v0.5.3 is left exactly as published — it already has downloads,
+  and rewriting a released artifact to fix its metadata is the kind of quiet mutation this
+  project avoids elsewhere. This release supersedes it.
+
 ## [0.5.3] - 2026-08-12
 
 **This release changes what the tool recommends.** It is a bug fix and the version number
@@ -593,7 +611,8 @@ community-maintained catalog by how well each model **fits** the job.
 - Explicit degradation with distinct exit codes when project data is insufficient,
   the judge is unavailable, or the catalog is empty.
 
-[Unreleased]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.3...HEAD
+[Unreleased]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.4...HEAD
+[0.5.4]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.3...v0.5.4
 [0.5.3]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.0...v0.5.1
