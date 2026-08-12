@@ -22,8 +22,7 @@ from .domain import DataState, ExecutionModel, JudgePreference, UserConfig
 from .envelope import build as build_envelope
 from .envelope import envelope_warnings
 from .gaps import find_gaps
-from .judge.evaluator import artifact_limit, estimate_demand, evidence_warnings
-from .judge.fragments import extract_fragments
+from .judge.evaluator import envelope_fragments, estimate_demand, evidence_warnings
 from .judge.ollama import OllamaClient
 from .rating import assert_dimensions_match, evaluate_all, load_rules
 from .recommend import build_comparison
@@ -229,7 +228,7 @@ def _run(
     if not demand.scored_dimensions:
         raise errors.no_supported_dimensions(judge_model)
 
-    fragments = extract_fragments(analysis, artifact_limit(rules, compact=True))
+    fragments = envelope_fragments(analysis, rules, client, judge_model)
     envelope = build_envelope(demand, fragments, execution)
     evaluations = evaluate_all(models, demand, rules, envelope.default_demand)
 

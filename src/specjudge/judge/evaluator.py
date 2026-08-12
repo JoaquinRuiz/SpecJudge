@@ -425,6 +425,24 @@ def evidence_warnings(profile: DemandProfile) -> list[str]:
     return warnings
 
 
+def envelope_fragments(
+    analysis: ProjectAnalysis,
+    rules: RatingRules,
+    client: OllamaClient,
+    judge_model: str,
+) -> list[Fragment]:
+    """The fragment set the judge was shown, for looking its citations up afterwards.
+
+    Lives here because it has to follow the same shape decision the prompt did. The
+    callers used to build it with the compact limit unconditionally, so for a judge
+    large enough to receive the full prose every citation missed the lookup and the
+    constraint table came out with no text and every row marked customary — silently,
+    which is the part that matters (issue #29).
+    """
+    compact = use_compact_prompt(client.model_params_b(judge_model), rules)
+    return extract_fragments(analysis, artifact_limit(rules, compact=compact), compact=compact)
+
+
 def estimate_demand(
     analysis: ProjectAnalysis,
     rules: RatingRules,
