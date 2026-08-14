@@ -32,6 +32,38 @@ Requires spec-kit 0.13.0 or newer, SpecJudge 0.5.0+, and [Ollama](https://ollama
 0.5.0+ with a local model. An 8B judge is enough; see
 [choosing a judge](https://github.com/JoaquinRuiz/SpecJudge/blob/main/docs/judges.md).
 
+### "discovery only — not installable"
+
+If you found this by searching the catalog, you will have seen that next to the name:
+
+```
+Catalog: community (discovery only — not installable)
+⚠  Not directly installable from 'community'.
+```
+
+**Nothing is wrong with the extension.** spec-kit ships two catalogs: `catalog.json`, the
+one GitHub maintains, is installable by default; `catalog.community.json`, where every
+third-party extension lives, is discovery-only. That applies to all ~150 entries in it,
+not to this one. Catalog acceptance checks that the metadata is right and the archive
+downloads — it does not audit anyone's code — so installing from it by name is a decision
+each project makes for itself rather than a default.
+
+The command above sidesteps it: `--from <url>` takes no position on catalogs, because you
+supplied the URL yourself.
+
+To install by name instead, approve the community catalog once:
+
+```bash
+specify extension catalog add https://raw.githubusercontent.com/github/spec-kit/main/extensions/catalog.community.json \
+  --name community-approved --priority 5 --install-allowed
+
+specify extension add specjudge
+```
+
+That approves **the whole catalog**, not just this extension — every third-party entry in
+it becomes installable by name in this project. Worth knowing before you run it; if you
+would rather not, the `--from` line stays the smaller commitment.
+
 **Tested against spec-kit 0.13.0 and 0.15.2.** The manifest declares a floor and no
 ceiling: it uses only `provides.commands` and `hooks`, the most stable part of the
 extension format, and an upper bound would stop the extension installing every time

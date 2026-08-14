@@ -305,6 +305,11 @@ and the task list exist and no tokens have been spent yet. The extension in
 specify extension add specjudge --from https://github.com/JoaquinRuiz/SpecJudge/releases/latest/download/spec-kit-specjudge.zip
 ```
 
+It is also in spec-kit's community catalog, which every project has to approve before it
+can install from it by name — see
+[the extension's README](./extensions/spec-kit/README.md#discovery-only--not-installable)
+if `specify extension search` tells you this is "discovery only".
+
 It asks before running — the judge is a local model and starting one costs you minutes — and
 it writes nothing. If SpecJudge is not installed or the project is too thin to judge, it says
 so in one line and gets out of the way: a recommendation nobody asked for should never be the
