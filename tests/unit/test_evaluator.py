@@ -23,6 +23,7 @@ from specjudge.judge.evaluator import (
     evidence_warnings,
     use_compact_prompt,
 )
+from specjudge.judge.ollama import JUDGE_SEED
 
 
 def _rules(**judge) -> RatingRules:
@@ -62,14 +63,19 @@ class _FakeClient:
         self._params_b = params_b
         self.prompts: list[str] = []
         self.schemas: list[dict | None] = []
+        self.seeds: list[int | None] = []
 
     def model_params_b(self, model):  # noqa: ARG002
         return self._params_b
 
-    def chat_json(self, model, prompt, schema=None):  # noqa: ARG002
+    def chat_json(self, model, prompt, schema=None, seed=None):  # noqa: ARG002
         self.prompts.append(prompt)
         self.schemas.append(schema)
-        return self._responses.pop(0)
+        self.seeds.append(seed)
+        # The last response repeats once the canned ones run out. A judge that
+        # answers badly usually keeps answering badly, and a test about *what* it
+        # answers should not have to know how many attempts it will be given.
+        return self._responses.pop(0) if len(self._responses) > 1 else self._responses[0]
 
 
 # A fragment id that _analysis() really produces. Asserted below, so a change to the
@@ -482,6 +488,76 @@ def test_the_prompt_asks_for_the_bulk_only_when_requested():
     )
     assert '"bulk"' in build_prompt(analysis, _rules(), request_bulk=True)
     assert '"bulk"' not in build_prompt(analysis, _rules())
+
+
+# ------------------------------------------- retries (issue #30)
+
+
+def test_both_prompt_shapes_get_the_same_number_of_attempts():
+    """The judges most likely to fumble the shape were the only ones without a retry.
+
+    A full-prompt judge fell back to the compact shape; a compact judge had nothing
+    smaller to fall back to, so its branch simply did not exist.
+    """
+    from specjudge.judge.evaluator import MAX_ATTEMPTS, _attempts
+
+    assert len(_attempts(compact=True)) == MAX_ATTEMPTS
+    assert len(_attempts(compact=False)) == MAX_ATTEMPTS
+
+
+def test_a_retry_is_a_different_draw_by_design():
+    """Not by relying on the runtime varying between identical calls.
+
+    It does today — measured — but that is somebody else's scheduler, and an Ollama
+    that made repeated calls identical would turn every retry into a second copy of
+    the same failure.
+    """
+    from specjudge.judge.evaluator import _attempts
+
+    for compact in (True, False):
+        seeds = [seed for _, seed in _attempts(compact)]
+        assert len(set(seeds)) == len(seeds), seeds
+
+
+def test_the_seed_sequence_is_fixed():
+    """Reproducible as a sequence, which is the reproducibility FR-021 can promise."""
+    from specjudge.judge.evaluator import _attempts
+
+    assert _attempts(compact=True) == _attempts(compact=True)
+    assert [seed for _, seed in _attempts(compact=True)] == [JUDGE_SEED, JUDGE_SEED + 1]
+
+
+def test_a_full_prompt_judge_still_falls_back_to_the_compact_shape():
+    """The old behaviour was right for the shape, only wrong about the count."""
+    from specjudge.judge.evaluator import _attempts
+
+    assert [compact for compact, _ in _attempts(compact=False)] == [False, True]
+
+
+def test_the_second_attempt_is_used_and_its_answer_returned():
+    client = _FakeClient([{"nonsense": True}, _VALID])
+    profile = estimate_demand(_analysis(), _rules(), client, "judge")
+    assert profile.dimensions["reasoning"] == "high"
+    assert len(client.prompts) == 2
+    assert client.seeds == [JUDGE_SEED, JUDGE_SEED + 1]
+
+
+def test_retrying_is_bounded_and_never_a_loop():
+    """A judge that needs three goes cannot do this; the honest output is a refusal."""
+    from specjudge.judge.evaluator import MAX_ATTEMPTS
+
+    client = _FakeClient([{"nonsense": True}])
+    with pytest.raises(JudgeUnavailableError):
+        estimate_demand(_analysis(), _rules(), client, "judge")
+    assert len(client.prompts) == MAX_ATTEMPTS
+
+
+def test_an_exhausted_retry_still_reports_why():
+    """The last failure is what the user has to act on, not "it did not work"."""
+    client = _FakeClient([{"dimensions": {"reasoning": "nonsense"}}])
+    with pytest.raises(JudgeUnavailableError) as exc:
+        estimate_demand(_analysis(), _rules(), client, "judge")
+    assert "reasoning" in str(exc.value.message) + str(exc.value.hint or "")
 
 
 # ------------------------------------------- who gets asked (measured, issue #3)

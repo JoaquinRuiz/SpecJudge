@@ -32,7 +32,7 @@ from ..domain import (
     RatingRules,
     answer_levels,
 )
-from ..judge.ollama import OllamaClient
+from ..judge.ollama import JUDGE_SEED, OllamaClient
 from . import digest
 from .fragments import (
     extract_fragments,
@@ -425,6 +425,35 @@ def evidence_warnings(profile: DemandProfile) -> list[str]:
     return warnings
 
 
+# Two attempts, never more. An unusable answer is usually a one-off shape error, and
+# one more draw is cheap; a judge that needs three goes is a judge that cannot do this,
+# and the honest output there is still a refusal (FR-029).
+MAX_ATTEMPTS = 2
+
+
+def _attempts(compact: bool) -> list[tuple[bool, int]]:
+    """The (prompt shape, seed) pairs to try, in order.
+
+    A full-prompt judge used to get two goes — the full shape, then the compact one —
+    while a compact judge got one, because there was no smaller shape to fall back to.
+    That left the judges most likely to fumble the response shape, which is precisely
+    why they were given the compact prompt, as the only ones without a second try
+    (issue #30).
+
+    Now both get `MAX_ATTEMPTS`. The second seed is `JUDGE_SEED + 1` rather than a
+    repeat: the runtime happens to vary between identical calls today, but depending on
+    that would mean depending on a bug in somebody else's scheduler, and a future Ollama
+    that made repeated calls truly identical would turn every retry into a second copy
+    of the same failure. Fixed offsets keep the sequence reproducible — the same seeds,
+    in the same order, every run — which is the reproducibility FR-021 can honestly
+    promise.
+    """
+    shapes = [compact] if compact else [False, True]
+    return [
+        (shapes[i] if i < len(shapes) else shapes[-1], JUDGE_SEED + i) for i in range(MAX_ATTEMPTS)
+    ]
+
+
 def envelope_fragments(
     analysis: ProjectAnalysis,
     rules: RatingRules,
@@ -453,11 +482,8 @@ def estimate_demand(
     compact = use_compact_prompt(params_b, rules)
     request_bulk = use_bulk_prompt(params_b, rules)
 
-    # Try the chosen shape; if it comes back unusable, retry once with the compact
-    # shape before giving up (a long prompt is the usual cause of a bad answer).
-    attempts = [compact] if compact else [False, True]
     detail = ""
-    for is_compact in attempts:
+    for is_compact, seed in _attempts(compact):
         # The fragment set must come from the same text this attempt sends, so it is
         # rebuilt per attempt: the two shapes truncate at different limits.
         fragments = extract_fragments(
@@ -467,6 +493,7 @@ def estimate_demand(
             judge_model,
             build_prompt(analysis, rules, compact=is_compact, request_bulk=request_bulk),
             schema=response_schema(rules, request_bulk),
+            seed=seed,
         )
         parsed = _parse_demand(raw, rules, fragments, request_bulk)
         if isinstance(parsed, DemandProfile):
