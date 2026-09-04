@@ -63,6 +63,30 @@ class Outcome:
     over_confidence: list[str] = field(default_factory=list)
     refused: bool = False
     error: str | None = None
+    # Attempts the judge needed. Reported apart from accuracy: passing on the second
+    # go is not the same as passing on the first, and averaging the two would launder
+    # a judge that only just manages into looking like one that never struggles
+    # (FR-029, issue #30).
+    attempts: int = 1
+
+
+class _CountingClient:
+    """Passes everything through, and counts how many times the judge was asked.
+
+    A wrapper rather than a flag on the client, so nothing about how the tool runs in
+    production changes to make the harness able to measure it.
+    """
+
+    def __init__(self, inner: OllamaClient) -> None:
+        self._inner = inner
+        self.calls = 0
+
+    def model_params_b(self, model: str) -> float | None:
+        return self._inner.model_params_b(model)
+
+    def chat_json(self, model, prompt, schema=None, seed=None):
+        self.calls += 1
+        return self._inner.chat_json(model, prompt, schema=schema, seed=seed)
 
 
 def _evaluate(case: Case, client: OllamaClient, judge: str) -> Outcome:
@@ -74,11 +98,14 @@ def _evaluate(case: Case, client: OllamaClient, judge: str) -> Outcome:
         outcome.refused = True
         return outcome
 
+    counting = _CountingClient(client)
     try:
-        demand = estimate_demand(analysis, rules, client, judge)
+        demand = estimate_demand(analysis, rules, counting, judge)
     except SpecJudgeError as exc:
         outcome.error = exc.message
+        outcome.attempts = counting.calls
         return outcome
+    outcome.attempts = counting.calls
 
     levels = rules.levels
     for dim, expectation in case.dimensions.items():
@@ -182,6 +209,14 @@ def _report(outcomes: list[Outcome], judge: str) -> str:
         )
         lines.append("")
 
+    retried = [o for o in outcomes if o.attempts > 1 and not o.refused]
+    if retried:
+        lines.append("RETRIES (the judge needed more than one attempt)")
+        recovered = [o for o in retried if not o.error]
+        lines.append(f"  needed a retry            {len(retried)}")
+        lines.append(f"  recovered on the retry    {len(recovered)}")
+        lines.append("")
+
     lines.append("REFUSALS")
     lines.append(f"  refused before judging     {len(refused)} (expected: task-less cases)")
     lines.append(f"  judge unusable             {len(errors)}")
@@ -205,6 +240,8 @@ def _report(outcomes: list[Outcome], judge: str) -> str:
                 bits.append("bulk missed " + "; ".join(o.bulk_misses))
             if o.bulk_undistinguished:
                 bits.append("no bulk/peak split")
+            if o.attempts > 1:
+                bits.append(f"needed {o.attempts} attempts")
             detail = " | ".join(bits)
         lines.append(f"  [{o.category:14}] {o.case:30} {detail}")
 
@@ -229,11 +266,13 @@ def markdown_row(outcomes: list[Outcome], judge: str, params_b: float | None) ->
     hits = sum(o.hits for o in scored)
     distance = sum(o.distance for o in scored)
     unusable = sum(1 for o in outcomes if o.error)
+    retried = sum(1 for o in outcomes if o.attempts > 1 and not o.refused and not o.error)
 
     accuracy = f"{hits}/{graded} ({100 * hits / graded:.0f}%)" if graded else "not graded"
     size = f"{params_b:.0f}B" if params_b else "?"
     steps = "0" if distance == 0 else f"{distance} steps"
-    return f"| `{judge}` | {size} | {accuracy} | {steps} | {unusable} |"
+    retries = "0" if retried == 0 else f"{retried}"
+    return f"| `{judge}` | {size} | {accuracy} | {steps} | {unusable} | {retries} |"
 
 
 def main(argv: list[str] | None = None) -> int:

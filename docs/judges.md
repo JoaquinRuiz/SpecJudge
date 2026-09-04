@@ -41,14 +41,14 @@ projects** with expected profiles, on one machine. Reproduce any row with:
 uv run python scripts/eval_judge.py --judge <model> --markdown-row
 ```
 
-| Judge | Params | Dimensions in band | Ordinal distance | Answers refused |
-|---|---|---|---|---|
-| `devstral-small-2` | 24B | 32/32 (100%) | 0 | 0 |
-| `qwen3:8b` | 8B | 26/30 (87%) | 4 steps | 1 |
-| `llama3.1:8b-instruct-q4_K_M` | 8B | 24/32 (75%) | 8 steps | 0 |
+| Judge | Params | Dimensions in band | Ordinal distance | Answers refused | Retries |
+|---|---|---|---|---|---|
+| `devstral-small-2` | 24B | 32/33 (97%) | 1 step | 0 | 0 |
+| `qwen3:8b` | 8B | 26/30 (87%) | 4 steps | 1 | 1 |
+| `llama3.1:8b-instruct-q4_K_M` | 8B | 25/31 (81%) | 6 steps | 1 | 1 |
 
-<sub>SpecJudge 0.5.3 · Ollama 0.32.6 · Apple silicon · corpus of
-18 cases · measured 2026-08-12</sub>
+<sub>SpecJudge 0.5.4 + issue #30 (unreleased) · Ollama 0.32.6 · Apple silicon · corpus of
+18 cases · measured 2026-09-04</sub>
 
 **In band** — the demand level landed inside the range the corpus expects. Ranges rather
 than exact levels, because the labels are human judgement on a four-point scale.
@@ -78,9 +78,21 @@ because a judge that refuses has fewer dimensions graded. `qwen3` was scored on 
 `llama3.1` on 32 — more of the corpus answered, more of it wrong. Comparing the
 percentages alone would flatter one of them for giving up.
 
-Two honest caveats. The 8B runs are not perfectly reproducible: repeating `llama3.1` gave
-the same totals but failed on a different case. And `devstral-small-2` is a code model, so
-part of its margin may be that rather than its size.
+**These figures move between runs, and now we can say by how much.** SpecJudge pins the
+judge's temperature and seed, but that does not make a local model deterministic: two
+identical calls, same seed, same temperature, come back with different answers. Measured
+against the previous run of this same table, `devstral-small-2` went 32/32 → 32/33 and
+`llama3.1` 24/32 → 25/31 without a line of the judge's input changing. Treat a difference
+of a point or two as noise, and a difference of twelve — which is what separates the two
+8B models here — as real.
+
+**Retries** counts runs where the judge's first answer was unusable and it was asked
+again. It is reported separately rather than folded into accuracy, because passing on the
+second attempt is not the same as passing on the first. On this corpus neither retry
+recovered: both refusals refused twice.
+
+One more caveat: `devstral-small-2` is a code model, so part of its margin may be that
+rather than its size.
 
 ### What a bigger judge additionally gets you
 
