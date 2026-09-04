@@ -12,14 +12,16 @@ import httpx
 
 from .. import errors
 
-# Sampling is pinned so the same project yields the same assessment twice (FR-021).
-# Two runs disagreeing about which model to buy is hard to defend in a tool about
-# spending money, and without it the judge evaluation suite cannot tell a prompt
+# Sampling is pinned so the tool contributes no randomness of its own (FR-021). Two
+# runs disagreeing about which model to buy is hard to defend in a tool about spending
+# money, and without a fixed seed the judge evaluation suite could not tell a prompt
 # change from sampling noise.
 #
-# This pins *sampling*, not the world: a different Ollama release, quantisation or
-# context size can still move the answer. Reproducible on one machine, not
-# comparable across two.
+# What this does NOT buy is identical output. Measured on qwen3:8b: two identical calls,
+# same pinned seed, temperature 0, came back with different answers. The variation is the
+# local runtime's — batching, cache state, the quantisation, the Ollama build — and no
+# option we can send removes it. So the guarantee is "we add nothing on top", not "the
+# answer is the same", and anywhere reproducibility is reported has to say so (issue #30).
 JUDGE_SEED = 20260803
 JUDGE_OPTIONS = {"temperature": 0, "seed": JUDGE_SEED}
 
@@ -129,20 +131,28 @@ class OllamaClient:
             raise errors.selected_model_missing(required_model)
         return models
 
-    def chat_json(self, model: str, prompt: str, schema: dict | None = None) -> dict:
+    def chat_json(
+        self, model: str, prompt: str, schema: dict | None = None, seed: int | None = None
+    ) -> dict:
         """Ask the model for a JSON response (POST /api/chat, stream=false).
 
         With a `schema`, generation is constrained to it (Ollama structured
         outputs). Without one, `format: "json"` only guarantees *some* valid JSON
         — which is how an 8B judge came to answer with `[true]` where a fragment
         id belonged (issue #14).
+
+        `seed` overrides the pinned one. It exists so a retry can be a genuinely
+        different draw by design rather than by relying on the runtime's residual
+        non-determinism, which is real today but is not ours to depend on: a future
+        Ollama could make repeated calls identical and silently turn every retry
+        into a second copy of the same failure (issue #30).
         """
         url = f"{self.host}/api/chat"
         payload = {
             "model": model,
             "stream": False,
             "format": schema if schema is not None else "json",
-            "options": dict(JUDGE_OPTIONS),
+            "options": {**JUDGE_OPTIONS, **({"seed": seed} if seed is not None else {})},
             "messages": [{"role": "user", "content": prompt}],
         }
         try:
