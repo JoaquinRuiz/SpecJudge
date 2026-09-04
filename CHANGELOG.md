@@ -9,6 +9,51 @@ Entries before 0.1.4 were reconstructed from the git tags and the GitHub release
 
 ## [Unreleased]
 
+## [0.5.5] - 2026-09-04
+
+Two corrections to what SpecJudge *claims*, which matter more here than what it does: the
+behaviour barely moves, and a promise it could not keep is gone.
+
+### Fixed
+
+- **A compact judge got one attempt where a full-prompt judge got two** ([#30], [#32]).
+  The retry fell back from the full prompt to the compact one, so a judge already on the
+  compact prompt had nothing to fall back to and its branch simply did not exist — leaving
+  the judges most likely to fumble the response shape as the only ones without a second
+  try. Both get two now, the second with a different seed by design rather than by relying
+  on the runtime varying between identical calls.
+
+  Measured, and it is worth saying plainly: **the retry recovered nothing.** Both 8B
+  judges needed one and both refused twice. The asymmetry was a real defect; fixing it did
+  not buy the benefit the issue expected, and `docs/judges.md` does not pretend otherwise.
+
+### Changed
+
+- **FR-021 promised something the tool cannot deliver.** It said two runs on the same
+  project produce the same assessment *because sampling is pinned*. Sampling is pinned —
+  temperature 0, fixed seed — and the answer still moves: two identical calls to
+  `qwen3:8b` came back different. The variation belongs to the local runtime and no
+  option we can send removes it.
+
+  The guarantee is now the one that is true: SpecJudge contributes no randomness of its
+  own, and any retry sequence is deterministic. The residual variation is stated where
+  reproducibility is reported rather than buried ([#30], [#32]).
+
+- [`docs/judges.md`](docs/judges.md) reports retries as their own column, and says how
+  much these figures move between runs — `devstral-small-2` went 32/32 → 32/33 and
+  `llama3.1` 24/32 → 25/31 with no change to any input. Without that, comparing two runs
+  of the table would look like a judge regressing.
+
+- The spec-kit extension's README explains spec-kit's "discovery only — not installable",
+  which applies to every third-party extension until a project approves the community
+  catalog, and gives the command — including the part it does not say out loud, that it
+  approves the whole catalog rather than one extension.
+
+### Compatibility
+
+Nothing to do. No API, schema or exit code changed, and the recommendations themselves are
+unchanged within the run-to-run variation now documented.
+
 ## [0.5.4] - 2026-08-12
 
 Carries a corrected spec-kit extension archive. No change to the code the package
@@ -611,7 +656,8 @@ community-maintained catalog by how well each model **fits** the job.
 - Explicit degradation with distinct exit codes when project data is insufficient,
   the judge is unavailable, or the catalog is empty.
 
-[Unreleased]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.4...HEAD
+[Unreleased]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.5...HEAD
+[0.5.5]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.4...v0.5.5
 [0.5.4]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.3...v0.5.4
 [0.5.3]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.1...v0.5.2
@@ -653,3 +699,5 @@ community-maintained catalog by how well each model **fits** the job.
 [#28]: https://github.com/JoaquinRuiz/SpecJudge/pull/28
 [#29]: https://github.com/JoaquinRuiz/SpecJudge/issues/29
 [#31]: https://github.com/JoaquinRuiz/SpecJudge/pull/31
+[#30]: https://github.com/JoaquinRuiz/SpecJudge/issues/30
+[#32]: https://github.com/JoaquinRuiz/SpecJudge/pull/32

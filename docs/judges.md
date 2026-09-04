@@ -47,7 +47,7 @@ uv run python scripts/eval_judge.py --judge <model> --markdown-row
 | `qwen3:8b` | 8B | 26/30 (87%) | 4 steps | 1 | 1 |
 | `llama3.1:8b-instruct-q4_K_M` | 8B | 25/31 (81%) | 6 steps | 1 | 1 |
 
-<sub>SpecJudge 0.5.4 + issue #30 (unreleased) · Ollama 0.32.6 · Apple silicon · corpus of
+<sub>SpecJudge 0.5.5 · Ollama 0.32.6 · Apple silicon · corpus of
 18 cases · measured 2026-09-04</sub>
 
 **In band** — the demand level landed inside the range the corpus expects. Ranges rather

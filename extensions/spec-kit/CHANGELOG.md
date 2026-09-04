@@ -8,6 +8,17 @@ points at. Keeping an independent number would mean a release tag of its own for
 change. One number for the whole repository is the cheaper answer, and the cost is that
 this one moves when SpecJudge moves even if nothing here changed.
 
+## [0.5.5] - 2026-09-04
+
+### Added
+
+- The README explains "discovery only — not installable", which is what spec-kit says
+  next to every third-party extension until a project approves the community catalog.
+  Someone who finds this by searching reads that beside our name and reasonably concludes
+  the fault is ours; it is not, and the command to change it is now written down — along
+  with the part that command does not say out loud, that it approves the whole catalog
+  rather than one extension.
+
 ## [0.5.4] - 2026-08-12
 
 ### Changed
