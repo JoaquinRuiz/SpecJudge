@@ -18,7 +18,7 @@ def _row(outcomes: list[Outcome], judge: str = "some:8b", params: float | None =
 
 def test_a_clean_run_reports_a_full_score():
     row = _row([Outcome("a", "thin", hits=3), Outcome("b", "well_specified", hits=2)])
-    assert row == "| `some:8b` | 8B | 5/5 (100%) | 0 | 0 |"
+    assert row == "| `some:8b` | 8B | 5/5 (100%) | 0 | 0 | 0 |"
 
 
 def test_misses_carry_their_ordinal_distance():
@@ -36,13 +36,13 @@ def test_refused_answers_are_counted_and_not_graded():
     outcomes = [Outcome("a", "thin", hits=2), Outcome("b", "thin", error="unusable")]
     row = _row(outcomes)
     assert "2/2 (100%)" in row
-    assert row.endswith("| 1 |")
+    assert row.split("|")[-3].strip() == "1", "the refusal count is its own column"
 
 
 def test_cases_refused_before_the_judge_are_not_failures():
     """The corpus contains projects SpecJudge must refuse; that is the pass condition."""
     outcomes = [Outcome("a", "thin", hits=1), Outcome("b", "insufficient", refused=True)]
-    assert _row(outcomes) == "| `some:8b` | 8B | 1/1 (100%) | 0 | 0 |"
+    assert _row(outcomes) == "| `some:8b` | 8B | 1/1 (100%) | 0 | 0 | 0 |"
 
 
 def test_an_unknown_parameter_count_is_admitted_not_invented():
@@ -53,6 +53,24 @@ def test_a_run_with_nothing_graded_says_so():
     """Every dimension abstained on: a real outcome, and 0/0 would read as a score."""
     outcomes = [Outcome("a", "thin", over_abstention=["reasoning"])]
     assert "not graded" in _row(outcomes)
+
+
+def test_a_retry_is_reported_rather_than_averaged_away():
+    """Passing on the second go is not passing on the first (FR-029).
+
+    Folding it into accuracy would launder a judge that only just manages into
+    looking like one that never struggles.
+    """
+    outcomes = [Outcome("a", "thin", hits=2), Outcome("b", "thin", hits=1, attempts=2)]
+    assert _row(outcomes).endswith("| 1 |")
+
+
+def test_a_refusal_that_exhausted_its_attempts_is_not_counted_as_a_retry():
+    """It is already reported as a refusal; counting it twice reads as two problems."""
+    outcomes = [Outcome("a", "thin", hits=1), Outcome("b", "thin", error="unusable", attempts=2)]
+    row = _row(outcomes)
+    assert row.endswith("| 0 |")
+    assert row.split("|")[-3].strip() == "1"
 
 
 def test_the_row_matches_the_table_it_is_pasted_into():
