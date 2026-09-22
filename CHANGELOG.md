@@ -9,6 +9,16 @@ Entries before 0.1.4 were reconstructed from the git tags and the GitHub release
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-22
+
+The projects that organise their context best were the ones SpecJudge read worst. If you
+keep your constitution short and push the stack-specific guidance into Copilot's
+`.github/instructions/*.instructions.md`, every one of those files was invisible to the
+tool — so the better your context discipline, the thinner the profile it estimated from.
+
+This release reads them, and has to answer a question no other context format posed: each
+file's `applyTo` glob selects by *file*, and SpecJudge runs before the files exist.
+
 ### Added
 
 - **Copilot's path-specific instructions are read as context** ([#33], raised by [@sabelaV]).
@@ -694,7 +704,8 @@ community-maintained catalog by how well each model **fits** the job.
 - Explicit degradation with distinct exit codes when project data is insufficient,
   the judge is unavailable, or the catalog is empty.
 
-[Unreleased]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.5...HEAD
+[Unreleased]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.5...v0.6.0
 [0.5.5]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.4...v0.5.5
 [0.5.4]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.3...v0.5.4
 [0.5.3]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.2...v0.5.3

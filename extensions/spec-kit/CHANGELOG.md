@@ -8,6 +8,14 @@ points at. Keeping an independent number would mean a release tag of its own for
 change. One number for the whole repository is the cheaper answer, and the cost is that
 this one moves when SpecJudge moves even if nothing here changed.
 
+## [0.6.0] - 2026-09-22
+
+### Changed
+
+- Nothing here moved. The number follows SpecJudge, which learned to read Copilot's
+  path-specific instructions — the extension passes the project through unchanged, so it
+  picks up the new source without a manifest change.
+
 ## [0.5.5] - 2026-09-04
 
 ### Added
