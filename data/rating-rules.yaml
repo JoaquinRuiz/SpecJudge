@@ -49,6 +49,12 @@ sources:
   # each. Files nearest the repository root are kept first, and whatever is left
   # out is reported. Missing or invalid => 12.
   max_context_files: 12
+  # Which .github/instructions/*.instructions.md count as context:
+  #   matching - only those whose applyTo glob matches a file in the repository
+  #              or a path the plan/tasks say will be created (default)
+  #   all      - every instructions file found, glob or no glob. For a feature so
+  #              new that nothing matches yet.
+  instructions: matching
 
 # How the project is going to be implemented, and how much the judge is asked about it.
 execution:

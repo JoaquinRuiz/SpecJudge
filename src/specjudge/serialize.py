@@ -16,6 +16,10 @@ Change rules, enforced by review rather than by code:
 0.1.x and 0.2.0 emitted this same payload without the `schema_version` field. Adding
 it is additive, so a consumer written against those releases keeps working.
 
+1.3 adds `instructions_considered`: which `*.instructions.md` files were looked at,
+whether each one became context and why. Additive, and absent rather than empty in a
+payload from an older release, so a 1.2 consumer is unaffected.
+
 1.2 adds `envelope`: the demand as a range with named causes — a default level, the peak,
 the constraint table behind both, and the escalation triggers when the caller said it can
 switch model per task. Additive, so a 1.1 consumer is unaffected.
@@ -33,7 +37,7 @@ from pathlib import Path
 
 from .domain import Comparison, Constraint, DemandProfile, Envelope
 
-SCHEMA_VERSION = "1.2"
+SCHEMA_VERSION = "1.3"
 
 
 def schema_path() -> Path:
@@ -112,6 +116,15 @@ def comparison_to_dict(comparison: Comparison) -> dict:
         "schema_version": SCHEMA_VERSION,
         "data_state": comparison.data_state.value,
         "sources_read": list(comparison.sources_read),
+        "instructions_considered": [
+            {
+                "path": i.path,
+                "apply_to": i.apply_to,
+                "included": i.included,
+                "reason": i.reason,
+            }
+            for i in comparison.instructions
+        ],
         "environment_only": comparison.environment_only,
         "judge_model": comparison.judge_model,
         "best_choice": comparison.best_choice,

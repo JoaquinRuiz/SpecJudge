@@ -9,6 +9,44 @@ Entries before 0.1.4 were reconstructed from the git tags and the GitHub release
 
 ## [Unreleased]
 
+### Added
+
+- **Copilot's path-specific instructions are read as context** ([#33], raised by [@sabelaV]).
+  `.github/instructions/*.instructions.md` is where a project puts the guidance that only
+  holds for part of the repository — the Java conventions, the React conventions — and
+  keeping the constitution short is exactly why people use it. SpecJudge was blind to all
+  of it, so the projects that organise their context best were the ones it read worst.
+
+  Each file carries an `applyTo` glob naming the files it governs, which poses a question
+  the other formats do not: SpecJudge runs *before* the code exists, so there is no diff
+  to match against. Applicability is decided deterministically — never by asking the judge
+  to guess — against what the repository already contains **and** what `plan.md` and
+  `tasks.md` say will be created. A task promising `FooService.java` makes `**/*.java`
+  apply before that file is written, which is the greenfield half a repository listing
+  cannot answer on its own.
+
+  A file with no `applyTo` is *not* treated as applying everywhere: VS Code does not
+  auto-apply those either, so neither does this. `sources.instructions: all` in
+  `data/rating-rules.yaml` overrides the whole decision for a feature so new that nothing
+  matches yet.
+
+  Every file considered is reported with its verdict and the reason, in the output and in
+  the new `instructions_considered` payload field, because a glob that matches nothing and
+  a file that was never found are otherwise the same absence.
+
+### Changed
+
+- **The environment budget is split in two pools**, one for path-specific instructions and
+  one for everything else ([#33]). A project has one `AGENTS.md` and as many
+  `*.instructions.md` as it has stacks, so a single pool let the narrow files crowd out the
+  broad one — the more stacks a project documented, the less of its `AGENTS.md` the judge
+  saw. The split is water-filled at the group level too, so a pool that cannot use its half
+  releases the remainder and a project with no instruction files is budgeted exactly as
+  before, to the character.
+
+- `schema_version` is now **1.3**: `instructions_considered` is additive, so a 1.2 consumer
+  is unaffected.
+
 ## [0.5.5] - 2026-09-04
 
 Two corrections to what SpecJudge *claims*, which matter more here than what it does: the
@@ -701,3 +739,5 @@ community-maintained catalog by how well each model **fits** the job.
 [#31]: https://github.com/JoaquinRuiz/SpecJudge/pull/31
 [#30]: https://github.com/JoaquinRuiz/SpecJudge/issues/30
 [#32]: https://github.com/JoaquinRuiz/SpecJudge/pull/32
+[#33]: https://github.com/JoaquinRuiz/SpecJudge/issues/33
+[@sabelaV]: https://github.com/sabelaV

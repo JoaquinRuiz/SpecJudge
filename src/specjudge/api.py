@@ -146,6 +146,7 @@ def analyze(
         source_kinds=analysis.source_kinds,
         environment_only=analysis.environment_only,
         envelope=envelope,
+        instructions=analysis.instructions,
     )
 
 

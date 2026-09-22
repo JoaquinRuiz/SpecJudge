@@ -22,6 +22,7 @@ from .domain import (
     DemandProfile,
     Evaluation,
     ExecutionModel,
+    InstructionsMode,
     Rating,
     RatingRules,
 )
@@ -72,6 +73,7 @@ def load_rules(path: Path | str | None = None) -> RatingRules:
         max_pricing_age_days=_max_pricing_age_days(raw.get("catalog_freshness")),
         require_spans=_require_spans(raw.get("evidence")),
         max_context_files=_max_context_files(raw.get("sources")),
+        instructions_mode=_instructions_mode(raw.get("sources")),
         request_bulk=_request_bulk(raw.get("execution")),
         request_bulk_above_params_b=_bulk_threshold(raw.get("execution")),
         execution_model=_execution_model(raw.get("execution")),
@@ -108,6 +110,21 @@ def _execution_model(raw: object) -> ExecutionModel:
         return ExecutionModel(str(raw.get("model", "")).strip().lower())
     except ValueError:
         return ExecutionModel.SINGLE
+
+
+def _instructions_mode(raw: object) -> InstructionsMode:
+    """Read sources.instructions, falling back to `matching` (FR-024).
+
+    An unrecognised value degrades to the default rather than raising, like every
+    other knob here. `matching` is the safe direction: reading instructions for a
+    stack the feature never touches spends budget the rest of the context needs.
+    """
+    if not isinstance(raw, dict):
+        return InstructionsMode.MATCHING
+    try:
+        return InstructionsMode(str(raw.get("instructions", "")).strip().lower())
+    except ValueError:
+        return InstructionsMode.MATCHING
 
 
 def _max_context_files(raw: object) -> int:

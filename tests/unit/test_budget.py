@@ -133,3 +133,54 @@ def test_fragments_come_from_exactly_the_budgeted_text():
     sent = "".join(s.text for s in prompt_sources(analysis, 60))
     for fragment in extract_fragments(analysis, 60):
         assert fragment.text[:20] in sent
+
+
+# ------------------------------------------- instructions get their own pool (#33)
+
+
+def test_instructions_cannot_crowd_out_the_broad_context():
+    """A project documents one AGENTS.md and one `.instructions.md` per stack.
+
+    In a single pool the narrow files win by sheer number, and the file describing
+    the whole repository gets thinner the more stacks the project documents.
+    """
+    analysis = _analysis(
+        _artifact("agents", "a" * 5000),
+        *[
+            _artifact("instructions", "i" * 5000, f".github/instructions/{i}.instructions.md")
+            for i in range(8)
+        ],
+    )
+    texts = {s.path: s.text for s in prompt_sources(analysis, LIMIT)}
+    assert len(texts["agents.md"]) >= LIMIT // 2
+
+
+def test_the_two_pools_together_still_cost_what_one_artifact_costs():
+    analysis = _analysis(
+        _artifact("agents", "a" * 5000),
+        _artifact("instructions", "i" * 5000, ".github/instructions/backend.instructions.md"),
+    )
+    assert sum(len(s.text) for s in prompt_sources(analysis, LIMIT)) <= LIMIT
+
+
+def test_a_project_without_instructions_is_budgeted_exactly_as_before():
+    """The split must be invisible until there is something to split."""
+    analysis = _analysis(
+        _artifact("agents", "a" * 5000),
+        _artifact("claude", "c" * 300, "CLAUDE.md"),
+        _artifact("adr", "d" * 5000, "docs/adr/0001-x.md"),
+    )
+    texts = _by_type(prompt_sources(analysis, LIMIT))
+    assert len(texts["claude"]) == 300
+    assert len(texts["agents"]) + len(texts["adr"]) == LIMIT - 300
+
+
+def test_an_unused_half_flows_to_the_other_group():
+    """Water-filling at the group level, so a short pool releases its remainder."""
+    analysis = _analysis(
+        _artifact("agents", "a" * 5000),
+        _artifact("instructions", "i" * 50, ".github/instructions/backend.instructions.md"),
+    )
+    texts = _by_type(prompt_sources(analysis, LIMIT))
+    assert len(texts["instructions"]) == 50
+    assert len(texts["agents"]) == LIMIT - 50
