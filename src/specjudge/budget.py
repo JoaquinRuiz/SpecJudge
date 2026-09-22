@@ -101,6 +101,65 @@ def _water_fill(lengths: list[int], budget: int) -> list[int]:
     return allowances
 
 
+# Below this many characters a truncated source stops being worth its room: what
+# arrives is a cut clause rather than a statement anyone can reason from — and it is
+# still citable, so it costs the judge attention and buys nothing.
+_MIN_FLOOR_CHARS = 200
+# The floor scales with the budget rather than being fixed, so the compact prompt —
+# which works with a fraction of the full budget — does not lose every source to a
+# floor sized for the full one.
+_FLOOR_DIVISOR = 20
+
+
+def _floor(budget: int) -> int:
+    """The smallest allowance worth spending on a source.
+
+    Derived from the budget rather than passed in, and that is the point. The prompt
+    and the citable fragment set are built by two different call sites from the same
+    `limit` (FR-020), so a floor threaded through as an argument would only have to
+    be forgotten at one of them to make the judge cite text it was never shown.
+    Deriving it makes the two structurally incapable of disagreeing.
+    """
+    return max(_MIN_FLOOR_CHARS, budget // _FLOOR_DIVISOR)
+
+
+def _apply_floor(members: list[tuple[int, int]], budget: int, floor: int) -> dict[int, int]:
+    """Allowances for one pool, dropping whatever the pool cannot fund properly.
+
+    Water-filling divides what there is; it never asks whether a share is large
+    enough to be worth anything. With enough sources competing it hands every one of
+    them a sliver, which is the failure this exists to stop: four sources read
+    properly tell the judge more than sixteen cut off mid-sentence.
+
+    A source is only ever dropped for being *truncated* below the floor. One that
+    fits entirely inside its share is complete, however short it is — a 40-character
+    `.cursorrules` is the whole file, not a fragment of one.
+
+    The last source in discovery order goes first, matching the file cap: context
+    near the repository root governs the whole repository, context deep inside
+    governs one corner of it. At least one always survives — a floor that silenced
+    every source would answer "this budget is too small" by sending nothing at all.
+    """
+    kept = list(members)
+    while len(kept) > 1:
+        shares = _water_fill([natural for _, natural in kept], budget)
+        starved = [
+            position
+            for position, ((_, natural), share) in enumerate(zip(kept, shares, strict=True))
+            if share < floor and share < natural
+        ]
+        if not starved:
+            break
+        del kept[starved[-1]]
+
+    allowances = {index: 0 for index, _ in members}
+    if kept:
+        shares = _water_fill([natural for _, natural in kept], budget)
+        for (index, _), share in zip(kept, shares, strict=True):
+            allowances[index] = share
+    return allowances
+
+
 def _environment_allowances(entries: list[tuple[int, int, bool]], budget: int) -> dict[int, int]:
     """Per-source allowances for the environment sources, filled in two stages.
 
@@ -129,12 +188,10 @@ def _environment_allowances(entries: list[tuple[int, int, bool]], budget: int) -
     totals = [sum(natural for _, natural in groups[key]) for key in present]
     group_budgets = _water_fill(totals, budget)
 
+    floor = _floor(budget)
     allowances: dict[int, int] = {}
     for key, group_budget in zip(present, group_budgets, strict=True):
-        members = groups[key]
-        shares = _water_fill([natural for _, natural in members], group_budget)
-        for (index, _), share in zip(members, shares, strict=True):
-            allowances[index] = share
+        allowances.update(_apply_floor(groups[key], group_budget, floor))
     return allowances
 
 
@@ -235,3 +292,40 @@ def prompt_sources(
                 )
             )
     return sources
+
+
+def dropped_sources(
+    analysis: ProjectAnalysis,
+    limit: int,
+    *,
+    compact: bool = False,
+    environment_budget: int | None = None,
+) -> list[SDDArtifact]:
+    """The sources the floor removed, so the run can say so rather than just do it.
+
+    A cap the reader cannot see is indistinguishable from having read everything
+    (FR-025), and that holds for this cap exactly as it did for the file one. Derived
+    the same way the prompt is, from the same `limit` and the same shape, so it can
+    only ever report what actually happened.
+    """
+    usable = [a for a in analysis.artifacts if a.readable and a.content]
+    budget = limit if environment_budget is None else environment_budget
+
+    counts: dict[str, int] = {}
+    for artifact in usable:
+        counts[artifact.type] = counts.get(artifact.type, 0) + 1
+    labels = [_label(a, analysis.root, counts[a.type] > 1) for a in usable]
+
+    environment = [i for i, a in enumerate(usable) if is_environment(a.type)]
+    if compact:
+        entries = [
+            (i, digest_module.natural_size(usable[i], labels[i]), usable[i].type == "instructions")
+            for i in environment
+        ]
+    else:
+        entries = [
+            (i, len(usable[i].content), usable[i].type == "instructions") for i in environment
+        ]
+
+    allowances = _environment_allowances(entries, budget)
+    return [usable[i] for i in environment if allowances.get(i, 0) == 0]

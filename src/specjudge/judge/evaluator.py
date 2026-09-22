@@ -21,7 +21,7 @@ from __future__ import annotations
 import re
 
 from .. import errors
-from ..budget import PromptSource, digest_sources, prompt_sources
+from ..budget import PromptSource, digest_sources, dropped_sources, prompt_sources
 from ..domain import (
     UNSUPPORTED,
     DemandProfile,
@@ -33,6 +33,7 @@ from ..domain import (
     answer_levels,
 )
 from ..judge.ollama import JUDGE_SEED, OllamaClient
+from ..sources import summarize_kinds
 from . import digest
 from .fragments import (
     extract_fragments,
@@ -470,6 +471,31 @@ def envelope_fragments(
     """
     compact = use_compact_prompt(client.model_params_b(judge_model), rules)
     return extract_fragments(analysis, artifact_limit(rules, compact=compact), compact=compact)
+
+
+def budget_warnings(
+    analysis: ProjectAnalysis,
+    rules: RatingRules,
+    client: OllamaClient,
+    judge_model: str,
+) -> list[str]:
+    """Whatever the character budget left out, named rather than merely dropped.
+
+    Here for the same reason `envelope_fragments` is: the answer depends on which
+    prompt shape the judge got, and that decision is made here. Asking from anywhere
+    else would report the compact run's losses for a full-prose run, or the reverse.
+    """
+    compact = use_compact_prompt(client.model_params_b(judge_model), rules)
+    dropped = dropped_sources(analysis, artifact_limit(rules, compact=compact), compact=compact)
+    if not dropped:
+        return []
+
+    names = summarize_kinds([a.type for a in dropped])
+    return [
+        f"Left {len(dropped)} context file(s) out of the prompt ({names}): the budget "
+        f"could only fund a fragment of each, and a source cut that short is quoted "
+        f"more easily than it is understood. The sources that remain were sent whole."
+    ]
 
 
 def estimate_demand(
