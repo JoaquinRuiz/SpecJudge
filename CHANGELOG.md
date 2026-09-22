@@ -9,6 +9,12 @@ Entries before 0.1.4 were reconstructed from the git tags and the GitHub release
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-09-22
+
+One fix, to a defect 0.6.0 made easier to hit. The budget knew how to divide what it had and
+not how to tell when a share had stopped being worth anything, so a project with enough written
+context got all of it, shredded.
+
 ### Fixed
 
 - **A source could be truncated below the point of being worth sending** ([#35]). The character
@@ -730,7 +736,8 @@ community-maintained catalog by how well each model **fits** the job.
 - Explicit degradation with distinct exit codes when project data is insufficient,
   the judge is unavailable, or the catalog is empty.
 
-[Unreleased]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.5...v0.6.0
 [0.5.5]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.4...v0.5.5
 [0.5.4]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.3...v0.5.4
