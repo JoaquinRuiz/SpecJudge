@@ -15,7 +15,14 @@ over a better-fitting one.
 
 from __future__ import annotations
 
-from .domain import Comparison, DataState, DemandProfile, Envelope, Evaluation
+from .domain import (
+    Comparison,
+    DataState,
+    DemandProfile,
+    Envelope,
+    Evaluation,
+    InstructionFile,
+)
 
 
 def _fit_key(e: Evaluation) -> tuple[int, int, tuple[float, float], str]:
@@ -56,6 +63,7 @@ def build_comparison(
     source_kinds: list[str] | None = None,
     environment_only: bool = False,
     envelope: Envelope | None = None,
+    instructions: list[InstructionFile] | None = None,
 ) -> Comparison:
     warnings = list(warnings or [])
     podium = choose_podium(evaluations)
@@ -78,4 +86,5 @@ def build_comparison(
         source_kinds=list(source_kinds or []),
         environment_only=environment_only,
         envelope=envelope,
+        instructions=list(instructions or []),
     )

@@ -12,8 +12,16 @@ import json
 import re
 from pathlib import Path
 
-from .discovery import context_files
-from .domain import DataState, ProjectAnalysis, RatingRules, SDDArtifact
+from .discovery import context_files, instruction_files, repository_paths
+from .domain import (
+    DataState,
+    InstructionFile,
+    InstructionsMode,
+    ProjectAnalysis,
+    RatingRules,
+    SDDArtifact,
+)
+from .instructions import decide, planned_paths
 from .sources import is_generated, plan_path, summarize_kinds
 
 # A task "with a description" = checklist line with substantial text after the id.
@@ -79,12 +87,26 @@ def read_project(project_path: Path | str, rules: RatingRules) -> ProjectAnalysi
 
     warnings: list[str] = []
 
+    # Decided before the rest of the context is read, because `applyTo` is matched
+    # against what the plan and the tasks say will be built — so those have to be
+    # on hand first (FR-024).
+    instructions = _decide_instructions(project_path, plan, tasks, rules.instructions_mode)
+    applicable = [project_path / i.path for i in instructions if i.included]
+
     # Context files are read alongside the SDD artifacts, never instead of them:
     # they describe the environment, the artifacts describe the work, and the two
     # do not overlap (FR-024).
-    environment = _read_environment(project_path, rules.max_context_files, warnings)
+    environment = _read_environment(project_path, rules.max_context_files, warnings, applicable)
 
     artifacts = [constitution, spec, tasks, plan, *environment]
+
+    excluded = [i for i in instructions if not i.included]
+    if excluded:
+        names = ", ".join(f"{i.path} ({i.reason})" for i in excluded)
+        warnings.append(
+            f"Skipped {len(excluded)} path-specific instruction file(s): {names}. "
+            f"Set sources.instructions: all in the rating rules to read them anyway."
+        )
 
     data_state = _classify(constitution, spec, tasks, environment, rules, warnings)
 
@@ -93,12 +115,44 @@ def read_project(project_path: Path | str, rules: RatingRules) -> ProjectAnalysi
         data_state=data_state,
         warnings=warnings,
         root=str(project_path),
+        instructions=instructions,
     )
 
 
-def _read_environment(project_path: Path, max_files: int, warnings: list[str]) -> list[SDDArtifact]:
+def _decide_instructions(
+    project_path: Path,
+    plan: SDDArtifact,
+    tasks: SDDArtifact,
+    mode: InstructionsMode,
+) -> list[InstructionFile]:
+    """Every `*.instructions.md` found, with the verdict on each (FR-024)."""
+    found = instruction_files(project_path)
+    if not found:
+        return []
+
+    contents: list[tuple[Path, str]] = []
+    for path in found:
+        try:
+            contents.append((path, path.read_text(encoding="utf-8")))
+        except (OSError, UnicodeDecodeError):
+            # Unreadable here means unreadable later too; skipping it keeps the
+            # verdict list honest rather than promising content that never arrives.
+            continue
+
+    planned = planned_paths([a.content for a in (plan, tasks) if a.usable])
+    # Only worth the subprocess when something might still match on disk.
+    existing = repository_paths(project_path) if mode is InstructionsMode.MATCHING else []
+    return decide(contents, existing, planned, mode, project_path)
+
+
+def _read_environment(
+    project_path: Path,
+    max_files: int,
+    warnings: list[str],
+    instructions: list[Path] | None = None,
+) -> list[SDDArtifact]:
     """Every context file that survives discovery, the cap and the generated check."""
-    found, dropped = context_files(project_path, max_files)
+    found, dropped = context_files(project_path, max_files, instructions)
 
     if dropped:
         # A cap the user cannot see reads as "we read everything" (FR-025).

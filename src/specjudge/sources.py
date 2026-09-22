@@ -17,9 +17,11 @@ nested `AGENTS.md` is worth exactly what a root one is.
 Two kinds of source, carrying different signal and both worth reading:
 
 * **environment** — `AGENTS.md`, `CLAUDE.md`, `.cursorrules`,
-  `.github/copilot-instructions.md`, ADRs. How hard this repository is to work in at
-  all: domain, constraints, testing rigour, decisions already made. Identical whether
-  you are fixing a typo or rewriting authentication.
+  `.github/copilot-instructions.md`, `.github/instructions/*.instructions.md`, ADRs.
+  How hard this repository is to work in at all: domain, constraints, testing rigour,
+  decisions already made. Mostly identical whether you are fixing a typo or rewriting
+  authentication — path-specific instructions are the one exception, and `instructions.py`
+  is where that exception is resolved.
 * **work** — constitution, spec, tasks, plan. What is about to be built.
 
 Picking one over the other would discard signal that does not overlap, so both are
@@ -34,7 +36,7 @@ from pathlib import Path
 
 # kind -> whether the source describes the work, or the environment it happens in.
 WORK_KINDS = ("constitution", "spec", "tasks", "plan")
-ENVIRONMENT_KINDS = ("agents", "claude", "cursor", "copilot", "adr")
+ENVIRONMENT_KINDS = ("agents", "claude", "cursor", "copilot", "instructions", "adr")
 
 # Markers a generator leaves behind. Checked only near the top of a file, where a
 # banner lives; the same words further down are prose about generated code.
@@ -55,6 +57,7 @@ LABELS = {
     "claude": "CLAUDE.md",
     "cursor": ".cursorrules",
     "copilot": "copilot-instructions.md",
+    "instructions": ".instructions.md",
     "adr": "ADR",
 }
 

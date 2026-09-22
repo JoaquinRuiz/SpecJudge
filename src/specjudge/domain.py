@@ -55,6 +55,26 @@ class ExecutionModel(str, Enum):
     ESCALATING = "escalating"
 
 
+class InstructionsMode(str, Enum):
+    """Which Copilot path-specific instructions count as context (FR-024).
+
+    * `matching` — only the files whose `applyTo` glob matches something the
+      repository already contains or something the plan and tasks say will be
+      created. What the coding agent would actually have loaded.
+    * `all` — every discovered file, glob or no glob. The escape hatch for a
+      feature so new that nothing matches yet, where `matching` would correctly
+      report "nothing applies" and unhelpfully leave the judge with the
+      constitution alone.
+
+    `matching` is the default because the alternative quietly pays for guidance
+    about a stack the feature does not touch, out of a budget the rest of the
+    context is competing for.
+    """
+
+    MATCHING = "matching"
+    ALL = "all"
+
+
 class JudgeAvailability(str, Enum):
     """Availability of the judge dependency (FR-011)."""
 
@@ -139,6 +159,22 @@ class Price:
         return (self.output_per_million, self.input_per_million)
 
 
+@dataclass(frozen=True)
+class InstructionFile:
+    """One `*.instructions.md` and why it did or did not become context.
+
+    The verdict is carried rather than applied and forgotten because the two ways
+    this feature fails are indistinguishable from the outside: a glob that matches
+    nothing and a file that was never found both show up as an absence. Naming the
+    file, its `applyTo` and the path that matched separates them.
+    """
+
+    path: str  # relative to the project root, as the globs are written
+    apply_to: str  # the raw frontmatter value; "" when the file declares none
+    included: bool
+    reason: str
+
+
 @dataclass
 class SDDArtifact:
     """One written source of project context.
@@ -171,6 +207,10 @@ class ProjectAnalysis:
     # by its path within the project ("packages/api/AGENTS.md" says which corner of
     # a monorepo it governs) rather than by an absolute path from this machine.
     root: str = ""
+    # Every `*.instructions.md` discovery considered, included or not (FR-024).
+    # Kept beside the artifacts rather than among them because an excluded file
+    # contributes no content and still has to be reported.
+    instructions: list[InstructionFile] = field(default_factory=list)
 
     def artifact(self, type_: str) -> SDDArtifact | None:
         for a in self.artifacts:
@@ -375,6 +415,9 @@ class RatingRules:
     # A monorepo can carry dozens; reading all of them would swamp the prompt with
     # near-duplicates of one another.
     max_context_files: int = DEFAULT_MAX_CONTEXT_FILES
+    # Whether path-specific Copilot instructions are filtered by their `applyTo`
+    # glob or read wholesale (FR-024).
+    instructions_mode: InstructionsMode = InstructionsMode.MATCHING
     # Whether the judge must cite a fragment per dimension (FR-020). Turning this
     # off restores the pre-evidence behaviour for judges too small to manage the
     # citation schema — at the cost of the grounding check.
@@ -428,6 +471,10 @@ class Comparison:
     source_kinds: list[str] = field(default_factory=list)
     # True when nothing described the work — see ProjectAnalysis.environment_only.
     environment_only: bool = False
+    # Every `*.instructions.md` considered, with the verdict and its reason
+    # (FR-024). Carried into the payload: which guidance reached the judge is part
+    # of what makes the assessment auditable.
+    instructions: list[InstructionFile] = field(default_factory=list)
     # The demand as a range with named causes (FR-027). None when there is no
     # profile to build one from.
     envelope: Envelope | None = None

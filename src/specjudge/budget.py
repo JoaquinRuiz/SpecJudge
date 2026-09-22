@@ -10,6 +10,11 @@ artifacts keep their existing per-artifact cap. The asymmetry is deliberate — 
 spec and the tasks describe what is about to be built and there is exactly one of
 each, while agent-context files are numerous and largely repeat one another.
 
+That single pool is split once more, between path-specific Copilot instructions and
+everything else, because the two scale differently: a project documents one
+`AGENTS.md` and as many `*.instructions.md` as it has stacks, so leaving them in one
+pool would let the narrow files crowd out the broad one.
+
 The budget is shared by water-filling: everyone is offered an equal share, whoever
 needs less than their share takes only what they need, and what they leave is
 redistributed among the rest. A 200-character `.cursorrules` therefore costs 200
@@ -96,6 +101,43 @@ def _water_fill(lengths: list[int], budget: int) -> list[int]:
     return allowances
 
 
+def _environment_allowances(entries: list[tuple[int, int, bool]], budget: int) -> dict[int, int]:
+    """Per-source allowances for the environment sources, filled in two stages.
+
+    One flat water-fill across every environment file was right while they were
+    interchangeable, and stops being right once path-specific instructions join
+    them. Those arrive in numbers — a repository can easily have a dozen, several
+    of which match — and a flat fill lets them take an arbitrary share of the
+    budget, so the root `AGENTS.md` gets thinner the more stacks a project
+    documents. That is a bad trade: the instructions are narrow by construction
+    and `AGENTS.md` describes the whole repository.
+
+    So the budget is split between two groups first — instructions, and everything
+    else — and then within each. Water-filling at the group level keeps the
+    property that makes it worth doing: a group that cannot use its half releases
+    the remainder to the other, so a project with no instructions gets exactly the
+    single-pool behaviour it had before, to the character.
+    """
+    groups: dict[bool, list[tuple[int, int]]] = {False: [], True: []}
+    for index, natural, is_instruction in entries:
+        groups[is_instruction].append((index, natural))
+
+    present = [key for key in (False, True) if groups[key]]
+    if not present:
+        return {}
+
+    totals = [sum(natural for _, natural in groups[key]) for key in present]
+    group_budgets = _water_fill(totals, budget)
+
+    allowances: dict[int, int] = {}
+    for key, group_budget in zip(present, group_budgets, strict=True):
+        members = groups[key]
+        shares = _water_fill([natural for _, natural in members], group_budget)
+        for (index, _), share in zip(members, shares, strict=True):
+            allowances[index] = share
+    return allowances
+
+
 def _truncate(content: str, allowed: int) -> str:
     """Cut at a line boundary when there is one, rather than mid-word.
 
@@ -137,9 +179,13 @@ def digest_sources(
     labels = [_label(a, analysis.root, counts[a.type] > 1) for a in usable]
 
     environment = [i for i, a in enumerate(usable) if is_environment(a.type)]
-    natural = [digest_module.natural_size(usable[i], labels[i]) for i in environment]
-    allowances = _water_fill(natural, budget)
-    per_index = dict(zip(environment, allowances, strict=True))
+    per_index = _environment_allowances(
+        [
+            (i, digest_module.natural_size(usable[i], labels[i]), usable[i].type == "instructions")
+            for i in environment
+        ],
+        budget,
+    )
 
     sources: list[PromptSource] = []
     for index, artifact in enumerate(usable):
@@ -166,8 +212,10 @@ def prompt_sources(
     budget = limit if environment_budget is None else environment_budget
 
     environment = [i for i, a in enumerate(usable) if is_environment(a.type)]
-    allowances = _water_fill([len(usable[i].content) for i in environment], budget)
-    per_index = dict(zip(environment, allowances, strict=True))
+    per_index = _environment_allowances(
+        [(i, len(usable[i].content), usable[i].type == "instructions") for i in environment],
+        budget,
+    )
 
     # A kind carried by a single file needs no disambiguation.
     counts: dict[str, int] = {}

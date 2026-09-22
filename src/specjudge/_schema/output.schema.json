@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/JoaquinRuiz/SpecJudge/main/src/specjudge/_schema/output.schema.json",
   "title": "SpecJudge comparison output",
-  "description": "Payload emitted by `specjudge --json` and by specjudge.api.to_dict(). Version 1.2. Adding a field is a MINOR bump; removing one, changing its type, or changing what an existing value means is MAJOR. Obtain this file without cloning the repo: `specjudge --print-schema`.",
+  "description": "Payload emitted by `specjudge --json` and by specjudge.api.to_dict(). Version 1.3. Adding a field is a MINOR bump; removing one, changing its type, or changing what an existing value means is MAJOR. Obtain this file without cloning the repo: `specjudge --print-schema`.",
   "type": "object",
   "required": [
     "schema_version",
@@ -27,48 +27,112 @@
     "data_state": {
       "description": "How much the project told us. `scarce` also covers a judge that could not ground every dimension.",
       "type": "string",
-      "enum": ["sufficient", "scarce", "insufficient"]
+      "enum": [
+        "sufficient",
+        "scarce",
+        "insufficient"
+      ]
     },
     "sources_read": {
       "description": "Kinds of written source that contributed content, deduplicated, in discovery order: constitution, spec, tasks, plan, agents (AGENTS.md), claude (CLAUDE.md), cursor (.cursorrules), copilot (.github/copilot-instructions.md), adr. One entry per kind however many files of it were read. Open-ended: new source kinds are added in MINOR releases, so treat an unknown value as a source you do not recognise rather than as an error.",
       "type": "array",
       "uniqueItems": true,
-      "items": { "type": "string" }
+      "items": {
+        "type": "string"
+      }
+    },
+    "instructions_considered": {
+      "description": "Every `.github/instructions/*.instructions.md` discovery looked at, whether or not it became context, in discovery order. `included` says if it reached the judge and `reason` says why \u2014 an `applyTo` that matches nothing is otherwise indistinguishable from a file that was never found. Optional: absent in payloads produced before schema 1.3, and an empty array when the project has no instruction files.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "description": "Path to the instructions file, relative to the project root.",
+            "type": "string"
+          },
+          "apply_to": {
+            "description": "The raw `applyTo` frontmatter value; empty when the file declares none.",
+            "type": "string"
+          },
+          "included": {
+            "description": "Whether the file's content was sent to the judge.",
+            "type": "boolean"
+          },
+          "reason": {
+            "description": "Why it was included or excluded, in prose. Open-ended: treat an unrecognised reason as text to show, not as a value to branch on.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "apply_to",
+          "included",
+          "reason"
+        ],
+        "additionalProperties": false
+      }
     },
     "environment_only": {
-      "description": "True when every source read describes the repository (AGENTS.md, CLAUDE.md) and none describes the work in progress. The result is then a floor — how demanding this codebase is to work in at all — not a recommendation for a specific piece of work.",
+      "description": "True when every source read describes the repository (AGENTS.md, CLAUDE.md) and none describes the work in progress. The result is then a floor \u2014 how demanding this codebase is to work in at all \u2014 not a recommendation for a specific piece of work.",
       "type": "boolean"
     },
     "judge_model": {
       "description": "Local model used as the judge.",
-      "type": ["string", "null"]
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "best_choice": {
       "description": "model_id of the best-fitting model, or null when no model in the catalog is capable enough.",
-      "type": ["string", "null"]
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "podium": {
       "description": "Up to three model_ids by fit, gold first. Shorter when fewer models qualify, empty when none does.",
       "type": "array",
-      "items": { "type": "string" }
+      "items": {
+        "type": "string"
+      }
     },
     "demand": {
       "description": "The judge's assessment of how demanding the project is, and the evidence behind it.",
-      "oneOf": [{ "$ref": "#/$defs/demand" }, { "type": "null" }]
+      "oneOf": [
+        {
+          "$ref": "#/$defs/demand"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "envelope": {
       "description": "The demand as a range with named causes (added in 1.2): the level the ranking used, the level the hardest part needs, the constraint table behind both, and the escalation triggers. Null when there is no demand profile.",
-      "oneOf": [{ "$ref": "#/$defs/envelope" }, { "type": "null" }]
+      "oneOf": [
+        {
+          "$ref": "#/$defs/envelope"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "warnings": {
       "description": "Human-readable warnings. Wording is not covered by the schema version.",
       "type": "array",
-      "items": { "type": "string" }
+      "items": {
+        "type": "string"
+      }
     },
     "evaluations": {
       "description": "One entry per catalog model, ordered best fit first.",
       "type": "array",
-      "items": { "$ref": "#/$defs/evaluation" }
+      "items": {
+        "$ref": "#/$defs/evaluation"
+      }
     }
   },
   "$defs": {
@@ -86,40 +150,64 @@
         "execution_model": {
           "description": "single: one model implements everything, so the ranking is built on the peak. escalating: the model can change per task, so it is built on the bulk and the outliers become triggers.",
           "type": "string",
-          "enum": ["single", "escalating"]
+          "enum": [
+            "single",
+            "escalating"
+          ]
         },
         "default_demand": {
           "description": "Dimension to level, for the demand the ranking was actually built on.",
           "type": "object",
-          "additionalProperties": { "type": "string" }
+          "additionalProperties": {
+            "type": "string"
+          }
         },
         "peak_demand": {
           "description": "Dimension to level for the hardest part of the work. Equal to default_demand under `single`, or when the judge did not distinguish the two.",
           "type": "object",
-          "additionalProperties": { "type": "string" }
+          "additionalProperties": {
+            "type": "string"
+          }
         },
         "constraints": {
           "description": "One row per rated dimension: what is demanded and the fragment that demands it.",
           "type": "array",
-          "items": { "$ref": "#/$defs/constraint" }
+          "items": {
+            "$ref": "#/$defs/constraint"
+          }
         },
         "escalations": {
           "description": "The subset of constraints whose peak sits above the default. Always empty under `single`, where there is nothing to escalate to.",
           "type": "array",
-          "items": { "$ref": "#/$defs/constraint" }
+          "items": {
+            "$ref": "#/$defs/constraint"
+          }
         }
       }
     },
     "constraint": {
       "type": "object",
-      "required": ["dimension", "level", "fragment_id", "text", "hard"],
+      "required": [
+        "dimension",
+        "level",
+        "fragment_id",
+        "text",
+        "hard"
+      ],
       "additionalProperties": false,
       "properties": {
-        "dimension": { "type": "string" },
-        "level": { "type": "string" },
+        "dimension": {
+          "type": "string"
+        },
+        "level": {
+          "type": "string"
+        },
         "fragment_id": {
           "description": "Id of the project fragment behind this constraint, or null when the dimension carries no citation.",
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "text": {
           "description": "The cited fragment as the judge was shown it. Free text.",
@@ -133,13 +221,20 @@
     },
     "demand": {
       "type": "object",
-      "required": ["dimensions", "justification", "coverage", "evidence"],
+      "required": [
+        "dimensions",
+        "justification",
+        "coverage",
+        "evidence"
+      ],
       "additionalProperties": false,
       "properties": {
         "dimensions": {
           "description": "Dimension name to demand level, or the literal `unsupported`. Dimension names and level vocabulary both come from data/rating-rules.yaml, so neither is enumerated here.",
           "type": "object",
-          "additionalProperties": { "type": "string" }
+          "additionalProperties": {
+            "type": "string"
+          }
         },
         "justification": {
           "description": "The judge's own summary. Free text.",
@@ -152,27 +247,43 @@
         "evidence": {
           "description": "Dimension name to the citation backing it.",
           "type": "object",
-          "additionalProperties": { "$ref": "#/$defs/evidence" }
+          "additionalProperties": {
+            "$ref": "#/$defs/evidence"
+          }
         }
       }
     },
     "evidence": {
       "type": "object",
-      "required": ["status", "fragment_id", "quote"],
+      "required": [
+        "status",
+        "fragment_id",
+        "quote"
+      ],
       "additionalProperties": false,
       "properties": {
         "status": {
           "description": "grounded: the cited fragment exists and any quote matched. quote_unverified: fragment exists, quoted wording did not match. unsupported: the judge found nothing to cite.",
           "type": "string",
-          "enum": ["grounded", "quote_unverified", "unsupported"]
+          "enum": [
+            "grounded",
+            "quote_unverified",
+            "unsupported"
+          ]
         },
         "fragment_id": {
           "description": "Id of the cited project fragment. Null when the dimension is unsupported.",
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "quote": {
           "description": "Optional literal quote the judge offered alongside the id.",
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         }
       }
     },
@@ -188,18 +299,29 @@
       ],
       "additionalProperties": false,
       "properties": {
-        "model_id": { "type": "string" },
-        "model_name": { "type": "string" },
+        "model_id": {
+          "type": "string"
+        },
+        "model_name": {
+          "type": "string"
+        },
         "rating": {
           "description": "Closed vocabulary fixed by the project constitution: changing it requires a constitutional amendment, not just a release.",
           "type": "string",
-          "enum": ["poor", "fair", "good", "overkill"]
+          "enum": [
+            "poor",
+            "fair",
+            "good",
+            "overkill"
+          ]
         },
         "justification": {
           "description": "Why this model got this rating. Free text.",
           "type": "string"
         },
-        "price": { "$ref": "#/$defs/price" },
+        "price": {
+          "$ref": "#/$defs/price"
+        },
         "price_stale": {
           "description": "True when the entry carries no pricing_date, so freshness cannot be verified. NOT a statement that the price is old.",
           "type": "boolean"
@@ -216,12 +338,23 @@
       ],
       "additionalProperties": false,
       "properties": {
-        "input_per_million": { "type": "number", "minimum": 0 },
-        "output_per_million": { "type": "number", "minimum": 0 },
-        "currency": { "type": "string" },
+        "input_per_million": {
+          "type": "number",
+          "minimum": 0
+        },
+        "output_per_million": {
+          "type": "number",
+          "minimum": 0
+        },
+        "currency": {
+          "type": "string"
+        },
         "pricing_date": {
           "description": "ISO date the price was verified, or null when the catalog entry carries none.",
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         }
       }
     }

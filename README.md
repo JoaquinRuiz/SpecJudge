@@ -160,6 +160,7 @@ SpecJudge reads whatever written context your project already has:
 | spec-kit artifacts | `constitution.md`, `spec.md`, `plan.md`, `tasks.md` |
 | agent-context files | `AGENTS.md` and `CLAUDE.md`, including nested ones in a monorepo |
 | editor rules | `.cursorrules`, `.github/copilot-instructions.md` |
+| path-specific instructions | `.github/instructions/*.instructions.md`, filtered by their `applyTo` glob |
 | decision records | `docs/adr/`, `docs/decisions/`, `adr/` |
 
 They are read together, because they say different things: the artifacts describe the work you are
@@ -170,6 +171,13 @@ the files nearest the root are kept first, up to `sources.max_context_files` in
 `data/rating-rules.yaml`, and anything left out is reported rather than silently dropped. Context
 files that announce a tool generated them are skipped — generated context mostly restates what the
 code already shows, and prompt space is the scarce resource.
+
+Copilot's path-specific instructions are the one source that is *filtered* rather than simply read:
+each file's `applyTo` glob says which files it governs, so only the ones matching something the
+repository already contains — or something `plan.md` and `tasks.md` say will be created — are used.
+Every file considered is reported with the reason, included or not, so a glob that matches nothing
+is visible instead of silent. Set `sources.instructions: all` in `data/rating-rules.yaml` to read
+them all regardless, which is the right setting for a feature so new that nothing matches yet.
 
 So you do not need a full Spec-Driven Development setup to get an answer. A repository with only
 an `AGENTS.md` gets a **floor** — how much model this codebase asks for before anyone writes a

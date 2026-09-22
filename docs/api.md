@@ -21,7 +21,7 @@ repo at [`src/specjudge/_schema/output.schema.json`](../src/specjudge/_schema/ou
 
 ### Versioning
 
-Every payload carries `schema_version`, currently **1.2**. It is deliberately
+Every payload carries `schema_version`, currently **1.3**. It is deliberately
 independent of the package version — otherwise the contract would appear to change
 on every catalog-only release.
 
@@ -39,7 +39,9 @@ working.
 - `sources_read` — which written sources the assessment actually came from
   (`constitution`, `spec`, `tasks`, `plan`, `agents` for an `AGENTS.md`, `claude`
   for a `CLAUDE.md`, `cursor` for a `.cursorrules`, `copilot` for
-  `.github/copilot-instructions.md`, `adr` for an architecture decision record).
+  `.github/copilot-instructions.md`, `instructions` for a path-specific
+  `.github/instructions/*.instructions.md`, `adr` for an architecture decision
+  record).
   One entry per kind, however many files of that kind were read — a monorepo with
   eight `AGENTS.md` still lists `agents` once. The list is open-ended: new source
   kinds arrive in MINOR releases, so treat an unfamiliar value as a source you do
@@ -61,6 +63,22 @@ working.
   under the `single` execution model, where there is nothing to escalate to
 - `envelope.execution_model` — `single` or `escalating`, i.e. which of the two readings
   produced `best_choice`
+
+**1.3** adds `instructions_considered`, additive: every
+`.github/instructions/*.instructions.md` discovery looked at, and what became of it.
+
+- `path` — relative to the project root, as `applyTo` globs are written
+- `apply_to` — the raw frontmatter value; empty when the file declares none
+- `included` — whether its content reached the judge
+- `reason` — why, in prose. Open-ended: show it, do not branch on it.
+
+The field exists because the two ways this can go wrong look identical from outside.
+An `applyTo` that matches nothing and a file that was never discovered both produce
+the same result — no extra context — and only the reason distinguishes a wrong glob
+from a task list that never names the file it creates.
+
+Absent rather than empty in payloads from releases before 1.3; an empty array means
+the project has no instruction files.
 
 Worth branching on if you automate spend: under `escalating`, `best_choice` answers "what
 should implement most of this" and `escalations` tells you what to reach for on the rest.
