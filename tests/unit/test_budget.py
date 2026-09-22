@@ -7,7 +7,7 @@ prompt not growing without bound as a repository contributes more files.
 
 from __future__ import annotations
 
-from specjudge.budget import prompt_sources
+from specjudge.budget import dropped_sources, prompt_sources
 from specjudge.domain import DataState, ProjectAnalysis, SDDArtifact
 
 LIMIT = 1000
@@ -184,3 +184,76 @@ def test_an_unused_half_flows_to_the_other_group():
     texts = _by_type(prompt_sources(analysis, LIMIT))
     assert len(texts["instructions"]) == 50
     assert len(texts["agents"]) == LIMIT - 50
+
+
+# ------------------------------------ a share too small to be worth it (#35)
+
+
+def test_sources_are_dropped_rather_than_cut_into_slivers():
+    """Four sources read properly say more than sixteen cut mid-sentence."""
+    analysis = _analysis(
+        *[_artifact("agents", "a" * 5000, f"a{i}.md") for i in range(16)],
+    )
+    sources = prompt_sources(analysis, LIMIT)
+    assert len(sources) < 16
+    assert all(len(s.text) >= 200 for s in sources)
+
+
+def test_what_the_floor_dropped_is_reported():
+    analysis = _analysis(*[_artifact("agents", "a" * 5000, f"a{i}.md") for i in range(16)])
+    kept = {s.path for s in prompt_sources(analysis, LIMIT)}
+    dropped = {a.path for a in dropped_sources(analysis, LIMIT)}
+    assert dropped
+    assert kept.isdisjoint(dropped)
+    assert kept | dropped == {f"a{i}.md" for i in range(16)}
+
+
+def test_a_short_source_is_complete_not_truncated():
+    """A 40-character .cursorrules is the whole file, so the floor must not eat it."""
+    analysis = _analysis(
+        _artifact("agents", "a" * 5000),
+        _artifact("cursor", "be terse", ".cursorrules"),
+    )
+    texts = _by_type(prompt_sources(analysis, LIMIT))
+    assert texts["cursor"] == "be terse"
+    assert dropped_sources(analysis, LIMIT) == []
+
+
+def test_at_least_one_source_survives_any_budget():
+    """A floor that silenced everything would answer a small budget with nothing."""
+    analysis = _analysis(_artifact("agents", "a" * 5000))
+    sources = prompt_sources(analysis, 50)
+    assert [s.type for s in sources] == ["agents"]
+
+
+def test_sources_that_clear_the_floor_are_budgeted_as_before():
+    analysis = _analysis(
+        _artifact("agents", "a" * 5000),
+        _artifact("claude", "c" * 5000, "CLAUDE.md"),
+    )
+    texts = _by_type(prompt_sources(analysis, LIMIT))
+    assert len(texts["agents"]) == 500
+    assert len(texts["claude"]) == 500
+    assert dropped_sources(analysis, LIMIT) == []
+
+
+def test_the_work_artifacts_are_never_dropped_by_the_floor():
+    analysis = _analysis(
+        _artifact("spec", "s" * 5000),
+        _artifact("tasks", "t" * 5000),
+        *[_artifact("agents", "a" * 5000, f"a{i}.md") for i in range(16)],
+    )
+    types = {s.type for s in prompt_sources(analysis, LIMIT)}
+    assert {"spec", "tasks"} <= types
+
+
+def test_a_dropped_source_is_not_citable():
+    """FR-020: the judge may only cite what it was actually shown."""
+    from specjudge.judge.fragments import extract_fragments
+
+    analysis = _analysis(
+        *[_artifact("agents", f"# Heading {i}\n" + "a" * 5000, f"a{i}.md") for i in range(16)]
+    )
+    shown = "".join(s.text for s in prompt_sources(analysis, LIMIT))
+    for fragment in extract_fragments(analysis, LIMIT):
+        assert fragment.text[:40] in shown

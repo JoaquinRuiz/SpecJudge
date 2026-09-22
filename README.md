@@ -168,7 +168,10 @@ about to do, and the rest describes how demanding the codebase is to work in at 
 
 A repository can carry dozens of these, so they share one budget rather than each getting its own:
 the files nearest the root are kept first, up to `sources.max_context_files` in
-`data/rating-rules.yaml`, and anything left out is reported rather than silently dropped. Context
+`data/rating-rules.yaml`, and anything left out is reported rather than silently dropped. When the
+budget cannot fund a real share of every file, whole files are left out rather than every file cut
+to a sliver — four sources read properly tell the judge more than sixteen cut off mid-sentence, and
+the ones left out are named. Context
 files that announce a tool generated them are skipped — generated context mostly restates what the
 code already shows, and prompt space is the scarce resource.
 

@@ -49,7 +49,12 @@ from .errors import (
     insufficient_project,
     no_supported_dimensions,
 )
-from .judge.evaluator import envelope_fragments, estimate_demand, evidence_warnings
+from .judge.evaluator import (
+    budget_warnings,
+    envelope_fragments,
+    estimate_demand,
+    evidence_warnings,
+)
 from .judge.ollama import OllamaClient
 from .rating import assert_dimensions_match, evaluate_all, load_rules
 from .recommend import build_comparison
@@ -131,6 +136,7 @@ def analyze(
         list(analysis.warnings)
         + catalog_warnings
         + evidence_warnings(demand)
+        + budget_warnings(analysis, rules, client, judge_model)
         + envelope_warnings(demand, execution)
     )
     data_state = analysis.data_state

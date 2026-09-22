@@ -9,6 +9,32 @@ Entries before 0.1.4 were reconstructed from the git tags and the GitHub release
 
 ## [Unreleased]
 
+### Fixed
+
+- **A source could be truncated below the point of being worth sending** ([#35]). The character
+  budget divided what there was without ever asking whether a share was large enough to be worth
+  anything, so with enough sources competing every one of them arrived as a sliver. Measured before
+  the fix: sixteen matching context files, per-artifact limit 1000, and each was sent as **31
+  characters** — a cut clause rather than a statement anyone can reason from, and still citable
+  under FR-020, so it cost the judge attention and bought nothing. The only existing guard dropped a
+  source whose text came out empty; anything above zero shipped.
+
+  There is now a floor. Below it a source is left out whole and reported, exactly like a file that
+  loses to `sources.max_context_files` — the same sixteen files now arrive as two read properly,
+  with the other fourteen named in the warnings. A source that fits entirely inside its share is
+  complete however short it is, so a 40-character `.cursorrules` is never mistaken for a fragment of
+  one, and at least one source always survives: a floor that silenced everything would answer "this
+  budget is too small" by sending nothing at all.
+
+  The floor is derived from the per-artifact limit rather than configured. The prompt and the
+  citable fragment set are built by two different call sites from that same limit, so a threaded
+  setting would only have to be forgotten at one of them to let the judge cite text it was never
+  shown; deriving it makes the two structurally incapable of disagreeing.
+
+  Raised indirectly by a commenter on the 0.6.0 release thread, whose diagnosis was wrong — a
+  greenfield feature does not trigger every glob, and `AGENTS.md` never drops below half — but whose
+  instinct, that truncated context can be worse than absent context, pointed straight at this.
+
 ## [0.6.0] - 2026-09-22
 
 The projects that organise their context best were the ones SpecJudge read worst. If you
@@ -752,3 +778,4 @@ community-maintained catalog by how well each model **fits** the job.
 [#32]: https://github.com/JoaquinRuiz/SpecJudge/pull/32
 [#33]: https://github.com/JoaquinRuiz/SpecJudge/issues/33
 [@sabelaV]: https://github.com/sabelaV
+[#35]: https://github.com/JoaquinRuiz/SpecJudge/issues/35
