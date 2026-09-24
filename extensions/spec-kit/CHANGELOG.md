@@ -8,6 +8,14 @@ points at. Keeping an independent number would mean a release tag of its own for
 change. One number for the whole repository is the cheaper answer, and the cost is that
 this one moves when SpecJudge moves even if nothing here changed.
 
+## [0.7.0] - 2026-09-24
+
+### Changed
+
+- Nothing here moved. The number follows SpecJudge, whose judge can now be any
+  OpenAI-compatible endpoint. The extension shells out to the tool, so it inherits whatever
+  judge the user has configured without a manifest change.
+
 ## [0.6.1] - 2026-09-22
 
 ### Changed

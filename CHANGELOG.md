@@ -9,6 +9,17 @@ Entries before 0.1.4 were reconstructed from the git tags and the GitHub release
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-09-24
+
+The judge no longer has to be Ollama. It never had to be — Ollama was the shortest path to a
+judge that runs on your own machine, not the point — but saying so in code meant every other way
+of running one was shut out. llama.cpp, vLLM, LM Studio, LocalAI, a box on your own network: same
+protocol, all of them work now. So does a hosted endpoint, for anyone who decides that trade is
+theirs to make.
+
+What did not change is the default, and this release spends most of its care on making sure it
+stays that way and says so when it doesn't.
+
 ### Added
 
 - **The judge can be any OpenAI-compatible endpoint** ([#4]). It was wired to Ollama and only
@@ -770,7 +781,8 @@ community-maintained catalog by how well each model **fits** the job.
 - Explicit degradation with distinct exit codes when project data is insufficient,
   the judge is unavailable, or the catalog is empty.
 
-[Unreleased]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.5...v0.6.0
 [0.5.5]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.4...v0.5.5
