@@ -110,6 +110,29 @@ payload = api.to_dict(comparison)   # same shape as --json
 Like the CLI, this needs Ollama running locally with the model installed: the
 assessment comes from a judge on your machine, not from a bundled heuristic.
 
+### Using a different judge endpoint
+
+`judge_url` points the judge at any OpenAI-compatible endpoint instead of local Ollama:
+
+```python
+# Still your machine — llama.cpp, vLLM, LM Studio.
+comparison = api.analyze(path, judge_model="my-model", judge_url="http://localhost:8000")
+
+# No longer your machine. The run says so.
+comparison = api.analyze(path, judge_model="some-model", judge_url="https://api.example.com")
+assert "remote judge" in comparison.warnings[0]
+```
+
+Omit it and the judge is local Ollama, which is the default and is not going to change.
+A non-local endpoint is never inferred and never fallen back to; when one is used, a notice
+naming the host is placed **first** in `comparison.warnings`, and therefore first in the
+`warnings` array of the JSON payload too. It is reported through the existing field rather
+than a new one, so this costs consumers nothing — but if you surface warnings to a user,
+that is the one you do not want to truncate.
+
+The key for an authenticated endpoint is read from the environment at run time (name it in
+`config.toml` under `[judge] api_key_env`) and is never written to the config file.
+
 ### Covered by semantic versioning
 
 Everything exported from `specjudge.api`, and nothing else:

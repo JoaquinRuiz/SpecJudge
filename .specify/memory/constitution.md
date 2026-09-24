@@ -156,14 +156,26 @@ presupuesto y del contexto de cada usuario, en manos del usuario.
 ### I. Local-First y Privacidad por Defecto
 
 El análisis de los artefactos del proyecto DEBE poder ejecutarse íntegramente en la máquina del
-usuario. El "juez" que evalúa las tareas es un modelo local ejecutado a través de Ollama. Los
-specs de un usuario NUNCA se envían a un servicio de terceros como parte del funcionamiento normal
-de la herramienta. La decisión sobre qué modelo usar no debe, en sí misma, filtrar el contenido
-del proyecto ni incurrir en coste de API.
+usuario, y esa DEBE ser la configuración por defecto. El "juez" que evalúa las tareas es, salvo
+que el usuario disponga lo contrario, un modelo local. La decisión sobre qué modelo usar no debe,
+en sí misma, filtrar el contenido del proyecto ni incurrir en coste de API.
+
+El juez se configura mediante una URL base; cuando no hay ninguna configurada, apunta a la
+instalación local de Ollama. Un endpoint no local es SIEMPRE una decisión explícita del usuario:
+la herramienta NUNCA lo infiere, NUNCA recurre a él como alternativa cuando algo local falla, y
+NUNCA lo activa por sí misma. Mientras el juez sea local —Ollama, llama.cpp, vLLM o cualquier otro
+servidor en la propia máquina— los specs no salen de ella.
+
+Cuando el usuario SÍ configura un endpoint remoto, la herramienta DEBE advertirlo en cada
+ejecución, indicando a qué host se envía el texto del proyecto. Un aviso mostrado una sola vez
+durante la configuración no basta: una URL escrita hace meses sigue vigente hoy, y una garantía
+que deja de cumplirse en silencio es peor que no haberla dado nunca (véase el Principio IV).
 
 **Razón**: Los specs contienen la lógica de negocio y las decisiones de diseño del usuario.
 Pedirle que los exponga a un tercero solo para decidir qué modelo contratar es inaceptable y
-contradice el propósito de la herramienta.
+contradice el propósito de la herramienta. Prohibirle que lo haga si es una decisión suya,
+informada y deliberada, es paternalismo: lo que el principio protege es el valor por defecto y el
+carácter explícito de la excepción, no la imposibilidad técnica de ella.
 
 ### II. Transparencia y Auditabilidad
 
@@ -261,4 +273,4 @@ Las enmiendas a esta constitución requieren:
    - **PATCH**: aclaraciones y correcciones que no cambian el significado.
 3. Revisión de que los artefactos dependientes sigan alineados.
 
-**Version**: 3.1.0 | **Ratified**: 2026-07-20 | **Last Amended**: 2026-08-03
+**Version**: 3.2.0 | **Ratified**: 2026-07-20 | **Last Amended**: 2026-09-24

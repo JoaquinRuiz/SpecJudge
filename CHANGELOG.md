@@ -9,6 +9,40 @@ Entries before 0.1.4 were reconstructed from the git tags and the GitHub release
 
 ## [Unreleased]
 
+### Added
+
+- **The judge can be any OpenAI-compatible endpoint** ([#4]). It was wired to Ollama and only
+  Ollama — never a statement about Ollama, just the shortest path to a judge that runs on your own
+  machine, but it excluded every other way of running one. llama.cpp's server, vLLM, LM Studio,
+  LocalAI, a box on your own network: all of them speak this protocol, and all of them work now.
+  So does a hosted endpoint, for anyone who decides that trade is theirs to make.
+
+  `--judge-url` for a single run, `[judge] base_url` in `config.toml` to persist it, and
+  `judge_url=` on `api.analyze`. An authenticated endpoint reads its key from the environment
+  variable named by `[judge] api_key_env` — the name goes in the config, never the key.
+
+  **The default has not moved and is not going to.** No config and no flag means local Ollama. A
+  non-local endpoint is never inferred, never fallen back to when something local fails, and never
+  turned on for you; it happens when you write the URL down. Every run that uses one puts a notice
+  naming the host **first** in the warnings, on every run rather than once at setup, because a URL
+  written months ago is still in the config today.
+
+### Changed
+
+- **Principle I of the constitution now says what it actually protects** (3.1.0 → 3.2.0, [#4]). It
+  named Ollama specifically and described a guarantee with no exception. The guarantee is the same
+  one, stated properly: local is the default, a remote judge is always the user's explicit and
+  informed decision, and the tool must say so on every run that uses one. Forbidding the choice
+  outright would have been paternalism; what the principle defends is the default and the
+  explicitness of the exception, not the technical impossibility of it.
+
+### Fixed
+
+- **The budget warning from 0.6.1 never reached the CLI** ([#4]). `cli.py` assembles its own
+  warning list rather than going through `api.analyze`, and the warning added in 0.6.1 was wired
+  into the API path only — so the people most likely to see it, running `specjudge` in a terminal,
+  were the ones who did not. Found while wiring the remote-judge notice through the same list.
+
 ## [0.6.1] - 2026-09-22
 
 One fix, to a defect 0.6.0 made easier to hit. The budget knew how to divide what it had and
@@ -786,3 +820,4 @@ community-maintained catalog by how well each model **fits** the job.
 [#33]: https://github.com/JoaquinRuiz/SpecJudge/issues/33
 [@sabelaV]: https://github.com/sabelaV
 [#35]: https://github.com/JoaquinRuiz/SpecJudge/issues/35
+[#4]: https://github.com/JoaquinRuiz/SpecJudge/issues/4

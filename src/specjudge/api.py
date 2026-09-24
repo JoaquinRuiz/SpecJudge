@@ -37,6 +37,7 @@ from .domain import (
     ExecutionModel,
     Price,
     Rating,
+    UserConfig,
 )
 from .envelope import build as build_envelope
 from .envelope import envelope_warnings
@@ -49,6 +50,7 @@ from .errors import (
     insufficient_project,
     no_supported_dimensions,
 )
+from .judge.client import build_client, remote_notice
 from .judge.evaluator import (
     budget_warnings,
     envelope_fragments,
@@ -97,6 +99,7 @@ def analyze(
     rules_path: str | Path | None = None,
     host: str = DEFAULT_HOST,
     execution_model: ExecutionModel | None = None,
+    judge_url: str | None = None,
 ) -> Comparison:
     """Analyse an SDD project and return the model comparison.
 
@@ -123,7 +126,13 @@ def analyze(
     assert_dimensions_match(models, rules)
     catalog_warnings = catalog_warnings + check_freshness(models, rules.max_pricing_age_days)
 
-    client = OllamaClient(host=host)
+    # Local Ollama unless the caller names an OpenAI-compatible endpoint. A
+    # non-local one puts a notice at the head of `warnings` (issue #4).
+    client = (
+        build_client(UserConfig(ollama_host=host), base_url=judge_url)
+        if judge_url
+        else OllamaClient(host=host)
+    )
     demand = estimate_demand(analysis, rules, client, judge_model)
     if not demand.scored_dimensions:
         raise no_supported_dimensions(judge_model)
@@ -139,6 +148,11 @@ def analyze(
         + budget_warnings(analysis, rules, client, judge_model)
         + envelope_warnings(demand, execution)
     )
+    # Ahead of every other warning: it is the only one about where the project's text
+    # went, rather than about how good the answer is (issue #4).
+    notice = remote_notice(client)
+    if notice:
+        warnings.insert(0, notice)
     data_state = analysis.data_state
     if demand.unsupported_dimensions and data_state == DataState.SUFFICIENT:
         data_state = DataState.SCARCE
