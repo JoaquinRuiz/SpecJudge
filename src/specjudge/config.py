@@ -12,7 +12,7 @@ from pathlib import Path
 
 from platformdirs import user_config_dir
 
-from .domain import JudgePreference, UserConfig
+from .domain import JudgeEndpoint, JudgePreference, UserConfig
 
 APP_NAME = "specjudge"
 DEFAULT_HOST = "http://localhost:11434"
@@ -46,7 +46,21 @@ def load_config(path: Path | None = None) -> UserConfig:
             chosen_at=str(jp["chosen_at"]) if jp.get("chosen_at") else None,
         )
 
-    return UserConfig(ollama_host=str(host), judge_preference=pref)
+    endpoint = None
+    je = raw.get("judge")
+    if isinstance(je, dict) and je.get("base_url"):
+        params = je.get("params_b")
+        try:
+            params_b = float(params) if params is not None else None
+        except (TypeError, ValueError):
+            params_b = None
+        endpoint = JudgeEndpoint(
+            base_url=str(je["base_url"]).strip(),
+            api_key_env=str(je["api_key_env"]) if je.get("api_key_env") else None,
+            params_b=params_b,
+        )
+
+    return UserConfig(ollama_host=str(host), judge_preference=pref, judge_endpoint=endpoint)
 
 
 def _toml_escape(value: str) -> str:
@@ -65,6 +79,15 @@ def save_config(config: UserConfig, path: Path | None = None) -> Path:
         lines.append(f'judge_model = "{_toml_escape(pref.judge_model)}"')
         if pref.chosen_at:
             lines.append(f'chosen_at = "{_toml_escape(pref.chosen_at)}"')
+        lines.append("")
+    if config.judge_endpoint is not None:
+        endpoint = config.judge_endpoint
+        lines.append("[judge]")
+        lines.append(f'base_url = "{_toml_escape(endpoint.base_url)}"')
+        if endpoint.api_key_env:
+            lines.append(f'api_key_env = "{_toml_escape(endpoint.api_key_env)}"')
+        if endpoint.params_b is not None:
+            lines.append(f"params_b = {endpoint.params_b}")
         lines.append("")
 
     tmp_path = cfg_path.with_suffix(cfg_path.suffix + ".tmp")

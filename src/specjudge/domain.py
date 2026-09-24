@@ -504,6 +504,26 @@ class JudgePreference:
 
 
 @dataclass
+class JudgeEndpoint:
+    """An OpenAI-compatible endpoint to use as the judge instead of local Ollama.
+
+    `api_key_env` names the environment variable holding the key; the key itself is
+    never written to the config, because a credential in a dotfile outlives the
+    reason it was put there.
+
+    `params_b` exists because `/v1/models` reports no parameter count and the prompt
+    shape depends on one. Left unset, a remote endpoint is assumed to be large and a
+    local one unknown — set it when self-hosting something small (issue #4).
+    """
+
+    base_url: str
+    api_key_env: str | None = None
+    params_b: float | None = None
+
+
+@dataclass
 class UserConfig:
     ollama_host: str = "http://localhost:11434"
     judge_preference: JudgePreference | None = None
+    # Unset means the judge is local Ollama, which is the default and stays it.
+    judge_endpoint: JudgeEndpoint | None = None

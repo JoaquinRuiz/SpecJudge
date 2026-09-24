@@ -77,6 +77,43 @@ def selected_model_missing(model: str) -> JudgeUnavailableError:
     )
 
 
+def endpoint_unreachable(host: str) -> JudgeUnavailableError:
+    return JudgeUnavailableError(
+        f"Could not connect to the judge endpoint at {host}.",
+        hint=(
+            "Check the endpoint is running and the URL is right.\n"
+            "  - self-hosted: confirm the server is up and serving /v1\n"
+            "  - hosted: check the base URL, and that you are online\n"
+            "Clear judge.base_url from the config to go back to local Ollama."
+        ),
+    )
+
+
+def endpoint_unauthorized(host: str) -> JudgeUnavailableError:
+    return JudgeUnavailableError(
+        f"The judge endpoint at {host} rejected the credentials.",
+        hint=(
+            "Set judge.api_key_env in the config to the name of the environment\n"
+            "variable holding the key, and export that variable. The key itself is\n"
+            "never written to the config file."
+        ),
+    )
+
+
+def endpoint_failed(host: str, detail: str) -> JudgeUnavailableError:
+    return JudgeUnavailableError(
+        f"The judge endpoint at {host} returned an error: {detail}",
+        hint="Check the endpoint's own logs; the message above is its, not ours.",
+    )
+
+
+def endpoint_model_missing(model: str, host: str) -> JudgeUnavailableError:
+    return JudgeUnavailableError(
+        f"The judge model '{model}' is not served by the endpoint at {host}.",
+        hint="Run with --judge <model> naming one the endpoint lists.",
+    )
+
+
 def judge_response_unusable(model: str, detail: str) -> JudgeUnavailableError:
     """The judge replied, but not with an assessment we can use (Principle IV).
 

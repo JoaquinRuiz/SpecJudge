@@ -11,7 +11,7 @@ fits the job — before you spend a single token implementing it.
 [![CI](https://github.com/JoaquinRuiz/SpecJudge/actions/workflows/ci.yml/badge.svg)](https://github.com/JoaquinRuiz/SpecJudge/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
-[![Local-first](https://img.shields.io/badge/local--first-your%20specs%20never%20leave-brightgreen.svg)](#privacy)
+[![Local-first](https://img.shields.io/badge/local--first-local%20judge%20by%20default-brightgreen.svg)](#privacy)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#contributing)
 
 </div>
@@ -133,11 +133,28 @@ require touching the code either.
 
 ## Privacy
 
-The judge runs **on your machine** through Ollama. Your specs — your business logic, your design
-decisions — never touch a third-party service, and deciding which model to buy costs you nothing
-in API calls. The browser report is a self-contained HTML file that loads nothing from the network.
+The judge runs **on your machine**, by default and without configuring anything. Your specs — your
+business logic, your design decisions — never touch a third-party service, and deciding which model
+to buy costs you nothing in API calls. The browser report is a self-contained HTML file that loads
+nothing from the network.
 
 This isn't a nice-to-have; it's Principle I of the [project constitution](./.specify/memory/constitution.md).
+
+**If you'd rather use something else**, the judge is configured by base URL and speaks the
+OpenAI-compatible protocol, so llama.cpp, vLLM, LM Studio and a hosted endpoint all work:
+
+```bash
+specjudge --judge-url http://localhost:8000 --judge my-local-model   # still your machine
+specjudge --judge-url https://api.example.com --judge some-model     # no longer your machine
+```
+
+Or persist it in `config.toml` under `[judge]` (`base_url`, and `api_key_env` naming the
+environment variable that holds your key — the key itself is never written to the file).
+
+A non-local endpoint is **never** inferred, never fallen back to when something local fails, and
+never turned on for you. It happens when you write the URL down, and every run that uses one says
+so at the top of its warnings, naming the host. A guarantee that quietly stops holding is worse
+than one that was never made.
 
 ## How it works
 

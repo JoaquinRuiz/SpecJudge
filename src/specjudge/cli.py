@@ -22,8 +22,13 @@ from .domain import DataState, ExecutionModel, JudgePreference, UserConfig
 from .envelope import build as build_envelope
 from .envelope import envelope_warnings
 from .gaps import find_gaps
-from .judge.evaluator import envelope_fragments, estimate_demand, evidence_warnings
-from .judge.ollama import OllamaClient
+from .judge.client import JudgeClient, build_client, remote_notice
+from .judge.evaluator import (
+    budget_warnings,
+    envelope_fragments,
+    estimate_demand,
+    evidence_warnings,
+)
 from .rating import assert_dimensions_match, evaluate_all, load_rules
 from .recommend import build_comparison
 from .render.html import open_in_browser
@@ -51,7 +56,7 @@ def _print_schema_callback(value: bool) -> None:
 
 def resolve_judge(
     config: UserConfig,
-    client: OllamaClient,
+    client: JudgeClient,
     *,
     forced_judge: str | None,
     set_judge: bool,
@@ -114,6 +119,15 @@ def main(
     judge: str | None = typer.Option(
         None, "--judge", help="Force the judge model for this run (not persisted)."
     ),
+    judge_url: str | None = typer.Option(
+        None,
+        "--judge-url",
+        help=(
+            "Base URL of an OpenAI-compatible judge endpoint for this run (not "
+            "persisted). The judge is local Ollama unless you set this. A non-local "
+            "URL sends your project's text to that endpoint, and the run says so."
+        ),
+    ),
     set_judge: bool = typer.Option(
         False, "--set-judge", help="Re-run judge selection and save it."
     ),
@@ -157,6 +171,7 @@ def main(
             as_json,
             no_color,
             execution_model,
+            judge_url,
         )
     except errors.SpecJudgeError as exc:
         typer.echo(exc.render(), err=True)
@@ -195,6 +210,7 @@ def _run(
     as_json: bool,
     no_color: bool,
     execution_model: str | None = None,
+    judge_url: str | None = None,
 ) -> None:
     rules = load_rules()
     execution = _resolve_execution_model(execution_model, rules)
@@ -214,7 +230,7 @@ def _run(
 
     # 3. Resolve the local judge (critical dependency).
     config = load_config()
-    client = OllamaClient(host=config.ollama_host or DEFAULT_HOST)
+    client = build_client(config, base_url=judge_url, default_host=DEFAULT_HOST)
     interactive = sys.stdin.isatty()
     judge_model, config = resolve_judge(
         config, client, forced_judge=judge, set_judge=set_judge, interactive=interactive
@@ -237,7 +253,13 @@ def _run(
         + list(catalog_warnings)
         + evidence_warnings(demand)
         + envelope_warnings(demand, execution)
+        + budget_warnings(analysis, rules, client, judge_model)
     )
+    # Ahead of every other warning: it is the only one about where the project's
+    # text went rather than about the quality of the answer (issue #4).
+    notice = remote_notice(client)
+    if notice:
+        warnings.insert(0, notice)
     # Ungrounded dimensions make the assessment thinner than it looks, which is
     # exactly what `scarce` communicates (FR-020).
     data_state = analysis.data_state
