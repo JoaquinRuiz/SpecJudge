@@ -29,9 +29,9 @@ $ specjudge examples/task-manager
 ┏━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃    ┃ Model                         ┃ Rating   ┃ Price                       ┃ Priced on  ┃
 ┡━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━┩
-│ 🥇 │ Mistral Small 3.2 24B (local) │ good     │ open-source/free            │ 2026-07-20 │
-│ 🥈 │ DeepSeek V4 Flash             │ good     │ 0.28 out / 0.14 in USD/1M   │ 2026-08-10 │
-│ 🥉 │ Gemma 4 26B MoE               │ good     │ 0.33 out / 0.06 in USD/1M   │ 2026-07-20 │
+│ 🥇 │ Mistral Small 3.2 24B (local) │ good     │ open-source/free            │ 2026-11-04 │
+│ 🥈 │ Gemma 4 26B MoE               │ good     │ 0.26 out / 0.09 in USD/1M   │ 2026-11-04 │
+│ 🥉 │ DeepSeek V4 Flash             │ good     │ 0.28 out / 0.14 in USD/1M   │ 2026-08-10 │
 │    │ Claude Fable 5                │ overkill │ 50.00 out / 10.00 in USD/1M │ 2026-08-10 │
 └────┴───────────────────────────────┴──────────┴─────────────────────────────┴────────────┘
 
@@ -39,12 +39,12 @@ $ specjudge examples/task-manager
    Mistral Small 3.2 24B (local) is a good fit for this project. Right-sized: capability 
 matches demand exactly in every dimension. Deciding dimension: 'reasoning' (demand=medium, 
 capability=medium -> good).
-🥈 Silver: DeepSeek V4 Flash
-   DeepSeek V4 Flash is a good fit for this project. Right-sized: capability matches demand 
+🥈 Silver: Gemma 4 26B MoE
+   Gemma 4 26B MoE is a good fit for this project. Right-sized: capability matches demand 
 exactly in every dimension. Deciding dimension: 'reasoning' (demand=medium, 
 capability=medium -> good).
-🥉 Bronze: Gemma 4 26B MoE
-   Gemma 4 26B MoE is a good fit for this project. Right-sized: capability matches demand 
+🥉 Bronze: DeepSeek V4 Flash
+   DeepSeek V4 Flash is a good fit for this project. Right-sized: capability matches demand 
 exactly in every dimension. Deciding dimension: 'reasoning' (demand=medium, 
 capability=medium -> good).
 
@@ -53,7 +53,7 @@ Read: constitution, spec, tasks
 
 Abridged: the real run scores all 37 models in the catalog and lists every one of them. Prices and ratings above are generated from [`data/models.yaml`](./data/models.yaml), so they cannot go stale silently.
 
-**Mistral Small 3.2 24B (local)** is right-sized for this project and costs nothing per token — it runs on your own hardware. **Claude Fable 5**, the priciest option this project does not need, bills $50.00/M output, $10.00/M input. If you would rather not self-host, the cheapest hosted model that still fits is **DeepSeek V4 Flash** at $0.28/M output, $0.14/M input — **179× cheaper on output** than reaching for the frontier.
+**Mistral Small 3.2 24B (local)** is right-sized for this project and costs nothing per token — it runs on your own hardware. **Claude Fable 5**, the priciest option this project does not need, bills $50.00/M output, $10.00/M input. If you would rather not self-host, the cheapest hosted model that still fits is **Gemma 4 26B MoE** at $0.26/M output, $0.09/M input — **192× cheaper on output** than reaching for the frontier.
 <!-- END generated-example -->
 
 The demand profile was estimated once by a local judge and pinned, so this example is
