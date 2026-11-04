@@ -9,6 +9,13 @@ Entries before 0.1.4 were reconstructed from the git tags and the GitHub release
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-11-04
+
+A release about things that were quietly wrong. A field that came back empty from the CLI for
+three releases, a model in the catalog that was never released, a price that was a placeholder
+all along — none of them raised an error, which is exactly why they lasted. The most useful
+change here is the one that makes the first kind structurally impossible to repeat.
+
 ### Fixed
 
 - **`instructions_considered` was always empty from the CLI** ([#38]). The field 0.6.0 added
@@ -835,7 +842,8 @@ community-maintained catalog by how well each model **fits** the job.
 - Explicit degradation with distinct exit codes when project data is insufficient,
   the judge is unavailable, or the catalog is empty.
 
-[Unreleased]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/JoaquinRuiz/SpecJudge/compare/v0.5.5...v0.6.0

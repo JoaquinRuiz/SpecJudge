@@ -8,6 +8,13 @@ points at. Keeping an independent number would mean a release tag of its own for
 change. One number for the whole repository is the cheaper answer, and the cost is that
 this one moves when SpecJudge moves even if nothing here changed.
 
+## [0.7.1] - 2026-11-04
+
+### Changed
+
+- Nothing here moved. The number follows SpecJudge, which fixed a field the CLI reported empty
+  and re-verified its catalog prices.
+
 ## [0.7.0] - 2026-09-24
 
 ### Changed
