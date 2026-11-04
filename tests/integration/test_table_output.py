@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import re
+from datetime import date
+
 from typer.testing import CliRunner
 
 from specjudge.cli import app
@@ -78,7 +81,25 @@ def test_stale_catalog_warning_is_shown_on_a_sufficient_project(
     assert "Ancient Model" in result.output
 
 
-def test_fresh_catalog_shows_no_staleness_warning(project_sufficient, mock_ollama, test_catalog):
+def test_fresh_catalog_shows_no_staleness_warning(
+    project_sufficient, mock_ollama, test_catalog, tmp_path
+):
+    """A catalog priced today raises no staleness warning.
+
+    "Fresh" is made true here rather than assumed of the fixture. The fixture's
+    `pricing_date` is a fixed day, so pointing this test at it directly made it a
+    countdown: it passed until that day was 90 days old and failed on every run after,
+    with nothing in the code having changed.
+    """
+    fresh = tmp_path / "catalog-fresh.yaml"
+    fresh.write_text(
+        re.sub(
+            r"pricing_date: \d{4}-\d{2}-\d{2}",
+            f"pricing_date: {date.today().isoformat()}",
+            test_catalog.read_text(encoding="utf-8"),
+        ),
+        encoding="utf-8",
+    )
     with mock_ollama(models=["llama3.1:8b"]):
         result = runner.invoke(
             app,
@@ -88,7 +109,7 @@ def test_fresh_catalog_shows_no_staleness_warning(project_sufficient, mock_ollam
                 "llama3.1:8b",
                 "--no-color",
                 "--catalog",
-                str(test_catalog),
+                str(fresh),
             ],
         )
     assert result.exit_code == 0, result.output

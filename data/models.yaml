@@ -283,7 +283,7 @@ models:
       input_per_million: 0.00
       output_per_million: 0.00
       currency: USD
-      pricing_date: 2026-07-20
+      pricing_date: 2026-11-04
     notes: >
       2.3B effective params — the smallest practical option. Runs comfortably on
       an 8–16GB Mac. Suitable only for small, well-scoped work.
@@ -301,7 +301,7 @@ models:
       input_per_million: 0.00
       output_per_million: 0.00
       currency: USD
-      pricing_date: 2026-07-20
+      pricing_date: 2026-11-04
     notes: >
       4.5B effective params, 128K context. ~6GB for the model, ~12.5GB in memory
       with the full context window; ~55 tok/s on a MacBook Air M4. Good default
@@ -320,7 +320,7 @@ models:
       input_per_million: 0.00
       output_per_million: 0.00
       currency: USD
-      pricing_date: 2026-07-20
+      pricing_date: 2026-11-04
     notes: >
       ~6.6GB at Q4_K_M; fits a 16GB Mac. Punches well above its size on
       reasoning — the strongest all-round option that fits base-tier hardware.
@@ -338,7 +338,7 @@ models:
       input_per_million: 0.00
       output_per_million: 0.00
       currency: USD
-      pricing_date: 2026-07-20
+      pricing_date: 2026-11-04
     notes: >
       Mistral's edge/on-device tier — ~2GB at Q4, runs on almost anything.
       Smallest practical Mistral; only for small, well-scoped work.
@@ -356,7 +356,7 @@ models:
       input_per_million: 0.00
       output_per_million: 0.00
       currency: USD
-      pricing_date: 2026-07-20
+      pricing_date: 2026-11-04
     notes: >
       ~2.5GB download; the usual starting point for local Llama. Comfortable on
       any 8GB+ Mac.
@@ -374,11 +374,11 @@ models:
       input_per_million: 0.00
       output_per_million: 0.00
       currency: USD
-      pricing_date: 2026-07-20
+      pricing_date: 2026-11-04
     notes: ~5GB at Q4; the mid size of the Ministral 3 line. Fits a 16GB Mac.
 
-  - id: llama-3-3-8b-local
-    name: Llama 3.3 8B (local)
+  - id: llama-3-1-8b-local
+    name: Llama 3.1 8B (local)
     family: Llama
     open_source: true
     provider: Local / Ollama
@@ -390,10 +390,10 @@ models:
       input_per_million: 0.00
       output_per_million: 0.00
       currency: USD
-      pricing_date: 2026-07-20
+      pricing_date: 2026-11-04
     notes: >
-      ~5.5GB RAM; the strongest all-round option in the 7B/8B class. Fits a
-      16GB Mac.
+      ~5.5GB RAM; the 8B of the Llama 3.1 line (Llama 3.3 was only ever released
+      at 70B). Fits a 16GB Mac.
 
   - id: mistral-small-3-2-24b-local
     name: Mistral Small 3.2 24B (local)
@@ -408,7 +408,7 @@ models:
       input_per_million: 0.00
       output_per_million: 0.00
       currency: USD
-      pricing_date: 2026-07-20
+      pricing_date: 2026-11-04
     notes: >
       ~14GB at Q4 — needs a 24GB+ Mac. Leading model in the sub-70B class;
       the most capable Mistral that is realistically local.
@@ -426,7 +426,7 @@ models:
       input_per_million: 0.00
       output_per_million: 0.00
       currency: USD
-      pricing_date: 2026-07-20
+      pricing_date: 2026-11-04
     notes: >
       ~17.5GB at Q4_0 before runtime overhead and KV cache — needs a 32GB+ Mac
       (M4/M5 Pro or Max). Same weights as the hosted gemma-4-31b entry; this row
@@ -445,7 +445,7 @@ models:
       input_per_million: 0.00
       output_per_million: 0.00
       currency: USD
-      pricing_date: 2026-07-20
+      pricing_date: 2026-11-04
     notes: >
       MoE with only 3B active params per token, so throughput stays high even
       though the file is ~20GB at Q4_K_M. Needs a 32GB+ Mac. The most capable
@@ -612,10 +612,10 @@ models:
       size: medium
       domain_specialization: medium
     price:
-      input_per_million: 0.12
-      output_per_million: 0.35
+      input_per_million: 0.20
+      output_per_million: 0.40
       currency: USD
-      pricing_date: 2026-07-20
+      pricing_date: 2026-11-04
     notes: >
       Apache 2.0 open weights (Google DeepMind). Very strong reasoning for its
       size — among the top-ranked open models — but a 31B dense model is limited
@@ -632,10 +632,10 @@ models:
       size: medium
       domain_specialization: medium
     price:
-      input_per_million: 0.06
-      output_per_million: 0.33
+      input_per_million: 0.087
+      output_per_million: 0.26
       currency: USD
-      pricing_date: 2026-07-20
+      pricing_date: 2026-11-04
     notes: >
       Apache 2.0 open weights; Mixture-of-Experts (3.8B active per token), so it
       is cheap to run for its capability. Rate shown is OpenRouter hosted.
@@ -673,14 +673,14 @@ models:
       size: high
       domain_specialization: medium
     price:
-      input_per_million: 0.20
-      output_per_million: 0.60
+      input_per_million: 0.10
+      output_per_million: 0.30
       currency: USD
-      pricing_date: 2026-07-20
+      pricing_date: 2026-11-04
     notes: >
-      Open weights; free to self-host (cost is GPU time). PLACEHOLDER RATE — the
-      real price depends on your hosting provider. Substitute your provider's
-      rate and update pricing_date.
+      Open weights; free to self-host (cost is GPU time). Rate shown is
+      OpenRouter hosted — it replaces a placeholder that was never a real quote,
+      and was twice the actual price.
 
   - id: mistral-large-3
     name: Mistral Large 3

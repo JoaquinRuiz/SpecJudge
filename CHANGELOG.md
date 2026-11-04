@@ -9,6 +9,37 @@ Entries before 0.1.4 were reconstructed from the git tags and the GitHub release
 
 ## [Unreleased]
 
+### Fixed
+
+- **The catalog listed a model that does not exist.** "Llama 3.3 8B (local)" was never released —
+  Meta shipped Llama 3.3 at 70B only, and `ollama pull llama3.3:8b` returns not found. The entry's
+  description matched Llama 3.1 8B, which does exist, so it is now that: renamed, and its id
+  changed from `llama-3-3-8b-local` to `llama-3-1-8b-local`. Anything keyed on the old
+  `model_id` in the JSON output needs the new one.
+
+- **Llama 4 Scout's price was a placeholder, and twice the real one.** The entry said so in its own
+  notes — "PLACEHOLDER RATE" — and carried $0.20/$0.60 per million. OpenRouter hosts it at
+  $0.10/$0.30, which is now the figure, sourced like the other open-weight hosted rates.
+
+- **A test failed on every run once its fixture turned 90 days old.**
+  `test_fresh_catalog_shows_no_staleness_warning` pointed at a fixture catalog with a fixed
+  `pricing_date` and assumed it was fresh, so it was a countdown rather than a check. It now dates
+  its catalog today, which is what "fresh" means.
+
+### Changed
+
+- **Catalog prices re-verified against their sources, 2026-11-04.** Thirteen entries had passed the
+  90-day freshness window.
+  - Hosted, against OpenRouter's public models API: **Gemma 4 31B** $0.12/$0.35 → $0.20/$0.40;
+    **Gemma 4 26B MoE** $0.06/$0.33 → $0.087/$0.26; **Llama 4 Scout** as above.
+  - Local, against the Ollama library: all nine remaining local models are still published under
+    their tags, so $0 per token still holds and they are re-dated on that evidence — not simply
+    re-dated.
+
+  Gemma 4 26B MoE's lower output price moves it ahead of DeepSeek V4 Flash in the README's worked
+  example, making it the cheapest hosted model that fits — 192× cheaper on output than the
+  frontier, up from 179×.
+
 ## [0.7.0] - 2026-09-24
 
 The judge no longer has to be Ollama. It never had to be — Ollama was the shortest path to a
