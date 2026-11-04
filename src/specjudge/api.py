@@ -23,8 +23,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .artifacts import read_project
-from .catalog import check_freshness, load_catalog
 from .domain import (
     Comparison,
     Constraint,
@@ -39,27 +37,16 @@ from .domain import (
     Rating,
     UserConfig,
 )
-from .envelope import build as build_envelope
-from .envelope import envelope_warnings
 from .errors import (
     CatalogError,
     InsufficientInfoError,
     JudgeUnavailableError,
     SpecJudgeError,
-    catalog_empty,
-    insufficient_project,
-    no_supported_dimensions,
 )
-from .judge.client import build_client, remote_notice
-from .judge.evaluator import (
-    budget_warnings,
-    envelope_fragments,
-    estimate_demand,
-    evidence_warnings,
-)
+from .judge.client import build_client
 from .judge.ollama import OllamaClient
-from .rating import assert_dimensions_match, evaluate_all, load_rules
-from .recommend import build_comparison
+from .pipeline import assess, prepare
+from .rating import load_rules
 from .serialize import SCHEMA_VERSION, comparison_to_dict, load_schema
 
 __all__ = [
@@ -115,59 +102,17 @@ def analyze(
         CatalogError: the catalog is missing, empty or malformed (exit code 4).
     """
     rules = load_rules(rules_path)
+    prepared = prepare(project_path, rules, catalog_path)
 
-    analysis = read_project(project_path, rules)
-    if analysis.data_state == DataState.INSUFFICIENT:
-        raise insufficient_project()
-
-    models, catalog_warnings = load_catalog(catalog_path)
-    if not models:
-        raise catalog_empty(str(catalog_path) if catalog_path else "data/models.yaml")
-    assert_dimensions_match(models, rules)
-    catalog_warnings = catalog_warnings + check_freshness(models, rules.max_pricing_age_days)
-
-    # Local Ollama unless the caller names an OpenAI-compatible endpoint. A
-    # non-local one puts a notice at the head of `warnings` (issue #4).
+    # Local Ollama unless the caller names an OpenAI-compatible endpoint. A non-local
+    # one puts a notice at the head of `warnings` (issue #4). No user config is read:
+    # a library call is answered from its arguments alone.
     client = (
         build_client(UserConfig(ollama_host=host), base_url=judge_url)
         if judge_url
         else OllamaClient(host=host)
     )
-    demand = estimate_demand(analysis, rules, client, judge_model)
-    if not demand.scored_dimensions:
-        raise no_supported_dimensions(judge_model)
-
-    execution = execution_model or rules.execution_model
-    fragments = envelope_fragments(analysis, rules, client, judge_model)
-    envelope = build_envelope(demand, fragments, execution)
-
-    warnings = (
-        list(analysis.warnings)
-        + catalog_warnings
-        + evidence_warnings(demand)
-        + budget_warnings(analysis, rules, client, judge_model)
-        + envelope_warnings(demand, execution)
-    )
-    # Ahead of every other warning: it is the only one about where the project's text
-    # went, rather than about how good the answer is (issue #4).
-    notice = remote_notice(client)
-    if notice:
-        warnings.insert(0, notice)
-    data_state = analysis.data_state
-    if demand.unsupported_dimensions and data_state == DataState.SUFFICIENT:
-        data_state = DataState.SCARCE
-
-    return build_comparison(
-        evaluate_all(models, demand, rules, envelope.default_demand),
-        data_state,
-        judge_model,
-        warnings=warnings,
-        demand=demand,
-        source_kinds=analysis.source_kinds,
-        environment_only=analysis.environment_only,
-        envelope=envelope,
-        instructions=analysis.instructions,
-    )
+    return assess(prepared, rules, client, judge_model, execution_model or rules.execution_model)
 
 
 def to_dict(comparison: Comparison) -> dict:

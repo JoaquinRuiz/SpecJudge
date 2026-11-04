@@ -11,6 +11,15 @@ Entries before 0.1.4 were reconstructed from the git tags and the GitHub release
 
 ### Fixed
 
+- **`instructions_considered` was always empty from the CLI** ([#38]). The field 0.6.0 added
+  to report every `.instructions.md` considered — included or not, and why — was populated by
+  `api.analyze` and never by `specjudge --json`, because the CLI built its `Comparison` by hand
+  and the argument was not passed. The instruction files themselves still reached the judge; it
+  was the report of them that came back as `[]`, for every project, in 0.6.0, 0.6.1 and 0.7.0.
+
+  The existing test comparing the two paths compared them field for field and still passed: on
+  its fixture, both sides were empty.
+
 - **The catalog listed a model that does not exist.** "Llama 3.3 8B (local)" was never released —
   Meta shipped Llama 3.3 at 70B only, and `ollama pull llama3.3:8b` returns not found. The entry's
   description matched Llama 3.1 8B, which does exist, so it is now that: renamed, and its id
@@ -27,6 +36,20 @@ Entries before 0.1.4 were reconstructed from the git tags and the GitHub release
   its catalog today, which is what "fresh" means.
 
 ### Changed
+
+- **The CLI and `api.analyze` run one pipeline** ([#38]). They used to orchestrate the same
+  steps side by side, by hand, and drifted the way two copies do — this is the third time a
+  step reached one path and not the other, after the budget warning in 0.6.1 and the field
+  above. Everything between a checked project and a `Comparison` now lives in one module that
+  both call; the CLI keeps what is genuinely its own (config, the judge picker, rendering, exit
+  codes) and `analyze` keeps its explicit-arguments contract. No change to the public API.
+
+  Warnings from the CLI now come in the same order as from the library, which is the
+  semver-covered path. The remote-judge notice stays first in both.
+
+  The new contract test asserts its fixture actually exercises every optional output before
+  comparing them, so it cannot regress into comparing two empty lists. Run against 0.6.1, it
+  fails on both historical divergences.
 
 - **Catalog prices re-verified against their sources, 2026-11-04.** Thirteen entries had passed the
   90-day freshness window.
@@ -864,3 +887,4 @@ community-maintained catalog by how well each model **fits** the job.
 [@sabelaV]: https://github.com/sabelaV
 [#35]: https://github.com/JoaquinRuiz/SpecJudge/issues/35
 [#4]: https://github.com/JoaquinRuiz/SpecJudge/issues/4
+[#38]: https://github.com/JoaquinRuiz/SpecJudge/issues/38
