@@ -53,8 +53,17 @@ def test_readme_cost_figure_is_derived_from_the_catalog():
     paid = render_example.cheapest_paid_fit(comparison)
     assert reference is not None and paid is not None
 
-    expected = reference.price.output_per_million / paid.price.output_per_million
-    assert f"{expected:.0f}× cheaper on output" in _readme_block()
+    ratio = comparison.input_output_ratio
+    blended = reference.price.blended(ratio) / paid.price.blended(ratio)
+    output = reference.price.output_per_million / paid.price.output_per_million
+    block = _readme_block()
+    assert f"**{blended:.0f}× cheaper** at {ratio:g}:1 input:output" in block
+    assert f"({output:.0f}× on output alone)" in block
+
+
+def test_readme_headline_is_not_the_output_only_multiple():
+    """The headline used to be the most flattering figure available (#41)."""
+    assert "cheaper on output**" not in _readme_block()
 
 
 def test_example_project_ships_with_the_repo():

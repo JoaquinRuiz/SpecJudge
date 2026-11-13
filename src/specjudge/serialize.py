@@ -16,6 +16,11 @@ Change rules, enforced by review rather than by code:
 0.1.x and 0.2.0 emitted this same payload without the `schema_version` field. Adding
 it is additive, so a consumer written against those releases keeps working.
 
+1.4 adds `input_output_ratio` and `price.blended_per_million`: the input:output
+assumption behind the price tie-break, and each model's price folded into one figure at
+that ratio. Additive, and absent in a payload from an older release, so a 1.3 consumer
+is unaffected.
+
 1.3 adds `instructions_considered`: which `*.instructions.md` files were looked at,
 whether each one became context and why. Additive, and absent rather than empty in a
 payload from an older release, so a 1.2 consumer is unaffected.
@@ -37,7 +42,7 @@ from pathlib import Path
 
 from .domain import Comparison, Constraint, DemandProfile, Envelope
 
-SCHEMA_VERSION = "1.3"
+SCHEMA_VERSION = "1.4"
 
 
 def schema_path() -> Path:
@@ -132,6 +137,7 @@ def comparison_to_dict(comparison: Comparison) -> dict:
         "demand": demand_to_dict(comparison.demand),
         "envelope": envelope_to_dict(comparison.envelope),
         "warnings": list(comparison.warnings),
+        "input_output_ratio": comparison.input_output_ratio,
         "evaluations": [
             {
                 "model_id": e.model_id,
@@ -141,6 +147,7 @@ def comparison_to_dict(comparison: Comparison) -> dict:
                 "price": {
                     "input_per_million": e.price.input_per_million,
                     "output_per_million": e.price.output_per_million,
+                    "blended_per_million": round(e.price.blended(comparison.input_output_ratio), 6),
                     "currency": e.price.currency,
                     "pricing_date": e.price.pricing_date,
                 },

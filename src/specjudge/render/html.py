@@ -14,9 +14,10 @@ from pathlib import Path
 from jinja2 import Environment, select_autoescape
 
 from .. import about
-from ..domain import Comparison
+from ..domain import Comparison, format_ratio
 from ..gaps import Gap
 from ..sources import summarize_kinds
+from .table import blended_note
 
 
 def _template_source() -> str:
@@ -55,6 +56,8 @@ def render_html(comparison: Comparison, gaps: list[Gap] | None = None) -> str:
         envelope=comparison.envelope,
         warnings=comparison.warnings,
         gaps=gaps or [],
+        input_output_ratio=format_ratio(comparison.input_output_ratio),
+        blended_note=blended_note(comparison.input_output_ratio),
     )
 
 

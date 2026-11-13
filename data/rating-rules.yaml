@@ -30,6 +30,18 @@ catalog_freshness:
   # raise it if the noise outweighs the signal. Missing or invalid => 90.
   max_age_days: 90
 
+# How the two prices of a model are compared as one (#41).
+cost:
+  # Input tokens per output token, used for the Blended column and to break ties
+  # between models that fit equally well. Coding agents read far more than they
+  # write — the codebase, test output, every turn resending the conversation — so
+  # comparing on output alone flatters models with cheap output and pricey input.
+  # Reported by people running agentic workflows (not measured by SpecJudge):
+  # about 5:1 to 8:1 on small-to-medium features, 10:1 to 15:1 on refactors of
+  # large codebases. Raise it for the latter. 0 compares on output alone.
+  # A number (5) or a ratio ("5:1"). Missing or invalid => 5.
+  input_output_ratio: 5
+
 # Evidence the judge must provide for its assessment (FR-019 / issue #1).
 evidence:
   # When true, the judge must cite the id of a project fragment supporting each

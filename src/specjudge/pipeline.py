@@ -129,4 +129,5 @@ def assess(
         environment_only=analysis.environment_only,
         envelope=envelope,
         instructions=analysis.instructions,
+        input_output_ratio=rules.input_output_ratio,
     )

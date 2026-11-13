@@ -7,6 +7,7 @@ that translates into a per-model label" (declarative rules), for auditability
 
 from __future__ import annotations
 
+import math
 from importlib.resources import files
 from pathlib import Path
 
@@ -14,6 +15,7 @@ import yaml
 
 from .domain import (
     DEFAULT_BULK_ABOVE_PARAMS_B,
+    DEFAULT_INPUT_OUTPUT_RATIO,
     DEFAULT_MAX_CONTEXT_FILES,
     DEFAULT_MAX_PRICING_AGE_DAYS,
     LEVELS,
@@ -77,7 +79,32 @@ def load_rules(path: Path | str | None = None) -> RatingRules:
         request_bulk=_request_bulk(raw.get("execution")),
         request_bulk_above_params_b=_bulk_threshold(raw.get("execution")),
         execution_model=_execution_model(raw.get("execution")),
+        input_output_ratio=_input_output_ratio(raw.get("cost")),
     )
+
+
+def _input_output_ratio(raw: object) -> float:
+    """Read cost.input_output_ratio, falling back to the default (#41).
+
+    Accepts a number (`5`) or the way people write it (`"5:1"`). Zero is allowed and
+    means "compare on output alone", the pre-#41 behaviour. Anything else — missing,
+    malformed, negative, infinite — degrades to the default rather than raising: a bad
+    pricing knob must not stop a recommendation.
+    """
+    if not isinstance(raw, dict) or "input_output_ratio" not in raw:
+        return DEFAULT_INPUT_OUTPUT_RATIO
+    value = raw["input_output_ratio"]
+    try:
+        if isinstance(value, bool):
+            raise TypeError
+        if isinstance(value, str) and ":" in value:
+            num, den = (float(x) for x in value.split(":", 1))
+            ratio = num / den
+        else:
+            ratio = float(value)
+    except (TypeError, ValueError, ZeroDivisionError):
+        return DEFAULT_INPUT_OUTPUT_RATIO
+    return ratio if math.isfinite(ratio) and ratio >= 0 else DEFAULT_INPUT_OUTPUT_RATIO
 
 
 def _request_bulk(raw: object) -> bool:

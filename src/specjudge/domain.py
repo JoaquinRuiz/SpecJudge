@@ -115,6 +115,15 @@ DEFAULT_BULK_ABOVE_PARAMS_B = 20.0
 # enough to catch real drift, long enough not to cry wolf on every run.
 DEFAULT_MAX_PRICING_AGE_DAYS = 90
 
+# Input tokens billed per output token when the two prices are folded into one (#41).
+# Coding agents read far more than they write: re-reading the codebase, test output
+# fed back into context, every turn resending the conversation. Comparing on output
+# alone is the most flattering reading for a cheap model and the least representative
+# of how agents are billed. 5:1 sits at the light end of what agentic workflows
+# report (5:1 to 8:1 on small features, 10:1 to 15:1 on refactors of large repos):
+# an assumption, not a measurement, which is why it is printed wherever it is used.
+DEFAULT_INPUT_OUTPUT_RATIO = 5.0
+
 
 @dataclass
 class Price:
@@ -153,10 +162,37 @@ class Price:
         """No per-token cost: open-weight models you self-host, or a free tier."""
         return self.input_per_million == 0 and self.output_per_million == 0
 
+    def blended(self, input_output_ratio: float = DEFAULT_INPUT_OUTPUT_RATIO) -> float:
+        """Cost of one million tokens at `input_output_ratio` input tokens per output token.
+
+        The weighted mean of the two prices. Relative, not absolute: it says what the
+        same work costs on two models, never what a project will cost, because the
+        volume of that work is not something the artifacts can tell (#41).
+        """
+        r = input_output_ratio
+        return (r * self.input_per_million + self.output_per_million) / (r + 1)
+
+    def cost_key(
+        self, input_output_ratio: float = DEFAULT_INPUT_OUTPUT_RATIO
+    ) -> tuple[float, float, float]:
+        """Price ordering metric (data-model.md): blended cost, then output, then input.
+
+        Replaces `sort_key` for ordering. Output alone ranked a model with cheap output
+        and expensive input ahead of one that is cheaper for the input-heavy way agents
+        actually bill (#41).
+        """
+        return (self.blended(input_output_ratio), self.output_per_million, self.input_per_million)
+
     @property
     def sort_key(self) -> tuple[float, float]:
-        """Price ordering metric (data-model.md): output as proxy, input breaks ties."""
+        """Output as proxy, input breaks ties. Kept for API callers; SpecJudge itself
+        orders by `cost_key` since #41."""
         return (self.output_per_million, self.input_per_million)
+
+
+def format_ratio(input_output_ratio: float) -> str:
+    """'5:1', '7.5:1' — how the assumption is printed next to every blended price."""
+    return f"{input_output_ratio:g}:1"
 
 
 @dataclass(frozen=True)
@@ -422,6 +458,8 @@ class RatingRules:
     # off restores the pre-evidence behaviour for judges too small to manage the
     # citation schema — at the cost of the grounding check.
     require_spans: bool = True
+    # Input tokens per output token when the two prices are compared as one (#41).
+    input_output_ratio: float = DEFAULT_INPUT_OUTPUT_RATIO
 
 
 @dataclass
@@ -478,6 +516,9 @@ class Comparison:
     # The demand as a range with named causes (FR-027). None when there is no
     # profile to build one from.
     envelope: Envelope | None = None
+    # The input:output assumption behind every blended price and the price tie-break
+    # (#41). Carried so the output can state it next to the figures it produced.
+    input_output_ratio: float = DEFAULT_INPUT_OUTPUT_RATIO
 
     @property
     def sources_read(self) -> list[str]:
