@@ -11,7 +11,14 @@ from rich.table import Table
 from rich.text import Text
 
 from ..about import TERMINAL_CREDIT
-from ..domain import Comparison, Evaluation, EvidenceStatus, ExecutionModel, Rating
+from ..domain import (
+    Comparison,
+    Evaluation,
+    EvidenceStatus,
+    ExecutionModel,
+    Rating,
+    format_ratio,
+)
 from ..gaps import Gap
 from ..sources import summarize_kinds
 
@@ -29,7 +36,27 @@ def _price_str(e: Evaluation) -> str:
     p = e.price
     if p.is_free:
         return "open-source/free"
-    return f"{p.output_per_million:.2f} out / {p.input_per_million:.2f} in {p.currency}/1M"
+    return f"{p.output_per_million:.2f} / {p.input_per_million:.2f} {p.currency}"
+
+
+def _blended_str(e: Evaluation, ratio: float) -> str:
+    if e.price.is_free:
+        return "—"
+    return f"{e.price.blended(ratio):.2f}"
+
+
+def blended_note(ratio: float) -> str:
+    """What the Blended column is, and what it is not (#41).
+
+    Shared with the HTML matrix so the two never explain the same number differently.
+    """
+    if ratio == 0:
+        return "Blended = output price alone (cost.input_output_ratio is 0)."
+    return (
+        f"Blended = price per 1M tokens at {format_ratio(ratio)} input:output, an assumption "
+        "set by cost.input_output_ratio in rating-rules.yaml. It compares models; it does "
+        "not estimate a project. Prompt caching lowers the real cost of input."
+    )
 
 
 def _pricing_date_str(e: Evaluation) -> str:
@@ -66,7 +93,10 @@ def render_comparison(
     table.add_column("", width=2)
     table.add_column("Model", no_wrap=True)
     table.add_column("Rating")
-    table.add_column("Price")
+    table.add_column("Price /1M\nout / in")
+    # The ratio sits in the header, not in a footnote: a blended figure read without
+    # its assumption is the decorated certainty #41 was declined to avoid.
+    table.add_column(f"Blended\n@ {format_ratio(comparison.input_output_ratio)}", justify="right")
     table.add_column("Priced on")
 
     for e in comparison.evaluations:
@@ -79,11 +109,16 @@ def render_comparison(
             e.model_name,
             rating_text,
             _price_str(e),
+            _blended_str(e, comparison.input_output_ratio),
             _pricing_date_str(e),
             style=row_style,
         )
 
     console.print(table)
+    if any(not e.price.is_free for e in comparison.evaluations):
+        console.print(
+            Text(blended_note(comparison.input_output_ratio), style=None if no_color else "dim")
+        )
 
     by_id = {e.model_id: e for e in comparison.evaluations}
     if comparison.podium:

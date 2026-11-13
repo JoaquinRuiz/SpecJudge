@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/JoaquinRuiz/SpecJudge/main/src/specjudge/_schema/output.schema.json",
   "title": "SpecJudge comparison output",
-  "description": "Payload emitted by `specjudge --json` and by specjudge.api.to_dict(). Version 1.3. Adding a field is a MINOR bump; removing one, changing its type, or changing what an existing value means is MAJOR. Obtain this file without cloning the repo: `specjudge --print-schema`.",
+  "description": "Payload emitted by `specjudge --json` and by specjudge.api.to_dict(). Version 1.4. Adding a field is a MINOR bump; removing one, changing its type, or changing what an existing value means is MAJOR. Obtain this file without cloning the repo: `specjudge --print-schema`.",
   "type": "object",
   "required": [
     "schema_version",
@@ -126,6 +126,11 @@
       "items": {
         "type": "string"
       }
+    },
+    "input_output_ratio": {
+      "description": "Input tokens assumed per output token wherever the two prices are folded into one: every `price.blended_per_million` and the price tie-break between equally fitting models. An assumption from `cost.input_output_ratio` in rating-rules.yaml, not a measurement; 0 means output price alone. Optional: absent in payloads produced before schema 1.4.",
+      "type": "number",
+      "minimum": 0
     },
     "evaluations": {
       "description": "One entry per catalog model, ordered best fit first.",
@@ -343,6 +348,11 @@
           "minimum": 0
         },
         "output_per_million": {
+          "type": "number",
+          "minimum": 0
+        },
+        "blended_per_million": {
+          "description": "Price per million tokens at `input_output_ratio` input tokens per output token. Relative: it compares models for the same work and does not estimate what a project costs. Optional: absent in payloads produced before schema 1.4.",
           "type": "number",
           "minimum": 0
         },

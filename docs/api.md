@@ -21,7 +21,7 @@ repo at [`src/specjudge/_schema/output.schema.json`](../src/specjudge/_schema/ou
 
 ### Versioning
 
-Every payload carries `schema_version`, currently **1.3**. It is deliberately
+Every payload carries `schema_version`, currently **1.4**. It is deliberately
 independent of the package version — otherwise the contract would appear to change
 on every catalog-only release.
 
@@ -79,6 +79,18 @@ from a task list that never names the file it creates.
 
 Absent rather than empty in payloads from releases before 1.3; an empty array means
 the project has no instruction files.
+
+**1.4** adds two fields, both additive:
+
+- `input_output_ratio` — input tokens assumed per output token wherever the two prices are
+  folded into one, from `cost.input_output_ratio` in `data/rating-rules.yaml` (default 5).
+  An assumption, not a measurement; `0` means output price alone.
+- `price.blended_per_million` — each model's price per million tokens at that ratio. It
+  compares models for the same work; it does not estimate what a project costs. It is also
+  the price used to break ties between models that fit equally well, which before 1.4 was
+  output price alone.
+
+Both absent in payloads from releases before 1.4.
 
 Worth branching on if you automate spend: under `escalating`, `best_choice` answers "what
 should implement most of this" and `escalations` tells you what to reach for on the rest.
@@ -151,7 +163,7 @@ Everything exported from `specjudge.api`, and nothing else:
 | `DemandProfile` | The judge's assessment and its evidence |
 | `Evidence` | One dimension's citation |
 | `EvidenceStatus` | `grounded` / `quote_unverified` / `unsupported` |
-| `Price` | Per-million rates and the date they were verified |
+| `Price` | Per-million rates and the date they were verified; `blended(ratio)` folds both into one |
 | `Rating` | `poor` / `fair` / `good` / `overkill` |
 | `DataState` | `sufficient` / `scarce` / `insufficient` |
 | `SpecJudgeError` | Base class for everything below |

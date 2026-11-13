@@ -29,6 +29,7 @@ from pathlib import Path
 from specjudge.api import Comparison, DataState, DemandProfile, Evaluation, Rating
 from specjudge.artifacts import read_project
 from specjudge.catalog import load_catalog
+from specjudge.domain import format_ratio
 from specjudge.rating import evaluate_all, load_rules
 from specjudge.recommend import build_comparison
 from specjudge.render.table import render_comparison
@@ -69,6 +70,7 @@ def build_full_comparison() -> Comparison:
         JUDGE_MODEL,
         source_kinds=analysis.source_kinds,
         environment_only=analysis.environment_only,
+        input_output_ratio=rules.input_output_ratio,
     )
 
 
@@ -82,7 +84,7 @@ def reference_overkill(comparison: Comparison) -> Evaluation | None:
     overkill = [e for e in comparison.evaluations if e.rating is Rating.OVERKILL]
     if not overkill:
         return None
-    return max(overkill, key=lambda e: e.price.sort_key)
+    return max(overkill, key=lambda e: e.price.cost_key(comparison.input_output_ratio))
 
 
 def cheapest_paid_fit(comparison: Comparison) -> Evaluation | None:
@@ -94,7 +96,7 @@ def cheapest_paid_fit(comparison: Comparison) -> Evaluation | None:
     paid = [e for e in comparison.evaluations if e.fits and not e.price.is_free]
     if not paid:
         return None
-    return min(paid, key=lambda e: e.price.sort_key)
+    return min(paid, key=lambda e: e.price.cost_key(comparison.input_output_ratio))
 
 
 def abridge(comparison: Comparison, reference: Evaluation | None) -> Comparison:
@@ -140,6 +142,24 @@ def _price_phrase(evaluation: Evaluation) -> str:
     return f"${price.output_per_million:.2f}/M output, ${price.input_per_million:.2f}/M input"
 
 
+def _factor_phrase(
+    comparison: Comparison, expensive: Evaluation, cheap: Evaluation, word: str
+) -> str:
+    """'**144× cheaper** at 5:1 input:output (192× on output alone)'.
+
+    Blended first, because agents bill mostly on input and the output-only multiple is
+    the most flattering reading for a cheap model (#41). The output figure stays in
+    brackets so nobody has to take the ratio on trust to compare with older numbers.
+    """
+    ratio = comparison.input_output_ratio
+    blended = expensive.price.blended(ratio) / cheap.price.blended(ratio)
+    output = expensive.price.output_per_million / cheap.price.output_per_million
+    return (
+        f"**{blended:.0f}× {word}** at {format_ratio(ratio)} input:output "
+        f"({output:.0f}× on output alone)"
+    )
+
+
 def cost_summary(comparison: Comparison, reference: Evaluation | None) -> str:
     """One paragraph putting a number on the gap, computed from the catalog."""
     gold = next((e for e in comparison.evaluations if e.model_id == comparison.best_choice), None)
@@ -155,19 +175,19 @@ def cost_summary(comparison: Comparison, reference: Evaluation | None) -> str:
         )
         paid = cheapest_paid_fit(comparison)
         if paid is not None and paid.model_id != reference.model_id:
-            factor = reference.price.output_per_million / paid.price.output_per_million
+            factor = _factor_phrase(comparison, reference, paid, "cheaper")
             lead += (
                 f" If you would rather not self-host, the cheapest hosted model that "
                 f"still fits is **{paid.model_name}** at {_price_phrase(paid)} — "
-                f"**{factor:.0f}× cheaper on output** than reaching for the frontier."
+                f"{factor} than reaching for the frontier."
             )
         return lead
 
-    factor = reference.price.output_per_million / gold.price.output_per_million
+    factor = _factor_phrase(comparison, reference, gold, "more")
     return (
         f"**{gold.model_name}** is right-sized for this project at {_price_phrase(gold)}. "
         f"**{reference.model_name}**, the priciest option this project does not need, "
-        f"bills {_price_phrase(reference)} — **{factor:.0f}× more on output** for "
+        f"bills {_price_phrase(reference)} — {factor} for "
         f"capability the work never uses."
     )
 

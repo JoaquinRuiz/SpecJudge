@@ -143,7 +143,7 @@
   <div class="scroll">
   <table>
     <thead>
-      <tr><th></th><th>Model</th><th>Rating</th><th>Price</th><th>Priced on</th></tr>
+      <tr><th></th><th>Model</th><th>Rating</th><th>Price /1M (out / in)</th><th>Blended @ {{ input_output_ratio }}</th><th>Priced on</th></tr>
     </thead>
     <tbody>
       {% for e in evaluations %}
@@ -163,12 +163,16 @@
           {{ '%.2f'|format(e.price.input_per_million) }} in {{ e.price.currency }}/1M
           {%- endif %}
         </td>
+        <td class="price">{% if e.price.is_free %}—{% else %}{{ '%.2f'|format(e.price.blended(comparison.input_output_ratio)) }}{% endif %}</td>
         <td>{% if e.price.pricing_date %}{{ e.price.pricing_date }}{% else %}<span class="stale">no date</span>{% endif %}</td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
   </div>
+  {%- if evaluations | rejectattr('price.is_free') | list %}
+  <p class="just">{{ blended_note }}</p>
+  {%- endif %}
 
   {% if comparison.podium %}
   <div class="podium">

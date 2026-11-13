@@ -9,6 +9,30 @@ Entries before 0.1.4 were reconstructed from the git tags and the GitHub release
 
 ## [Unreleased]
 
+### Changed
+
+- **Prices are compared at an explicit input:output ratio** ([#41], raised by [@lweis-83]).
+  Coding agents spend far more tokens reading than writing — the codebase, test output, the
+  conversation resent every turn — and SpecJudge compared prices on output alone, the most
+  flattering reading for a model with cheap output and the least representative of how
+  agents are billed.
+  A new **Blended** column folds both prices into one at `cost.input_output_ratio` in
+  `data/rating-rules.yaml` (default **5:1**, the light end of what agentic workflows
+  report; 10:1 or more on large refactors). The ratio is printed in the column header, and
+  a note under the table says what the figure is not: an estimate of what a project costs.
+- **The price tie-break uses the blended cost.** Price still never beats fit; among models
+  that fit equally well, the cheaper one at the configured ratio now comes first, where
+  output price alone used to decide. Set the ratio to `0` for the old ordering.
+- **The README headline no longer quotes the output-only multiple.** Gemma 4 26B MoE against
+  Claude Fable 5 now reads "144× cheaper at 5:1 input:output (192× on output alone)". It
+  used to say only 192×.
+
+### Added
+
+- **`--json` schema 1.4**: `input_output_ratio` and `price.blended_per_million`, both
+  additive. `Price.blended(ratio)` and `Price.cost_key(ratio)` in the Python API;
+  `Price.sort_key` keeps its old meaning.
+
 ## [0.7.1] - 2026-11-04
 
 A release about things that were quietly wrong. A field that came back empty from the CLI for
@@ -893,6 +917,8 @@ community-maintained catalog by how well each model **fits** the job.
 [#32]: https://github.com/JoaquinRuiz/SpecJudge/pull/32
 [#33]: https://github.com/JoaquinRuiz/SpecJudge/issues/33
 [@sabelaV]: https://github.com/sabelaV
+[@lweis-83]: https://github.com/lweis-83
 [#35]: https://github.com/JoaquinRuiz/SpecJudge/issues/35
 [#4]: https://github.com/JoaquinRuiz/SpecJudge/issues/4
 [#38]: https://github.com/JoaquinRuiz/SpecJudge/issues/38
+[#41]: https://github.com/JoaquinRuiz/SpecJudge/issues/41

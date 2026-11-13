@@ -26,14 +26,18 @@ CRUD web app, is included in this repo so you can run it yourself:
 $ specjudge examples/task-manager
 
                    Model comparison (SpecJudge) - judge: devstral-small-2                   
-┏━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
-┃    ┃ Model                         ┃ Rating   ┃ Price                       ┃ Priced on  ┃
-┡━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━┩
-│ 🥇 │ Mistral Small 3.2 24B (local) │ good     │ open-source/free            │ 2026-11-04 │
-│ 🥈 │ Gemma 4 26B MoE               │ good     │ 0.26 out / 0.09 in USD/1M   │ 2026-11-04 │
-│ 🥉 │ DeepSeek V4 Flash             │ good     │ 0.28 out / 0.14 in USD/1M   │ 2026-08-10 │
-│    │ Claude Fable 5                │ overkill │ 50.00 out / 10.00 in USD/1M │ 2026-08-10 │
-└────┴───────────────────────────────┴──────────┴─────────────────────────────┴────────────┘
+┏━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━┓
+┃    ┃                               ┃          ┃ Price /1M         ┃ Blended ┃            ┃
+┃    ┃ Model                         ┃ Rating   ┃ out / in          ┃   @ 5:1 ┃ Priced on  ┃
+┡━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━┩
+│ 🥇 │ Mistral Small 3.2 24B (local) │ good     │ open-source/free  │       — │ 2026-11-04 │
+│ 🥈 │ Gemma 4 26B MoE               │ good     │ 0.26 / 0.09 USD   │    0.12 │ 2026-11-04 │
+│ 🥉 │ DeepSeek V4 Flash             │ good     │ 0.28 / 0.14 USD   │    0.16 │ 2026-08-10 │
+│    │ Claude Fable 5                │ overkill │ 50.00 / 10.00 USD │   16.67 │ 2026-08-10 │
+└────┴───────────────────────────────┴──────────┴───────────────────┴─────────┴────────────┘
+Blended = price per 1M tokens at 5:1 input:output, an assumption set by 
+cost.input_output_ratio in rating-rules.yaml. It compares models; it does not estimate a 
+project. Prompt caching lowers the real cost of input.
 
 🥇 Gold: Mistral Small 3.2 24B (local)
    Mistral Small 3.2 24B (local) is a good fit for this project. Right-sized: capability 
@@ -53,7 +57,7 @@ Read: constitution, spec, tasks
 
 Abridged: the real run scores all 37 models in the catalog and lists every one of them. Prices and ratings above are generated from [`data/models.yaml`](./data/models.yaml), so they cannot go stale silently.
 
-**Mistral Small 3.2 24B (local)** is right-sized for this project and costs nothing per token — it runs on your own hardware. **Claude Fable 5**, the priciest option this project does not need, bills $50.00/M output, $10.00/M input. If you would rather not self-host, the cheapest hosted model that still fits is **Gemma 4 26B MoE** at $0.26/M output, $0.09/M input — **192× cheaper on output** than reaching for the frontier.
+**Mistral Small 3.2 24B (local)** is right-sized for this project and costs nothing per token — it runs on your own hardware. **Claude Fable 5**, the priciest option this project does not need, bills $50.00/M output, $10.00/M input. If you would rather not self-host, the cheapest hosted model that still fits is **Gemma 4 26B MoE** at $0.26/M output, $0.09/M input — **144× cheaper** at 5:1 input:output (192× on output alone) than reaching for the frontier.
 <!-- END generated-example -->
 
 The demand profile was estimated once by a local judge and pinned, so this example is
@@ -277,6 +281,14 @@ nor more powerful than needed.
 > costs, and it only breaks ties between models that fit *equally well*. A cheaper model never wins
 > over one that fits better — recommending something that can't do the job is the most expensive
 > mistake of all. Right-sizing is what keeps you from overpaying.
+
+Input and output are priced separately, and agents spend far more of the first: they re-read the
+codebase, feed test output back into context and resend the conversation every turn. So the
+**Blended** column folds both prices into one at an explicit input:output ratio — **5:1** by default,
+set by `cost.input_output_ratio` in `data/rating-rules.yaml` — and that is also what breaks ties.
+Raise it for refactors of a large codebase, where 10:1 or more is common; `0` compares on output
+alone. It is a comparison between models for the same work, not an estimate of what your project
+will cost: how many tokens the work takes is not something the specs can tell.
 
 If no model in the catalog is capable enough, SpecJudge **says so** instead of recommending one
 anyway. Same when your project is too thinly specified to judge — see *Data states* below.

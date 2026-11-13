@@ -6,6 +6,8 @@ whatever the real catalog happens to contain today.
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 import render_example
 
 from specjudge.domain import Comparison, DataState, Evaluation, Price, Rating
@@ -153,7 +155,9 @@ def test_cost_summary_states_the_gap_when_the_winner_is_free():
     summary = render_example.cost_summary(comparison, render_example.reference_overkill(comparison))
 
     assert "costs nothing per token" in summary
-    assert "100× cheaper on output" in summary  # 50.00 / 0.50, via the hosted fallback
+    # Via the hosted fallback. Blended at 5:1: (5·1 + 50) / (5·1 + 0.5) = 10×; the
+    # output-only multiple (50.00 / 0.50) stays alongside it, in brackets.
+    assert "**10× cheaper** at 5:1 input:output (100× on output alone)" in summary
 
 
 def test_cost_summary_uses_a_multiple_when_the_winner_is_paid():
@@ -164,10 +168,24 @@ def test_cost_summary_uses_a_multiple_when_the_winner_is_paid():
     comparison = _comparison(rows, ["hosted"])
     summary = render_example.cost_summary(comparison, render_example.reference_overkill(comparison))
 
-    assert "25× more on output" in summary
+    # (5 + 50) / (5 + 2) ≈ 8× blended; 50 / 2 = 25× on output.
+    assert "**8× more** at 5:1 input:output (25× on output alone)" in summary
     assert "costs nothing per token" not in summary
 
 
 def test_cost_summary_is_empty_without_a_reference():
     comparison = _comparison([_evaluation("only", Rating.GOOD, 1.0)], ["only"])
     assert render_example.cost_summary(comparison, None) == ""
+
+
+def test_cost_summary_states_the_ratio_it_assumed():
+    """The multiple is only meaningful with its assumption next to it (#41)."""
+    rows = [
+        _evaluation("hosted", Rating.GOOD, 2.0),
+        _evaluation("frontier", Rating.OVERKILL, 50.0, excess=2),
+    ]
+    comparison = replace(_comparison(rows, ["hosted"]), input_output_ratio=10.0)
+    summary = render_example.cost_summary(comparison, render_example.reference_overkill(comparison))
+
+    # (10 + 50) / (10 + 2) = 5×
+    assert "**5× more** at 10:1 input:output" in summary

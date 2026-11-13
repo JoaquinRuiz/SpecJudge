@@ -16,6 +16,7 @@ over a better-fitting one.
 from __future__ import annotations
 
 from .domain import (
+    DEFAULT_INPUT_OUTPUT_RATIO,
     Comparison,
     DataState,
     DemandProfile,
@@ -25,26 +26,35 @@ from .domain import (
 )
 
 
-def _fit_key(e: Evaluation) -> tuple[int, int, tuple[float, float], str]:
+def _fit_key(
+    e: Evaluation, ratio: float = DEFAULT_INPUT_OUTPUT_RATIO
+) -> tuple[int, int, tuple[float, float, float], str]:
     """Ordering key: most optimal first.
 
     Fit dominates (deficit, then excess). Price and model_id only disambiguate
-    models that fit the project equally well.
+    models that fit the project equally well — price as the blended cost at `ratio`
+    input tokens per output token, not output alone (#41).
     """
-    return (e.deficit, e.excess, e.price.sort_key, e.model_id)
+    return (e.deficit, e.excess, e.price.cost_key(ratio), e.model_id)
 
 
 PODIUM_SIZE = 3
 
 
-def choose_podium(evaluations: list[Evaluation], size: int = PODIUM_SIZE) -> list[str]:
+def choose_podium(
+    evaluations: list[Evaluation],
+    size: int = PODIUM_SIZE,
+    input_output_ratio: float = DEFAULT_INPUT_OUTPUT_RATIO,
+) -> list[str]:
     """The best-fitting models, gold first (FR-008).
 
     Only capable models are eligible — a model that cannot do the job does not
     belong on the podium even if nothing else is left. So the podium is shorter
     than `size` when fewer models qualify, and empty when none does.
     """
-    capable = sorted((e for e in evaluations if e.fits), key=_fit_key)
+    capable = sorted(
+        (e for e in evaluations if e.fits), key=lambda e: _fit_key(e, input_output_ratio)
+    )
     return [e.model_id for e in capable[:size]]
 
 
@@ -64,16 +74,17 @@ def build_comparison(
     environment_only: bool = False,
     envelope: Envelope | None = None,
     instructions: list[InstructionFile] | None = None,
+    input_output_ratio: float = DEFAULT_INPUT_OUTPUT_RATIO,
 ) -> Comparison:
     warnings = list(warnings or [])
-    podium = choose_podium(evaluations)
+    podium = choose_podium(evaluations, input_output_ratio=input_output_ratio)
     if not podium and evaluations:
         warnings.append(
             "No model in the catalog is capable enough for this project in every "
             "dimension; no best option is designated."
         )
 
-    ordered = sorted(evaluations, key=_fit_key)
+    ordered = sorted(evaluations, key=lambda e: _fit_key(e, input_output_ratio))
 
     return Comparison(
         evaluations=ordered,
@@ -87,4 +98,5 @@ def build_comparison(
         environment_only=environment_only,
         envelope=envelope,
         instructions=list(instructions or []),
+        input_output_ratio=input_output_ratio,
     )
